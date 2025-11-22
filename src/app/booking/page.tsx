@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { createBooking, rescheduleBooking } from '@/lib/calcom';
 import { motion } from 'framer-motion';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
 import { tutors, packages } from '@/data/mockData';
-import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Monitor, Home } from 'lucide-react';
 import { TutorCard } from '@/components/tutors/TutorCard';
 
 const bookingSteps = [
@@ -19,7 +20,7 @@ const bookingSteps = [
   'Kontakt'
 ];
 
-export default function BookingPage() {
+function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -182,7 +183,10 @@ export default function BookingPage() {
       case 1: return selectedPackage;
       case 2: return selectedDate && selectedTime;
       case 3: return selectedLocation;
-      case 4: return contactInfo.name && contactInfo.email;
+      case 4: {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return contactInfo.name && contactInfo.email && emailRegex.test(contactInfo.email);
+      }
       default: return false;
     }
   };
@@ -448,18 +452,18 @@ export default function BookingPage() {
           {/* Step 0: Subject & Tutor */}
           {currentStep === 0 && (
             <div>
-              <h2 className="text-3xl font-bold text-white mb-6">Wähle Fach und Tutor</h2>
+              <h2 className="text-2xl font-bold text-white mb-6">Wähle Fach und Tutor</h2>
               
               {/* Subject Selection */}
-              <div className="mb-8">
-                <label className="block text-white font-semibold mb-3">Fach</label>
+              <div className="mb-6">
+                <label className="block text-white font-semibold mb-2 text-sm">Fach</label>
                 <select
                   value={selectedSubject}
                   onChange={(e) => {
                     setSelectedSubject(e.target.value);
                     setSelectedTutor(''); // Reset tutor when subject changes
                   }}
-                  className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                  className="w-full p-2.5 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none text-sm"
                 >
                   <option value="">Fach auswählen...</option>
                   {Array.from(new Set(tutors.flatMap(t => t.subjects))).map(subject => (
@@ -472,61 +476,104 @@ export default function BookingPage() {
               {selectedSubject && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-white font-semibold">
+                    <label className="text-white font-semibold text-sm">
                       Verfügbare Tutoren
                       {matchingData && (
-                        <span className="ml-2 text-sm text-gray-400">
-                          (Sortiert nach bester Übereinstimmung)
+                        <span className="ml-2 text-xs text-gray-400">
+                          (nach Übereinstimmung sortiert)
                         </span>
                       )}
                     </label>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-xs text-gray-400">
                       {filteredTutors.length} {filteredTutors.length === 1 ? 'Tutor' : 'Tutoren'}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  
+                  {/* Compact Tutor List */}
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                     {filteredTutors.map((tutor, index) => (
-                      <div
+                      <button
                         key={tutor.id}
-                        className="relative"
+                        onClick={() => setSelectedTutor(tutor.id)}
+                        className={`w-full p-4 rounded-xl text-left transition-all border-2 ${
+                          selectedTutor === tutor.id
+                            ? 'bg-accent/10 border-accent'
+                            : 'bg-secondary-dark/50 border-white/10 hover:bg-secondary-dark hover:border-white/20'
+                        }`}
                       >
-                        {/* Match Badge */}
-                        {matchingData && tutor.matchScore > 0 && index < 3 && (
-                          <div className="absolute -top-2 -right-2 z-10 bg-accent text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                            {index === 0 ? '🏆 Top Match' : `#${index + 1} Match`}
+                        <div className="flex items-start gap-4">
+                          {/* Tutor Image */}
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                            <Image
+                              src={tutor.image}
+                              alt={tutor.name}
+                              fill
+                              sizes="64px"
+                              className="object-cover"
+                            />
+                            {matchingData && tutor.matchScore > 0 && index === 0 && (
+                              <div className="absolute top-0 left-0 bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br">
+                                Top
+                              </div>
+                            )}
                           </div>
-                        )}
-                        
-                        <div
-                          className={`h-full transition-all ${
-                            selectedTutor === tutor.id ? 'ring-4 ring-accent rounded-xl' : ''
-                          }`}
-                        >
-                          <TutorCard 
-                            tutor={tutor} 
-                            onSelect={(t) => setSelectedTutor(t.id)}
-                          />
-                        </div>
-                        
-                        {/* Match Score Indicator */}
-                        {matchingData && tutor.matchScore > 0 && (
-                          <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
-                            <div className="flex-1 bg-secondary-dark/50 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className="h-full bg-accent rounded-full transition-all"
-                                style={{ width: `${tutor.matchScore}%` }}
-                              />
+                          
+                          {/* Tutor Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h3 className={`font-bold text-base ${selectedTutor === tutor.id ? 'text-white' : 'text-white'}`}>
+                                {tutor.name}
+                              </h3>
+                              <div className={`text-sm font-semibold whitespace-nowrap ${selectedTutor === tutor.id ? 'text-accent' : 'text-accent'}`}>
+                                €{tutor.hourlyRate}/Std
+                              </div>
                             </div>
-                            <span>{Math.round(tutor.matchScore)}% Match</span>
+                            
+                            <p className="text-xs text-gray-400 mb-2 line-clamp-1">{tutor.bio}</p>
+                            
+                            {/* Subjects */}
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {tutor.subjects.slice(0, 3).map((subject) => (
+                                <span
+                                  key={subject}
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                    selectedTutor === tutor.id
+                                      ? 'bg-accent/20 text-accent'
+                                      : 'bg-accent/10 text-accent'
+                                  }`}
+                                >
+                                  {subject}
+                                </span>
+                              ))}
+                            </div>
+                            
+                            {/* Top Achievement */}
+                            <div className="flex items-start gap-1 text-[11px] text-gray-500">
+                              <Check className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                              <span className="line-clamp-1">{tutor.achievements[0]}</span>
+                            </div>
+                            
+                            {/* Match Score */}
+                            {matchingData && tutor.matchScore > 0 && (
+                              <div className="mt-2 flex items-center gap-2">
+                                <div className="flex-1 bg-secondary-dark rounded-full h-1.5 overflow-hidden">
+                                  <div 
+                                    className="h-full bg-accent rounded-full transition-all"
+                                    style={{ width: `${tutor.matchScore}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] text-gray-500">{Math.round(tutor.matchScore)}%</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      </button>
                     ))}
                   </div>
                   
                   {filteredTutors.length === 0 && (
-                    <div className="text-center py-12 bg-secondary-dark/30 rounded-xl">
-                      <p className="text-gray-400">Keine Tutoren für dieses Fach verfügbar.</p>
+                    <div className="text-center py-8 bg-secondary-dark/30 rounded-xl">
+                      <p className="text-gray-400 text-sm">Keine Tutoren für dieses Fach verfügbar.</p>
                     </div>
                   )}
                 </div>
@@ -550,10 +597,10 @@ export default function BookingPage() {
                   <button
                     key={pkg.id}
                     onClick={() => setSelectedPackage(pkg.id)}
-                    className={`p-6 rounded-xl text-left transition-all ${
+                    className={`p-6 rounded-xl text-left transition-all border-2 ${
                       selectedPackage === pkg.id
-                        ? 'bg-accent text-white scale-105'
-                        : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark'
+                        ? 'bg-accent text-white border-accent'
+                        : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                     }`}
                   >
                     <div className="text-2xl font-bold mb-2">{pkg.name}</div>
@@ -617,25 +664,25 @@ export default function BookingPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => setSelectedLocation('online')}
-                  className={`p-8 rounded-xl transition-all ${
+                  className={`p-8 rounded-xl transition-all border-2 ${
                     selectedLocation === 'online'
-                      ? 'bg-accent text-white scale-105'
-                      : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark'
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                   }`}
                 >
-                  <div className="text-4xl mb-3">💻</div>
+                  <Monitor className="w-12 h-12 mx-auto mb-3" />
                   <div className="text-2xl font-bold mb-2">Online</div>
                   <p className="text-sm opacity-80">Via Zoom oder Google Meet</p>
                 </button>
                 <button
                   onClick={() => setSelectedLocation('in-person')}
-                  className={`p-8 rounded-xl transition-all ${
+                  className={`p-8 rounded-xl transition-all border-2 ${
                     selectedLocation === 'in-person'
-                      ? 'bg-accent text-white scale-105'
-                      : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark'
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                   }`}
                 >
-                  <div className="text-4xl mb-3">🏠</div>
+                  <Home className="w-12 h-12 mx-auto mb-3" />
                   <div className="text-2xl font-bold mb-2">Vor Ort</div>
                   <p className="text-sm opacity-80">In München oder Umgebung</p>
                 </button>
@@ -729,5 +776,17 @@ export default function BookingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-accent animate-spin" />
+      </div>
+    }>
+      <BookingContent />
+    </Suspense>
   );
 }

@@ -164,9 +164,9 @@ export default function MatchingPage() {
               {/* Step 1: Subjects */}
               {currentStep === 1 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Welche Fächer interessieren dich?</h2>
-                  <p className="text-gray-400 mb-8">Wähle ein oder mehrere Fächer aus</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <h2 className="text-3xl font-bold text-white mb-2 text-center">Welche Fächer interessieren dich?</h2>
+                  <p className="text-gray-400 mb-8 text-center">Wähle ein oder mehrere Fächer aus</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
                     {subjects.map((subject) => (
                       <button
                         key={subject.id}
@@ -295,7 +295,7 @@ export default function MatchingPage() {
             </FrostedCard>
 
             {/* Navigation */}
-            <div className="flex justify-between mt-8">
+            <div className="flex justify-between items-center mt-8">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}

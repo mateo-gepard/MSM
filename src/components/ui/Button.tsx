@@ -17,7 +17,7 @@ export function Button({
   size = 'md',
   ...props 
 }: ButtonProps) {
-  const baseStyles = 'font-semibold rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
     primary: 'bg-accent text-white hover:bg-accent/90 hover:scale-105 hover:shadow-lg hover:shadow-accent/50',

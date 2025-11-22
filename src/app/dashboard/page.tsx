@@ -175,6 +175,7 @@ export default function DashboardPage() {
   const rescheduleSuccess = searchParams.get('rescheduleSuccess');
   const [activeTab, setActiveTab] = useState<'bookings' | 'messages' | 'calendar' | 'profile'>('bookings');
   const [userBookings, setUserBookings] = useState<any[]>([]);
+  const [bookingFilter, setBookingFilter] = useState<'scheduled' | 'completed' | 'cancelled' | 'all'>('scheduled');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<any>(null);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -408,15 +409,61 @@ export default function DashboardPage() {
               {/* Bookings Tab */}
               {activeTab === 'bookings' && (
                 <div>
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                     <h2 className="text-2xl font-bold text-white">Meine Buchungen</h2>
                     <Link href="/booking">
-                      <Button size="sm">
+                      <Button size="sm" className="flex items-center">
                         <Plus className="w-4 h-4 mr-2" />
                         Neue Buchung
                       </Button>
                     </Link>
                   </div>
+
+                  {/* Filter Buttons */}
+                  {userBookings.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      <button
+                        onClick={() => setBookingFilter('scheduled')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          bookingFilter === 'scheduled'
+                            ? 'bg-accent text-white'
+                            : 'bg-secondary-dark/50 text-gray-400 hover:bg-secondary-dark'
+                        }`}
+                      >
+                        Anstehend ({userBookings.filter(b => b.status === 'scheduled').length})
+                      </button>
+                      <button
+                        onClick={() => setBookingFilter('completed')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          bookingFilter === 'completed'
+                            ? 'bg-accent text-white'
+                            : 'bg-secondary-dark/50 text-gray-400 hover:bg-secondary-dark'
+                        }`}
+                      >
+                        Abgeschlossen ({userBookings.filter(b => b.status === 'completed').length})
+                      </button>
+                      <button
+                        onClick={() => setBookingFilter('cancelled')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          bookingFilter === 'cancelled'
+                            ? 'bg-accent text-white'
+                            : 'bg-secondary-dark/50 text-gray-400 hover:bg-secondary-dark'
+                        }`}
+                      >
+                        Storniert ({userBookings.filter(b => b.status === 'cancelled').length})
+                      </button>
+                      <button
+                        onClick={() => setBookingFilter('all')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                          bookingFilter === 'all'
+                            ? 'bg-accent text-white'
+                            : 'bg-secondary-dark/50 text-gray-400 hover:bg-secondary-dark'
+                        }`}
+                      >
+                        Alle ({userBookings.length})
+                      </button>
+                    </div>
+                  )}
 
                   {userBookings.length === 0 ? (
                     <div className="p-12 bg-secondary-dark/30 rounded-xl text-center">
@@ -433,13 +480,30 @@ export default function DashboardPage() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {userBookings.map((booking) => (
+                    <>
+                      {userBookings.filter(booking => bookingFilter === 'all' || booking.status === bookingFilter).length === 0 ? (
+                        <div className="p-12 bg-secondary-dark/30 rounded-xl text-center">
+                          <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                          <h3 className="text-xl font-bold text-white mb-2">
+                            Keine {bookingFilter === 'scheduled' ? 'anstehenden' : bookingFilter === 'completed' ? 'abgeschlossenen' : 'stornierten'} Buchungen
+                          </h3>
+                          <p className="text-gray-400">
+                            {bookingFilter === 'scheduled' && 'Du hast aktuell keine anstehenden Termine.'}
+                            {bookingFilter === 'completed' && 'Du hast noch keine abgeschlossenen Termine.'}
+                            {bookingFilter === 'cancelled' && 'Du hast keine stornierten Termine.'}
+                            {bookingFilter === 'all' && 'Keine Buchungen vorhanden.'}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {userBookings
+                            .filter(booking => bookingFilter === 'all' || booking.status === bookingFilter)
+                            .map((booking) => (
                       <motion.div
                         key={booking.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-secondary-dark/50 rounded-xl p-6 hover:bg-secondary-dark transition-all"
+                        className="bg-secondary-dark/50 rounded-xl p-6 transition-colors"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div>
@@ -506,7 +570,9 @@ export default function DashboardPage() {
                         )}
                       </motion.div>
                       ))}
-                    </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
