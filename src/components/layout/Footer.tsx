@@ -1,0 +1,123 @@
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { Mail, Phone, MapPin, Instagram, Linkedin } from 'lucide-react';
+
+export function Footer() {
+  return (
+    <footer className="bg-primary-dark border-t border-white/10 py-12">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          {/* Brand */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative w-12 h-12">
+                <Image
+                  src="/MSM_Logo.png"
+                  alt="MSM Munich Scholar Mentors Logo"
+                  width={48}
+                  height={48}
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-white leading-tight">MSM</span>
+                <span className="text-xs text-gray-400 leading-tight">Munich Scholar Mentors</span>
+              </div>
+            </div>
+            <p className="text-gray-400 text-sm">
+              Premium Nachhilfe von Olympiade-Siegern und Top-Studenten in München.
+            </p>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/#tutors" className="text-gray-400 hover:text-accent transition-colors text-sm">
+                  Tutoren
+                </Link>
+              </li>
+              <li>
+                <Link href="/#pricing" className="text-gray-400 hover:text-accent transition-colors text-sm">
+                  Preise
+                </Link>
+              </li>
+              <li>
+                <Link href="/matching" className="text-gray-400 hover:text-accent transition-colors text-sm">
+                  Matching
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard" className="text-gray-400 hover:text-accent transition-colors text-sm">
+                  Dashboard
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Rechtliches</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/impressum" className="text-gray-400 hover:text-accent transition-colors text-sm">
+                  Impressum
+                </Link>
+              </li>
+              <li>
+                <Link href="/datenschutz" className="text-gray-400 hover:text-accent transition-colors text-sm">
+                  Datenschutz
+                </Link>
+              </li>
+              <li>
+                <Link href="/agb" className="text-gray-400 hover:text-accent transition-colors text-sm">
+                  AGB
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Kontakt</h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2 text-gray-400 text-sm">
+                <Mail className="w-4 h-4 text-accent" />
+                <a href="mailto:info@msm-munich.de" className="hover:text-accent transition-colors">
+                  info@msm-munich.de
+                </a>
+              </li>
+              <li className="flex items-center gap-2 text-gray-400 text-sm">
+                <Phone className="w-4 h-4 text-accent" />
+                <a href="tel:+4989123456" className="hover:text-accent transition-colors">
+                  +49 89 123456
+                </a>
+              </li>
+              <li className="flex items-center gap-2 text-gray-400 text-sm">
+                <MapPin className="w-4 h-4 text-accent" />
+                <span>München, Deutschland</span>
+              </li>
+            </ul>
+            <div className="flex items-center gap-3 mt-4">
+              <a href="#" className="w-8 h-8 rounded-full bg-accent/20 hover:bg-accent flex items-center justify-center transition-colors">
+                <Instagram className="w-4 h-4 text-accent hover:text-white" />
+              </a>
+              <a href="#" className="w-8 h-8 rounded-full bg-accent/20 hover:bg-accent flex items-center justify-center transition-colors">
+                <Linkedin className="w-4 h-4 text-accent hover:text-white" />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 pt-8 text-center">
+          <p className="text-gray-400 text-sm">
+            © {new Date().getFullYear()} MSM Munich Scholar Mentors. Alle Rechte vorbehalten.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
