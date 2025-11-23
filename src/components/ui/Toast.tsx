@@ -9,18 +9,17 @@ export type ToastType = 'success' | 'error' | 'warning' | 'info';
 interface ToastProps {
   message: string;
   type?: ToastType;
-  isVisible: boolean;
   onClose: () => void;
   duration?: number;
 }
 
-export function Toast({ message, type = 'info', isVisible, onClose, duration = 3000 }: ToastProps) {
+export function Toast({ message, type = 'info', onClose, duration = 5000 }: ToastProps) {
   useEffect(() => {
-    if (isVisible && duration > 0) {
+    if (message && duration > 0) {
       const timer = setTimeout(onClose, duration);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, duration, onClose]);
+  }, [message, duration, onClose]);
 
   const icons = {
     success: <Check className="w-5 h-5" />,
@@ -38,28 +37,26 @@ export function Toast({ message, type = 'info', isVisible, onClose, duration = 3
 
   return (
     <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: -50, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.9 }}
-          className="fixed top-4 right-4 z-[9999] max-w-md"
-        >
-          <div className={`flex items-center gap-3 p-4 rounded-xl border backdrop-blur-md shadow-2xl ${styles[type]}`}>
-            <div className="flex-shrink-0">
-              {icons[type]}
-            </div>
-            <p className="flex-1 text-sm font-medium">{message}</p>
-            <button
-              onClick={onClose}
-              className="flex-shrink-0 hover:opacity-70 transition-opacity"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      <motion.div
+        initial={{ opacity: 0, y: -50, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -20, scale: 0.9 }}
+        className="fixed top-4 right-4 z-[9999] max-w-md"
+      >
+        <div className={`flex items-center gap-3 p-4 rounded-xl border backdrop-blur-md shadow-2xl ${styles[type]}`}>
+          <div className="flex-shrink-0">
+            {icons[type]}
           </div>
-        </motion.div>
-      )}
+          <p className="flex-1 text-sm font-medium">{message}</p>
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 hover:opacity-70 transition-opacity"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 }
