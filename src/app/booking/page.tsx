@@ -384,7 +384,15 @@ function BookingContent() {
     } catch (error) {
       console.error('Booking failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      setBookingError(`Buchung fehlgeschlagen: ${errorMessage}`);
+      
+      // If trial booking is rejected, scroll to package selection and highlight the error
+      if (errorMessage.includes('Probestunde') || errorMessage.includes('Neukunden')) {
+        setCurrentStep(1); // Go back to package selection step
+        setBookingError(`⚠️ ${errorMessage}`);
+      } else {
+        setBookingError(`Buchung fehlgeschlagen: ${errorMessage}`);
+      }
+      
       setIsSubmitting(false);
     }
   };

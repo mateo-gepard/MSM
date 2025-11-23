@@ -1,4 +1,4 @@
-import { saveBookingToSupabase, updateBookingStatus, deleteBooking, supabase } from './supabase';
+import { saveBookingToSupabase, updateBookingStatus, deleteBooking, supabase, getUserBookings } from './supabase';
 
 // Use Next.js API route as proxy to avoid CORS issues
 const CALCOM_API_PROXY = '/api/bookings';
@@ -86,6 +86,19 @@ export async function createBooking(data: {
 }) {
   try {
     console.log('Creating booking via API proxy:', data);
+    
+    // ⚠️ BACKEND VALIDATION: Prevent trial bookings for users with existing booking history
+    if (data.userId && data.metadata.packageId === 'trial') {
+      console.log('🔒 Validating trial booking eligibility for user:', data.userId);
+      const existingBookings = await getUserBookings(data.userId);
+      
+      if (existingBookings && existingBookings.length > 0) {
+        console.error('❌ Trial booking REJECTED: User has', existingBookings.length, 'existing bookings');
+        throw new Error('Die Probestunde ist nur für Neukunden verfügbar. Du hast bereits eine Buchungshistorie.');
+      }
+      
+      console.log('✅ Trial booking APPROVED: User has no booking history');
+    }
     
     // Add default values for required Cal.com fields
     const bookingData = {

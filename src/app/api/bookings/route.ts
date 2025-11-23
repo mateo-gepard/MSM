@@ -1,11 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserBookings } from '@/lib/supabase';
 
 const CALCOM_API_BASE = 'https://api.cal.com/v1';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { eventTypeId, start, responses, metadata, timeZone, language } = body;
+    const { eventTypeId, start, responses, metadata, timeZone, language, userId } = body;
+
+    // ⚠️ BACKEND VALIDATION: Prevent trial bookings for users with existing booking history
+    if (userId && metadata?.packageId === 'trial') {
+      console.log('🔒 API Route - Validating trial booking eligibility for user:', userId);
+      try {
+        const existingBookings = await getUserBookings(userId);
+        
+        if (existingBookings && existingBookings.length > 0) {
+          console.error('❌ API Route - Trial booking REJECTED: User has', existingBookings.length, 'existing bookings');
+          return NextResponse.json(
+            { 
+              error: 'Die Probestunde ist nur für Neukunden verfügbar. Du hast bereits eine Buchungshistorie.',
+              code: 'TRIAL_NOT_ALLOWED'
+            },
+            { status: 403 }
+          );
+        }
+        
+        console.log('✅ API Route - Trial booking APPROVED: User has no booking history');
+      } catch (error) {
+        console.error('⚠️ API Route - Failed to check booking history:', error);
+        // Continue with booking if validation fails (don't block legitimate bookings)
+      }
+    }
 
     // Use server-side environment variable (not NEXT_PUBLIC_)
     const apiKey = process.env.CALCOM_API_KEY || process.env.NEXT_PUBLIC_CALCOM_API_KEY;
