@@ -77,10 +77,26 @@ export async function createBooking(data: {
         const startDate = new Date(data.start);
         console.log('Attempting to save booking to Supabase with ID:', bookingId);
         
+        // Helper function to check if a string is a valid UUID
+        const isValidUUID = (str: string) => {
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return uuidRegex.test(str);
+        };
+        
+        // Validate tutor_id is a proper UUID
+        const tutorId = data.metadata.tutorId && isValidUUID(data.metadata.tutorId) 
+          ? data.metadata.tutorId 
+          : undefined;
+          
+        if (data.metadata.tutorId && !tutorId) {
+          console.warn(`⚠️ Tutor ID "${data.metadata.tutorId}" is not a valid UUID. Booking will be saved without tutor reference.`);
+          console.warn('💡 Tip: To link bookings to tutors in Supabase, tutors must have proper UUID IDs.');
+        }
+        
         const supabaseData = {
           calcom_booking_id: bookingId.toString(),
           user_id: data.userId,
-          tutor_id: data.metadata.tutorId || undefined,
+          tutor_id: tutorId,
           subject: data.metadata.subject || 'Nicht angegeben',
           package: data.metadata.packageId || 'Einzelstunde',
           date: startDate.toISOString().split('T')[0],
