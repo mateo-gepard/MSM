@@ -89,9 +89,13 @@ export async function createBooking(data: {
           : undefined;
           
         if (data.metadata.tutorId && !tutorId) {
-          console.warn(`⚠️ Tutor ID "${data.metadata.tutorId}" is not a valid UUID. Booking will be saved without tutor reference.`);
-          console.warn('💡 Tip: To link bookings to tutors in Supabase, tutors must have proper UUID IDs.');
+          console.warn(`⚠️ Tutor ID "${data.metadata.tutorId}" is not a valid UUID. Storing in message field instead.`);
         }
+        
+        // Include non-UUID tutor_id in message if not a valid UUID
+        const messageWithTutorId = tutorId 
+          ? data.responses.notes 
+          : `[Tutor ID: ${data.metadata.tutorId}] ${data.responses.notes || ''}`;
         
         const supabaseData = {
           calcom_booking_id: bookingId.toString(),
@@ -105,7 +109,7 @@ export async function createBooking(data: {
           contact_name: data.responses.name,
           contact_email: data.responses.email,
           contact_phone: data.metadata.phone || undefined,
-          message: data.responses.notes || undefined,
+          message: messageWithTutorId || undefined,
           status: 'scheduled' as const
         };
         

@@ -276,7 +276,7 @@ function BookingContent() {
           responses: {
             name: contactInfo.name || user?.email || 'Anonymous',
             email: contactInfo.email || user?.email || '',
-            notes: `${selectedPackageData.name} - ${selectedSubject}\n${contactInfo.message || ''}`
+            notes: `Tutor: ${selectedTutorData.name} (ID: ${selectedTutor})\nPaket: ${selectedPackageData.name}\nFach: ${selectedSubject}\n${contactInfo.message || ''}`
           },
           metadata: {
             tutorId: selectedTutor,
