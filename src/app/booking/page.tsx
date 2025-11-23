@@ -87,8 +87,14 @@ function BookingContent() {
     
     // Check if user has existing bookings - load from Supabase AND localStorage
     const checkBookingHistory = async () => {
+      console.log('🔍 checkBookingHistory called');
+      console.log('🔍 User ID:', user?.id);
+      console.log('🔍 User object:', user);
+      
       if (!user?.id) {
+        console.log('⚠️ No user ID found - skipping booking history check');
         setBookingHistoryLoaded(true);
+        setHasExistingBookings(false);
         return;
       }
       
@@ -96,10 +102,14 @@ function BookingContent() {
       
       // Try to load from Supabase first
       try {
+        console.log('🔍 Checking Supabase for bookings...');
         const supabaseBookings = await getUserBookings(user.id);
+        console.log('🔍 Supabase response:', supabaseBookings);
         if (supabaseBookings && supabaseBookings.length > 0) {
           allBookings = supabaseBookings;
-          console.log('📊 Loaded bookings from Supabase for trial check:', allBookings.length);
+          console.log('📊 Loaded bookings from Supabase for trial check:', allBookings.length, allBookings);
+        } else {
+          console.log('📊 No bookings found in Supabase');
         }
       } catch (error) {
         console.error('⚠️ Failed to load bookings from Supabase:', error);
@@ -107,19 +117,30 @@ function BookingContent() {
       
       // Also check localStorage as fallback
       const storageKey = `userBookings_${user.id}`;
+      console.log('🔍 Checking localStorage key:', storageKey);
       const storedBookings = localStorage.getItem(storageKey);
+      console.log('🔍 localStorage raw data:', storedBookings);
+      
       if (storedBookings) {
         try {
           const localBookings = JSON.parse(storedBookings);
+          console.log('🔍 Parsed localStorage bookings:', localBookings);
           // If Supabase had no bookings, use localStorage
           if (allBookings.length === 0) {
             allBookings = localBookings;
             console.log('📊 Using localStorage bookings for trial check:', allBookings.length);
+          } else {
+            console.log('📊 Skipping localStorage - already have Supabase bookings');
           }
         } catch (error) {
           console.error('⚠️ Failed to load bookings from localStorage:', error);
         }
+      } else {
+        console.log('📊 No bookings found in localStorage');
       }
+      
+      console.log('🔍 Total bookings found:', allBookings.length);
+      console.log('🔍 All bookings:', allBookings);
       
       // Count ALL bookings (including cancelled) to prevent trial booking abuse
       if (allBookings.length > 0) {
@@ -131,6 +152,7 @@ function BookingContent() {
       }
       
       setBookingHistoryLoaded(true);
+      console.log('🔍 Booking history check complete. hasExistingBookings:', allBookings.length > 0);
     };
     
     checkBookingHistory();
@@ -729,6 +751,15 @@ function BookingContent() {
           {currentStep === 1 && (
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">Wähle ein Paket</h2>
+              
+              {/* DEBUG INFO */}
+              <div className="mb-4 p-3 bg-purple-900/30 border border-purple-500/50 rounded text-xs text-purple-200 font-mono">
+                <div>🐛 Debug Info:</div>
+                <div>• bookingHistoryLoaded: {bookingHistoryLoaded ? '✅ true' : '❌ false'}</div>
+                <div>• hasExistingBookings: {hasExistingBookings ? '✅ true' : '❌ false'}</div>
+                <div>• User ID: {user?.id || 'None'}</div>
+                <div>• Selected Package: {selectedPackage || 'None'}</div>
+              </div>
               
               {/* Loading state while checking booking history */}
               {!bookingHistoryLoaded && (
