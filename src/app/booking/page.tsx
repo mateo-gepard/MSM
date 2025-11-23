@@ -49,12 +49,13 @@ function BookingContent() {
   useEffect(() => {
     // Check if this is a reschedule
     const rescheduleId = searchParams.get('reschedule');
-    if (rescheduleId) {
+    if (rescheduleId && user?.id) {
       setIsReschedule(true);
       setRescheduleBookingId(rescheduleId);
       
-      // Load the booking to reschedule
-      const storedBookings = localStorage.getItem('userBookings');
+      // Load the booking to reschedule (user-specific)
+      const storageKey = `userBookings_${user.id}`;
+      const storedBookings = localStorage.getItem(storageKey);
       if (storedBookings) {
         try {
           const bookings = JSON.parse(storedBookings);
@@ -83,13 +84,16 @@ function BookingContent() {
     }
     
     // Check if user has existing bookings
-    const storedBookings = localStorage.getItem('userBookings');
-    if (storedBookings) {
-      try {
-        const bookings = JSON.parse(storedBookings);
-        setHasExistingBookings(bookings.length > 0);
-      } catch (error) {
-        console.error('Failed to load bookings:', error);
+    if (user?.id) {
+      const storageKey = `userBookings_${user.id}`;
+      const storedBookings = localStorage.getItem(storageKey);
+      if (storedBookings) {
+        try {
+          const bookings = JSON.parse(storedBookings);
+          setHasExistingBookings(bookings.length > 0);
+        } catch (error) {
+          console.error('Failed to load bookings:', error);
+        }
       }
     }
     
@@ -274,7 +278,7 @@ function BookingContent() {
           eventTypeId: parseInt(process.env.NEXT_PUBLIC_CALCOM_EVENT_TYPE_ID || '3976917'),
           start: `${selectedDate}T${selectedTime}:00`,
           responses: {
-            name: contactInfo.name || user?.email || 'Anonymous',
+            name: contactInfo.name || user?.user_metadata?.name || user?.email || 'Unbekannt',
             email: contactInfo.email || user?.email || '',
             notes: `Tutor: ${selectedTutorData.name} (ID: ${selectedTutor})\nPaket: ${selectedPackageData.name}\nFach: ${selectedSubject}\n${contactInfo.message || ''}`
           },
@@ -290,8 +294,9 @@ function BookingContent() {
         console.log('Booking created successfully:', bookingResult);
       }
       
-      // Store booking data in localStorage for dashboard display
-      const existingBookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
+      // Store booking data in localStorage for dashboard display (user-specific)
+      const storageKey = user?.id ? `userBookings_${user.id}` : 'userBookings';
+      const existingBookings = JSON.parse(localStorage.getItem(storageKey) || '[]');
       
       if (isReschedule && rescheduleBookingId) {
         // Update existing booking instead of creating new one
@@ -306,7 +311,7 @@ function BookingContent() {
               }
             : b
         );
-        localStorage.setItem('userBookings', JSON.stringify(updatedBookings));
+        localStorage.setItem(storageKey, JSON.stringify(updatedBookings));
         
         // Clear reschedule info
         localStorage.removeItem('rescheduleBookingId');
@@ -318,7 +323,7 @@ function BookingContent() {
           status: 'scheduled',
           createdAt: new Date().toISOString()
         });
-        localStorage.setItem('userBookings', JSON.stringify(existingBookings));
+        localStorage.setItem(storageKey, JSON.stringify(existingBookings));
       }
 
       // Clear matching data
@@ -785,13 +790,23 @@ function BookingContent() {
               <h2 className="text-3xl font-bold text-white mb-6">Kontaktinformationen</h2>
               {user ? (
                 // Logged-in users: Show confirmation message only
-                <div className="p-6 bg-accent/10 border border-accent/30 rounded-xl">
-                  <p className="text-white text-center">
-                    ✓ Du bist eingeloggt als <strong>{user.email}</strong>
-                  </p>
-                  <p className="text-gray-400 text-sm text-center mt-2">
-                    Deine Kontaktdaten werden automatisch verwendet.
-                  </p>
+                <div className="space-y-4">
+                  <div className="p-6 bg-accent/10 border border-accent/30 rounded-xl">
+                    <p className="text-white text-center">
+                      ✓ Du bist eingeloggt als <strong>{user.email}</strong>
+                    </p>
+                    <p className="text-gray-400 text-sm text-center mt-2">
+                      Deine Kontaktdaten werden automatisch verwendet.
+                    </p>
+                  </div>
+                  
+                  {!user.user_metadata?.name && (
+                    <div className="p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-xl">
+                      <p className="text-yellow-200 text-sm">
+                        ⚠️ <strong>Kein Name hinterlegt:</strong> Bitte gehe nach der Buchung zu <strong>Dashboard → Profil</strong> und trage deinen Namen ein, damit er bei zukünftigen Buchungen verwendet wird.
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 // Non-logged-in users: Show full contact form

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
 import { cancelBooking } from '@/lib/calcom';
-import { getUserBookings } from '@/lib/supabase';
+import { getUserBookings, supabase } from '@/lib/supabase';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -181,6 +181,9 @@ function DashboardContent() {
   const [bookingToCancel, setBookingToCancel] = useState<any>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
 
   // Load user bookings from Supabase (with fallback to localStorage)
   useEffect(() => {
@@ -199,20 +202,31 @@ function DashboardContent() {
         }
       }
       
-      // Fallback to localStorage
-      const storedBookings = localStorage.getItem('userBookings');
-      if (storedBookings) {
-        try {
-          const bookings = JSON.parse(storedBookings);
-          console.log('Loaded user bookings from localStorage:', bookings);
-          setUserBookings(bookings);
-        } catch (error) {
-          console.error('Failed to load bookings from localStorage:', error);
+      // Fallback to localStorage (user-specific)
+      if (user?.id) {
+        const storageKey = `userBookings_${user.id}`;
+        const storedBookings = localStorage.getItem(storageKey);
+        if (storedBookings) {
+          try {
+            const bookings = JSON.parse(storedBookings);
+            console.log('Loaded user bookings from localStorage:', bookings);
+            setUserBookings(bookings);
+          } catch (error) {
+            console.error('Failed to load bookings from localStorage:', error);
+          }
         }
       }
     };
     
     loadBookings();
+  }, [user]);
+
+  // Load user name from metadata
+  useEffect(() => {
+    if (user) {
+      const name = user.user_metadata?.name || '';
+      setUserName(name);
+    }
   }, [user]);
 
   // Redirect to login if not authenticated
@@ -269,8 +283,11 @@ function DashboardContent() {
           : b
       );
 
-      // Save to localStorage
-      localStorage.setItem('userBookings', JSON.stringify(updatedBookings));
+      // Save to localStorage (user-specific)
+      if (user?.id) {
+        const storageKey = `userBookings_${user.id}`;
+        localStorage.setItem(storageKey, JSON.stringify(updatedBookings));
+      }
       
       // Update state
       setUserBookings(updatedBookings);
@@ -287,6 +304,27 @@ function DashboardContent() {
       );
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!user || !userName.trim()) return;
+
+    setIsSavingName(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { name: userName.trim() }
+      });
+
+      if (error) throw error;
+
+      setIsEditingName(false);
+      alert('Name erfolgreich gespeichert!');
+    } catch (error) {
+      console.error('Failed to update name:', error);
+      alert('Fehler beim Speichern des Namens. Bitte versuche es erneut.');
+    } finally {
+      setIsSavingName(false);
     }
   };
 
@@ -697,30 +735,38 @@ function DashboardContent() {
                           <label className="block text-gray-400 text-sm mb-2">Name</label>
                           <input
                             type="text"
-                            defaultValue="Max Mustermann"
+                            value={userName}
+                            onChange={(e) => setUserName(e.target.value)}
+                            placeholder="Dein vollständiger Name"
                             className="w-full p-3 rounded-lg bg-primary-dark text-white border border-accent/30 focus:border-accent outline-none"
                           />
+                          {!userName && (
+                            <p className="text-yellow-400 text-xs mt-1">
+                              ⚠️ Bitte gib deinen Namen ein, damit er bei Buchungen verwendet wird
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-gray-400 text-sm mb-2">E-Mail</label>
                           <input
                             type="email"
-                            defaultValue="max@example.com"
-                            className="w-full p-3 rounded-lg bg-primary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                            value={user?.email || ''}
+                            disabled
+                            className="w-full p-3 rounded-lg bg-primary-dark/50 text-gray-400 border border-accent/20 outline-none cursor-not-allowed"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-gray-400 text-sm mb-2">Telefon</label>
-                          <input
-                            type="tel"
-                            defaultValue="+49 89 123456"
-                            className="w-full p-3 rounded-lg bg-primary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                          />
+                          <p className="text-gray-500 text-xs mt-1">
+                            E-Mail kann nicht geändert werden
+                          </p>
                         </div>
                       </div>
 
                       <div className="mt-6">
-                        <Button>Änderungen speichern</Button>
+                        <Button 
+                          onClick={handleSaveName} 
+                          disabled={isSavingName || !userName.trim()}
+                        >
+                          {isSavingName ? 'Speichern...' : 'Änderungen speichern'}
+                        </Button>
                       </div>
                     </div>
 
