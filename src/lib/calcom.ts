@@ -109,6 +109,11 @@ export async function createBooking(data: {
       // Provide user-friendly error messages
       let errorMessage = errorData.details || errorData.error || 'Booking creation failed';
       
+      // Ensure errorMessage is a string
+      if (typeof errorMessage !== 'string') {
+        errorMessage = JSON.stringify(errorMessage);
+      }
+      
       if (errorMessage.includes('no_available_users_found_error')) {
         errorMessage = 'Dieser Tutor ist zum gewählten Zeitpunkt nicht verfügbar. Bitte wähle einen anderen Termin oder kontaktiere uns direkt.';
       } else if (errorMessage.includes('invalid_type in')) {
