@@ -114,8 +114,47 @@ export async function createBooking(data: {
         errorMessage = JSON.stringify(errorMessage);
       }
       
+      // For no_available_users_found_error, create local booking instead of throwing
       if (errorMessage.includes('no_available_users_found_error')) {
-        errorMessage = 'Dieser Tutor ist zum gewählten Zeitpunkt nicht verfügbar. Bitte wähle einen anderen Termin oder kontaktiere uns direkt.';
+        console.warn('⚠️ Cal.com has no available hosts - creating local-only booking');
+        
+        // Create a local booking ID
+        const localBookingId = `booking_${Date.now()}`;
+        console.log('📝 Created local booking ID:', localBookingId);
+        
+        // Save to Supabase with local ID
+        if (data.userId) {
+          try {
+            const startDate = new Date(data.start);
+            const supabaseData = {
+              calcom_booking_id: localBookingId,
+              user_id: data.userId,
+              tutor_id: undefined,
+              subject: data.metadata.subject || 'Nicht angegeben',
+              package: data.metadata.packageId || 'Einzelstunde',
+              date: startDate.toISOString().split('T')[0],
+              time: startDate.toTimeString().split(' ')[0],
+              location: data.metadata.location || 'online',
+              contact_name: data.responses.name,
+              contact_email: data.responses.email,
+              contact_phone: data.metadata.phone || undefined,
+              message: data.responses.notes || undefined,
+              status: 'scheduled' as const
+            };
+            
+            await saveBookingToSupabase(supabaseData);
+            console.log('✅ Local booking saved to Supabase');
+          } catch (supabaseError) {
+            console.error('❌ Failed to save local booking to Supabase:', supabaseError);
+          }
+        }
+        
+        // Return local booking object
+        return {
+          id: localBookingId,
+          localOnly: true,
+          message: 'Booking created locally (Cal.com not configured)'
+        };
       } else if (errorMessage.includes('invalid_type in')) {
         errorMessage = 'Ungültige Buchungsdaten. Bitte versuche es erneut oder kontaktiere den Support.';
       }

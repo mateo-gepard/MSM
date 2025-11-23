@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { createBooking, rescheduleBooking } from '@/lib/calcom';
+import { getUserBookings } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
@@ -83,24 +84,50 @@ function BookingContent() {
       }
     }
     
-    // Check if user has existing bookings (only count active/scheduled bookings)
-    if (user?.id) {
+    // Check if user has existing bookings - load from Supabase AND localStorage
+    const checkBookingHistory = async () => {
+      if (!user?.id) return;
+      
+      let allBookings: any[] = [];
+      
+      // Try to load from Supabase first
+      try {
+        const supabaseBookings = await getUserBookings(user.id);
+        if (supabaseBookings && supabaseBookings.length > 0) {
+          allBookings = supabaseBookings;
+          console.log('📊 Loaded bookings from Supabase for trial check:', allBookings.length);
+        }
+      } catch (error) {
+        console.error('Failed to load bookings from Supabase:', error);
+      }
+      
+      // Also check localStorage as fallback
       const storageKey = `userBookings_${user.id}`;
       const storedBookings = localStorage.getItem(storageKey);
       if (storedBookings) {
         try {
-          const bookings = JSON.parse(storedBookings);
-          // Count ALL bookings (including cancelled) to prevent trial booking abuse
-          setHasExistingBookings(bookings.length > 0);
-          console.log('Booking history check:', bookings.length, 'total bookings found');
-          if (bookings.length > 0) {
-            console.log('Trial booking blocked: User has booking history (including cancelled bookings)');
+          const localBookings = JSON.parse(storedBookings);
+          // If Supabase had no bookings, use localStorage
+          if (allBookings.length === 0) {
+            allBookings = localBookings;
+            console.log('📊 Using localStorage bookings for trial check:', allBookings.length);
           }
         } catch (error) {
-          console.error('Failed to load bookings:', error);
+          console.error('Failed to load bookings from localStorage:', error);
         }
       }
-    }
+      
+      // Count ALL bookings (including cancelled) to prevent trial booking abuse
+      if (allBookings.length > 0) {
+        setHasExistingBookings(true);
+        console.log('🚫 Trial booking BLOCKED: User has', allBookings.length, 'bookings in history');
+      } else {
+        setHasExistingBookings(false);
+        console.log('✅ Trial booking ALLOWED: User has no booking history');
+      }
+    };
+    
+    checkBookingHistory();
     
     // Load matching data from wizard if available
     const stored = localStorage.getItem('matchingData');
