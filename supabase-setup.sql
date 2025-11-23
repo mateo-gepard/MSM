@@ -17,6 +17,10 @@ create table if not exists public.tutors (
   rating numeric(3,2), -- z.B. 4.95
   olympiad_wins integer default 0,
   university text,
+  calcom_username text, -- Cal.com username für API Integration (z.B. 'alexander-schmidt')
+  availability_text text, -- Text-basierte Verfügbarkeit (z.B. 'Mo-Fr nachmittags')
+  available_slots jsonb, -- Strukturierte Zeitfenster: [{"day": "monday", "times": ["14:00", "15:00"]}]
+  hourly_rate integer, -- Stundensatz in Euro
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
@@ -163,10 +167,117 @@ create trigger messages_updated_at
 -- ============================================
 -- 10. INSERT SAMPLE TUTORS (Optional)
 -- ============================================
-insert into public.tutors (name, email, subjects, bio, rating, olympiad_wins, university) values
-  ('Max Müller', 'max@msm-munich.de', ARRAY['Mathematik', 'Physik'], 'Internationale Mathe-Olympiade Goldmedaille', 4.95, 3, 'TU München'),
-  ('Sophie Schmidt', 'sophie@msm-munich.de', ARRAY['Chemie', 'Biologie'], 'Chemie-Olympiade Siegerin', 4.90, 2, 'LMU München'),
-  ('Leon Weber', 'leon@msm-munich.de', ARRAY['Informatik', 'Mathematik'], 'Informatik-Olympiade Finalist', 4.88, 1, 'TU München')
+insert into public.tutors (name, email, subjects, bio, rating, olympiad_wins, university, hourly_rate, availability_text, available_slots, calcom_username) values
+  (
+    'Alexander Schmidt', 
+    'alexander@msm-munich.de', 
+    ARRAY['Mathematik', 'Physik'], 
+    'Bundessieger Mathematik-Olympiade 2023, Gold-Medaille Internationale Physik-Olympiade', 
+    4.95, 
+    3, 
+    'TU München',
+    65,
+    'Mo-Fr nachmittags',
+    '[
+      {"day": "monday", "times": ["14:00", "15:00", "16:00", "17:00"]},
+      {"day": "tuesday", "times": ["14:00", "15:00", "16:00", "17:00"]},
+      {"day": "wednesday", "times": ["14:00", "15:00", "16:00", "17:00"]},
+      {"day": "thursday", "times": ["14:00", "15:00", "16:00", "17:00"]},
+      {"day": "friday", "times": ["14:00", "15:00", "16:00", "17:00"]}
+    ]'::jsonb,
+    'alexander-schmidt'
+  ),
+  (
+    'Sophie Weber', 
+    'sophie@msm-munich.de', 
+    ARRAY['Chemie', 'Biologie'], 
+    '1. Platz Jugend forscht (Chemie), Stipendiatin Studienstiftung', 
+    4.90, 
+    2, 
+    'LMU München',
+    60,
+    'Mo, Mi, Fr',
+    '[
+      {"day": "monday", "times": ["10:00", "11:00", "12:00", "15:00", "16:00"]},
+      {"day": "wednesday", "times": ["10:00", "11:00", "12:00", "15:00", "16:00"]},
+      {"day": "friday", "times": ["10:00", "11:00", "12:00", "15:00", "16:00"]}
+    ]'::jsonb,
+    'sophie-weber'
+  ),
+  (
+    'Maximilian Hoffmann', 
+    'max@msm-munich.de', 
+    ARRAY['Informatik', 'Mathematik'], 
+    'Bundeswettbewerb Informatik Sieger, First Robotics Competition Team Lead', 
+    4.88, 
+    1, 
+    'ETH Zürich',
+    70,
+    'Di-Do abends',
+    '[
+      {"day": "tuesday", "times": ["17:00", "18:00", "19:00", "20:00"]},
+      {"day": "wednesday", "times": ["17:00", "18:00", "19:00", "20:00"]},
+      {"day": "thursday", "times": ["17:00", "18:00", "19:00", "20:00"]}
+    ]'::jsonb,
+    'maximilian-hoffmann'
+  ),
+  (
+    'Laura Zimmermann', 
+    'laura@msm-munich.de', 
+    ARRAY['Englisch', 'Spanisch'], 
+    'Cambridge Proficiency Grade A, DELE C2 (Spanisch)', 
+    4.85, 
+    0, 
+    'Dolmetschen München',
+    55,
+    'Flexibel',
+    '[
+      {"day": "monday", "times": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]},
+      {"day": "tuesday", "times": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]},
+      {"day": "wednesday", "times": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]},
+      {"day": "thursday", "times": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]},
+      {"day": "friday", "times": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]},
+      {"day": "saturday", "times": ["10:00", "11:00", "12:00", "13:00"]}
+    ]'::jsonb,
+    'laura-zimmermann'
+  ),
+  (
+    'David Chen', 
+    'david@msm-munich.de', 
+    ARRAY['Mathematik', 'Informatik', 'Physik'], 
+    'Internationale Mathematik-Olympiade Medaille, Google Science Fair Finalist', 
+    4.92, 
+    2, 
+    'MIT',
+    70,
+    'Online flexibel',
+    '[
+      {"day": "monday", "times": ["10:00", "12:00", "14:00", "16:00", "18:00", "20:00"]},
+      {"day": "tuesday", "times": ["10:00", "12:00", "14:00", "16:00", "18:00", "20:00"]},
+      {"day": "wednesday", "times": ["10:00", "12:00", "14:00", "16:00", "18:00", "20:00"]},
+      {"day": "thursday", "times": ["10:00", "12:00", "14:00", "16:00", "18:00", "20:00"]},
+      {"day": "friday", "times": ["10:00", "12:00", "14:00", "16:00", "18:00", "20:00"]},
+      {"day": "saturday", "times": ["11:00", "13:00", "15:00"]},
+      {"day": "sunday", "times": ["11:00", "13:00", "15:00"]}
+    ]'::jsonb,
+    'david-chen'
+  ),
+  (
+    'Emma Müller', 
+    'emma@msm-munich.de', 
+    ARRAY['Latein', 'Geschichte', 'Deutsch'], 
+    'Bundeswettbewerb Fremdsprachen 1. Platz, Certamen Ciceronianum Gold', 
+    4.87, 
+    1, 
+    'Altphilologie Heidelberg',
+    50,
+    'Wochenende',
+    '[
+      {"day": "saturday", "times": ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"]},
+      {"day": "sunday", "times": ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00"]}
+    ]'::jsonb,
+    'emma-mueller'
+  )
 on conflict (email) do nothing;
 
 -- ============================================
