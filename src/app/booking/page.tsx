@@ -48,7 +48,50 @@ function BookingContent() {
   const [isReschedule, setIsReschedule] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
 
+  // First useEffect: Handle reschedule and matching data (doesn't need user)
   useEffect(() => {
+    // Load matching data from wizard if available
+    const stored = localStorage.getItem('matchingData');
+    if (stored) {
+      const data = JSON.parse(stored);
+      setMatchingData(data);
+      console.log('Matching data loaded:', data);
+      
+      // Map subject IDs to full names
+      const subjectMap: Record<string, string> = {
+        'math': 'Mathematik',
+        'physics': 'Physik',
+        'chemistry': 'Chemie',
+        'biology': 'Biologie',
+        'cs': 'Informatik',
+        'english': 'Englisch',
+        'german': 'Deutsch',
+        'spanish': 'Spanisch',
+        'latin': 'Latein',
+        'history': 'Geschichte'
+      };
+      
+      // Set subject from wizard but stay on tutor selection
+      if (data.subjects && data.subjects.length > 0) {
+        // Convert first subject ID to full name
+        const subjectName = subjectMap[data.subjects[0]] || data.subjects[0];
+        setSelectedSubject(subjectName);
+        console.log('Auto-selected subject:', subjectName);
+        // Stay at step 0 to let user choose tutor from sorted list
+      }
+    }
+
+    // Check for package param from pricing section
+    const pkgParam = searchParams.get('package');
+    if (pkgParam) {
+      setSelectedPackage(pkgParam);
+    }
+  }, [searchParams]);
+
+  // Second useEffect: Check booking history (NEEDS user to be loaded)
+  useEffect(() => {
+    console.log('🔍 Booking history effect triggered. User:', user?.id);
+    
     // Check if this is a reschedule
     const rescheduleId = searchParams.get('reschedule');
     if (rescheduleId && user?.id) {
@@ -156,44 +199,7 @@ function BookingContent() {
     };
     
     checkBookingHistory();
-    
-    // Load matching data from wizard if available
-    const stored = localStorage.getItem('matchingData');
-    if (stored) {
-      const data = JSON.parse(stored);
-      setMatchingData(data);
-      console.log('Matching data loaded:', data);
-      
-      // Map subject IDs to full names
-      const subjectMap: Record<string, string> = {
-        'math': 'Mathematik',
-        'physics': 'Physik',
-        'chemistry': 'Chemie',
-        'biology': 'Biologie',
-        'cs': 'Informatik',
-        'english': 'Englisch',
-        'german': 'Deutsch',
-        'spanish': 'Spanisch',
-        'latin': 'Latein',
-        'history': 'Geschichte'
-      };
-      
-      // Set subject from wizard but stay on tutor selection
-      if (data.subjects && data.subjects.length > 0) {
-        // Convert first subject ID to full name
-        const subjectName = subjectMap[data.subjects[0]] || data.subjects[0];
-        setSelectedSubject(subjectName);
-        console.log('Auto-selected subject:', subjectName);
-        // Stay at step 0 to let user choose tutor from sorted list
-      }
-    }
-
-    // Check for package param from pricing section
-    const pkgParam = searchParams.get('package');
-    if (pkgParam) {
-      setSelectedPackage(pkgParam);
-    }
-  }, [searchParams]);
+  }, [user, searchParams]); // Run when user changes or searchParams change
 
   // Calculate match score for each tutor based on matching data
   const calculateMatchScore = (tutor: typeof tutors[0]) => {
@@ -759,6 +765,25 @@ function BookingContent() {
                 <div>• hasExistingBookings: {hasExistingBookings ? '✅ true' : '❌ false'}</div>
                 <div>• User ID: {user?.id || 'None'}</div>
                 <div>• Selected Package: {selectedPackage || 'None'}</div>
+                <div>• localStorage Key: userBookings_{user?.id}</div>
+                <div>• localStorage Data: {localStorage.getItem(`userBookings_${user?.id}`) ? 'Found (' + JSON.parse(localStorage.getItem(`userBookings_${user?.id}`) || '[]').length + ' bookings)' : 'Empty'}</div>
+                <button 
+                  onClick={() => {
+                    console.log('=== MANUAL DEBUG CHECK ===');
+                    console.log('User:', user);
+                    console.log('localStorage key:', `userBookings_${user?.id}`);
+                    console.log('localStorage raw:', localStorage.getItem(`userBookings_${user?.id}`));
+                    if (user?.id) {
+                      const data = localStorage.getItem(`userBookings_${user.id}`);
+                      if (data) {
+                        console.log('localStorage parsed:', JSON.parse(data));
+                      }
+                    }
+                  }}
+                  className="mt-2 px-2 py-1 bg-purple-600 rounded text-white text-xs"
+                >
+                  Check Storage Now
+                </button>
               </div>
               
               {/* Loading state while checking booking history */}
