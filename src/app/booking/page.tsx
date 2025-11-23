@@ -560,7 +560,12 @@ function BookingContent() {
                                 </span>
                               ))}
                             </div>
-                            
+                            {/* Languages (no icon) */}
+                            <div className="flex flex-wrap gap-1 mb-2 text-[10px] text-gray-400">
+                              {tutor.languages && tutor.languages.length > 0 && (
+                                <span>{tutor.languages.join(', ')}</span>
+                              )}
+                            </div>
                             {/* Top Achievement */}
                             <div className="flex items-start gap-1 text-[11px] text-gray-500">
                               <Check className="w-3 h-3 flex-shrink-0 mt-0.5" />
