@@ -12,17 +12,21 @@ export async function POST(req: NextRequest) {
 
     console.log('=== Cal.com Booking API Debug ===');
     console.log('API Key exists:', !!apiKey);
-    console.log('API Key length:', apiKey?.length);
+    console.log('API Key prefix:', apiKey?.substring(0, 10) + '...');
     console.log('Event Type ID:', eventTypeId);
     console.log('Start time:', start);
     console.log('TimeZone:', timeZone);
     console.log('Language:', language);
-    console.log('Responses:', responses);
+    console.log('Responses:', JSON.stringify(responses, null, 2));
+    console.log('Metadata:', JSON.stringify(metadata, null, 2));
 
     if (!apiKey) {
-      console.error('ERROR: No Cal.com API key found in environment variables');
+      console.error('❌ ERROR: No Cal.com API key found in environment variables');
       return NextResponse.json(
-        { error: 'Cal.com API key not configured' },
+        { 
+          error: 'Cal.com API key not configured',
+          hint: 'Add CALCOM_API_KEY to your environment variables' 
+        },
         { status: 500 }
       );
     }
@@ -49,13 +53,43 @@ export async function POST(req: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log('Cal.com API Response Status:', response.status);
-    console.log('Cal.com API Response:', responseText);
+    console.log('📡 Cal.com API Response Status:', response.status);
+    console.log('📡 Cal.com API Response Body:', responseText);
 
     if (!response.ok) {
-      console.error('Cal.com API error:', response.status, responseText);
+      console.error('❌ Cal.com API error:', response.status, responseText);
+      
+      let errorDetails = responseText;
+      try {
+        const errorJson = JSON.parse(responseText);
+        errorDetails = JSON.stringify(errorJson, null, 2);
+        
+        // Check for specific error
+        if (errorJson.message === 'no_available_users_found_error') {
+          console.error('🚨 NO AVAILABLE USERS ERROR');
+          console.error('Possible causes:');
+          console.error('1. Event Type has no hosts assigned');
+          console.error('2. No availability set for the selected time');
+          console.error('3. Event Type is inactive');
+          console.error('');
+          console.error('Fix: Go to https://app.cal.com/event-types/' + eventTypeId);
+          console.error('- Assign yourself as a host');
+          console.error('- Set availability hours');
+          console.error('- Make sure Event Type is active');
+        }
+      } catch (e) {
+        // Keep original text if not JSON
+      }
+      
       return NextResponse.json(
-        { error: 'Booking creation failed', details: responseText, status: response.status },
+        { 
+          error: 'Booking creation failed', 
+          details: errorDetails, 
+          status: response.status,
+          hint: responseText.includes('no_available_users_found_error') 
+            ? 'Event Type has no available hosts. Configure hosts and availability in Cal.com.'
+            : undefined
+        },
         { status: response.status }
       );
     }
