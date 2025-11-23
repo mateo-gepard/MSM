@@ -222,7 +222,13 @@ function BookingContent() {
   const canProceed = () => {
     switch (currentStep) {
       case 0: return selectedSubject && selectedTutor;
-      case 1: return selectedPackage;
+      case 1: {
+        // Block trial package if user has existing bookings
+        if (selectedPackage === 'trial' && hasExistingBookings) {
+          return false;
+        }
+        return selectedPackage;
+      }
       case 2: return selectedDate && selectedTime;
       case 3: return selectedLocation;
       case 4: {
@@ -251,6 +257,47 @@ function BookingContent() {
     setBookingError(null);
 
     try {
+      // ⚠️ CRITICAL VALIDATION: Block trial bookings for users with existing bookings
+      if (selectedPackage === 'trial') {
+        // Block if user is not logged in
+        if (!user?.id) {
+          throw new Error('Bitte melde dich an, um eine Probestunde zu buchen.');
+        }
+        
+        console.log('🔒 Final validation check for trial booking...');
+        
+        // Check Supabase first
+        let hasBookings = false;
+        try {
+          const supabaseBookings = await getUserBookings(user.id);
+          if (supabaseBookings && supabaseBookings.length > 0) {
+            hasBookings = true;
+            console.log('❌ Found', supabaseBookings.length, 'bookings in Supabase');
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not check Supabase bookings:', error);
+        }
+        
+        // Also check localStorage as fallback
+        if (!hasBookings) {
+          const storageKey = `userBookings_${user.id}`;
+          const storedBookings = localStorage.getItem(storageKey);
+          if (storedBookings) {
+            const localBookings = JSON.parse(storedBookings);
+            if (localBookings.length > 0) {
+              hasBookings = true;
+              console.log('❌ Found', localBookings.length, 'bookings in localStorage');
+            }
+          }
+        }
+        
+        if (hasBookings) {
+          throw new Error('Die Probestunde ist nur für Neukunden verfügbar. Du hast bereits eine Buchungshistorie.');
+        }
+        
+        console.log('✅ Trial booking validation passed');
+      }
+      
       // Debug logging
       console.log('Selected values:', {
         tutor: selectedTutor,
@@ -713,46 +760,56 @@ function BookingContent() {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {packages
-                  .filter(pkg => !bookingHistoryLoaded || !hasExistingBookings || pkg.id !== 'trial')
-                  .map(pkg => (
-                  <button
-                    key={pkg.id}
-                    onClick={() => setSelectedPackage(pkg.id)}
-                    disabled={!bookingHistoryLoaded}
-                    className={`p-6 rounded-xl text-left transition-all border-2 ${
-                      selectedPackage === pkg.id
-                        ? 'bg-accent text-white border-accent'
-                        : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
-                    } ${!bookingHistoryLoaded ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    <div className="text-2xl font-bold mb-2">{pkg.name}</div>
-                    <div className="text-3xl font-bold mb-2">€{pkg.price}</div>
-                    {pkg.savings && (
-                      <div className="text-sm text-green-400 mb-3">Spare €{pkg.savings}!</div>
-                    )}
-                    <ul className="space-y-1 text-sm">
-                      {pkg.features.slice(0, 3).map((feature, idx) => (
-                        <li key={idx} className="flex items-center gap-2">
-                          <Check className="w-4 h-4" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </button>
-                ))}
+                  .filter(pkg => {
+                    // Filter out trial if user has existing bookings
+                    if (pkg.id === 'trial' && bookingHistoryLoaded && hasExistingBookings) {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map(pkg => {
+                    // Disable trial package if still loading or if user has bookings
+                    const isTrialDisabled = pkg.id === 'trial' && (!bookingHistoryLoaded || hasExistingBookings);
+                    
+                    return (
+                      <button
+                        key={pkg.id}
+                        onClick={() => {
+                          if (!isTrialDisabled) {
+                            setSelectedPackage(pkg.id);
+                          }
+                        }}
+                        disabled={!bookingHistoryLoaded || isTrialDisabled}
+                        className={`p-6 rounded-xl text-left transition-all border-2 ${
+                          selectedPackage === pkg.id
+                            ? 'bg-accent text-white border-accent'
+                            : isTrialDisabled
+                            ? 'bg-gray-800/30 text-gray-600 border-gray-600/30 opacity-50 cursor-not-allowed'
+                            : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                        } ${!bookingHistoryLoaded ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        <div className="text-2xl font-bold mb-2">{pkg.name}</div>
+                        <div className="text-3xl font-bold mb-2">€{pkg.price}</div>
+                        {pkg.savings && (
+                          <div className="text-sm text-green-400 mb-3">Spare €{pkg.savings}!</div>
+                        )}
+                        {pkg.id === 'trial' && isTrialDisabled && (
+                          <div className="text-sm text-red-400 mb-3">Nur für Neukunden</div>
+                        )}
+                        <ul className="space-y-1 text-sm">
+                          {pkg.features.slice(0, 3).map((feature, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <Check className="w-4 h-4" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </button>
+                    );
+                  })}
               </div>
               
-              {/* Show disabled trial card if user has bookings */}
-              {bookingHistoryLoaded && hasExistingBookings && (
-                <div className="mt-4 p-6 rounded-xl bg-gray-800/30 border-2 border-gray-600/30 opacity-50 cursor-not-allowed">
-                  <div className="text-2xl font-bold mb-2 text-gray-500">Probestunde</div>
-                  <div className="text-3xl font-bold mb-2 text-gray-500">€0</div>
-                  <div className="text-sm text-gray-500 mb-3">Nur für Neukunden</div>
-                  <div className="text-xs text-gray-600">
-                    Diese Option ist nicht verfügbar, da du bereits eine Buchungshistorie hast (inkl. stornierte Buchungen).
-                  </div>
-                </div>
-              )}
+              {/* Additional info card removed since trial is now shown as disabled in the main grid */}
             </div>
           )}
 
