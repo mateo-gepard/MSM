@@ -34,7 +34,7 @@ export async function DELETE(
     const url = `https://api.cal.com/v1/bookings/${bookingId}/cancel?apiKey=${apiKey}`;
     
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'DELETE',  // ← Changed from POST to DELETE
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cancellationReason: reason,
