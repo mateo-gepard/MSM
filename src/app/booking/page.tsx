@@ -44,6 +44,7 @@ function BookingContent() {
     message: ''
   });
   const [hasExistingBookings, setHasExistingBookings] = useState(false);
+  const [bookingHistoryLoaded, setBookingHistoryLoaded] = useState(false);
   const [isReschedule, setIsReschedule] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
 
@@ -86,7 +87,10 @@ function BookingContent() {
     
     // Check if user has existing bookings - load from Supabase AND localStorage
     const checkBookingHistory = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setBookingHistoryLoaded(true);
+        return;
+      }
       
       let allBookings: any[] = [];
       
@@ -98,7 +102,7 @@ function BookingContent() {
           console.log('📊 Loaded bookings from Supabase for trial check:', allBookings.length);
         }
       } catch (error) {
-        console.error('Failed to load bookings from Supabase:', error);
+        console.error('⚠️ Failed to load bookings from Supabase:', error);
       }
       
       // Also check localStorage as fallback
@@ -113,7 +117,7 @@ function BookingContent() {
             console.log('📊 Using localStorage bookings for trial check:', allBookings.length);
           }
         } catch (error) {
-          console.error('Failed to load bookings from localStorage:', error);
+          console.error('⚠️ Failed to load bookings from localStorage:', error);
         }
       }
       
@@ -125,6 +129,8 @@ function BookingContent() {
         setHasExistingBookings(false);
         console.log('✅ Trial booking ALLOWED: User has no booking history');
       }
+      
+      setBookingHistoryLoaded(true);
     };
     
     checkBookingHistory();
@@ -668,7 +674,20 @@ function BookingContent() {
           {currentStep === 1 && (
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">Wähle ein Paket</h2>
-              {hasExistingBookings && (
+              
+              {/* Loading state while checking booking history */}
+              {!bookingHistoryLoaded && (
+                <div className="mb-4 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-yellow-400 animate-spin" />
+                    <div className="text-yellow-200">
+                      Prüfe Buchungshistorie...
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {bookingHistoryLoaded && hasExistingBookings && (
                 <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
                   <div className="flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -686,16 +705,17 @@ function BookingContent() {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {packages
-                  .filter(pkg => !hasExistingBookings || pkg.id !== 'trial')
+                  .filter(pkg => !bookingHistoryLoaded || !hasExistingBookings || pkg.id !== 'trial')
                   .map(pkg => (
                   <button
                     key={pkg.id}
                     onClick={() => setSelectedPackage(pkg.id)}
+                    disabled={!bookingHistoryLoaded}
                     className={`p-6 rounded-xl text-left transition-all border-2 ${
                       selectedPackage === pkg.id
                         ? 'bg-accent text-white border-accent'
                         : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
-                    }`}
+                    } ${!bookingHistoryLoaded ? 'opacity-50 cursor-wait' : ''}`}
                   >
                     <div className="text-2xl font-bold mb-2">{pkg.name}</div>
                     <div className="text-3xl font-bold mb-2">€{pkg.price}</div>
@@ -715,7 +735,7 @@ function BookingContent() {
               </div>
               
               {/* Show disabled trial card if user has bookings */}
-              {hasExistingBookings && (
+              {bookingHistoryLoaded && hasExistingBookings && (
                 <div className="mt-4 p-6 rounded-xl bg-gray-800/30 border-2 border-gray-600/30 opacity-50 cursor-not-allowed">
                   <div className="text-2xl font-bold mb-2 text-gray-500">Probestunde</div>
                   <div className="text-3xl font-bold mb-2 text-gray-500">€0</div>
