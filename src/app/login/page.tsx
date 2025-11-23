@@ -2,16 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn, signUp, sendMagicLink } from '@/lib/auth';
+import { signIn, signUp, sendMagicLink, resetPassword } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { FrostedCard } from '@/components/ui/FrostedCard';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'login' | 'signup' | 'magic'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'magic' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -66,6 +66,22 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const { error: authError } = await resetPassword(email);
+    
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+    } else {
+      setSuccess('Passwort-Reset-Link wurde gesendet! Überprüfe deine E-Mail.');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-20">
       <div className="container mx-auto px-4 max-w-md">
@@ -79,11 +95,13 @@ export default function LoginPage() {
               {mode === 'login' && 'Willkommen zurück'}
               {mode === 'signup' && 'Account erstellen'}
               {mode === 'magic' && 'Magic Link Login'}
+              {mode === 'reset' && 'Passwort zurücksetzen'}
             </h1>
             <p className="text-gray-400">
               {mode === 'login' && 'Melde dich an um fortzufahren'}
               {mode === 'signup' && 'Erstelle deinen Account für Elite Tutoring'}
               {mode === 'magic' && 'Login ohne Passwort via E-Mail'}
+              {mode === 'reset' && 'Wir senden dir einen Link zum Zurücksetzen'}
             </p>
           </div>
 
@@ -139,6 +157,15 @@ export default function LoginPage() {
                   {loading ? 'Anmelden...' : 'Anmelden'}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
+
+                {/* Forgot Password Link */}
+                <button
+                  type="button"
+                  onClick={() => setMode('reset')}
+                  className="block w-full text-center text-gray-400 hover:text-accent transition-colors text-sm"
+                >
+                  Passwort vergessen?
+                </button>
               </form>
             )}
 
@@ -228,6 +255,35 @@ export default function LoginPage() {
               </form>
             )}
 
+            {/* Password Reset Form */}
+            {mode === 'reset' && (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div>
+                  <label className="block text-white font-semibold mb-2">E-Mail</label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      placeholder="deine@email.de"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Senden...' : 'Reset-Link senden'}
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+
+                <p className="text-xs text-gray-400 text-center">
+                  Du erhältst einen Link zum Zurücksetzen deines Passworts per E-Mail
+                </p>
+              </form>
+            )}
+
             {/* Mode Switch */}
             <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
               {mode === 'login' && (
@@ -255,6 +311,14 @@ export default function LoginPage() {
                 </button>
               )}
               {mode === 'magic' && (
+                <button
+                  onClick={() => setMode('login')}
+                  className="block w-full text-center text-accent hover:text-accent/80 transition-colors text-sm"
+                >
+                  Zurück zum Login
+                </button>
+              )}
+              {mode === 'reset' && (
                 <button
                   onClick={() => setMode('login')}
                   className="block w-full text-center text-accent hover:text-accent/80 transition-colors text-sm"
