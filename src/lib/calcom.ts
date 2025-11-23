@@ -1,3 +1,5 @@
+import { saveBookingToSupabase, updateBookingStatus, deleteBooking, supabase } from './supabase';
+
 // Use Next.js API route as proxy to avoid CORS issues
 const CALCOM_API_PROXY = '/api/bookings';
 const CALCOM_API_BASE = 'https://api.cal.com/v1'; // For direct server-side calls if needed
@@ -13,9 +15,13 @@ export async function createBooking(data: {
   metadata: {
     tutorId: string;
     packageId: string;
+    subject?: string;
+    location?: string;
+    phone?: string;
   };
   timeZone?: string;
   language?: string;
+  userId?: string; // Supabase User ID
 }) {
   try {
     console.log('Creating booking via API proxy:', data);
@@ -53,6 +59,33 @@ export async function createBooking(data: {
 
     const result = await response.json();
     console.log('Booking created successfully:', result);
+    
+    // Save booking to Supabase if userId is provided
+    if (data.userId && result.id) {
+      try {
+        const startDate = new Date(data.start);
+        await saveBookingToSupabase({
+          calcom_booking_id: result.id.toString(),
+          user_id: data.userId,
+          tutor_id: data.metadata.tutorId,
+          subject: data.metadata.subject || 'Nicht angegeben',
+          package: data.metadata.packageId,
+          date: startDate.toISOString().split('T')[0],
+          time: startDate.toTimeString().split(' ')[0],
+          location: data.metadata.location || 'online',
+          contact_name: data.responses.name,
+          contact_email: data.responses.email,
+          contact_phone: data.metadata.phone,
+          message: data.responses.notes,
+          status: 'scheduled'
+        });
+        console.log('Booking saved to Supabase');
+      } catch (supabaseError) {
+        console.error('Failed to save booking to Supabase:', supabaseError);
+        // Don't fail the entire booking if Supabase save fails
+      }
+    }
+    
     return result;
   } catch (error) {
     console.error('Cal.com booking error:', error);
@@ -111,6 +144,15 @@ export async function cancelBooking(bookingId: string, reason?: string) {
 
     const result = await response.json();
     console.log('Booking cancelled successfully:', result);
+    
+    // Update booking status in Supabase
+    try {
+      await updateBookingStatus(bookingId, 'cancelled');
+      console.log('Booking status updated in Supabase');
+    } catch (supabaseError) {
+      console.error('Failed to update booking status in Supabase:', supabaseError);
+    }
+    
     return result;
   } catch (error) {
     console.error('Cal.com cancellation error:', error);
@@ -141,6 +183,23 @@ export async function rescheduleBooking(bookingId: string, newStart: string, tim
 
     const result = await response.json();
     console.log('Booking rescheduled successfully:', result);
+    
+    // Update booking in Supabase
+    try {
+      const startDate = new Date(newStart);
+      await supabase
+        .from('bookings')
+        .update({
+          date: startDate.toISOString().split('T')[0],
+          time: startDate.toTimeString().split(' ')[0],
+          status: 'scheduled'
+        })
+        .eq('calcom_booking_id', bookingId);
+      console.log('Booking updated in Supabase');
+    } catch (supabaseError) {
+      console.error('Failed to update booking in Supabase:', supabaseError);
+    }
+    
     return result;
   } catch (error) {
     console.error('Cal.com reschedule error:', error);

@@ -275,8 +275,12 @@ function BookingContent() {
           },
           metadata: {
             tutorId: selectedTutor,
-            packageId: selectedPackage
-          }
+            packageId: selectedPackage,
+            subject: selectedSubject,
+            location: selectedLocation,
+            phone: contactInfo.phone
+          },
+          userId: user?.id // Pass Supabase User ID for synchronization
         });
         console.log('Booking created successfully:', bookingResult);
       }

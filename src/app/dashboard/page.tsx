@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
 import { cancelBooking } from '@/lib/calcom';
+import { getUserBookings } from '@/lib/supabase';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -181,19 +182,38 @@ function DashboardContent() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  // Load user bookings from localStorage
+  // Load user bookings from Supabase (with fallback to localStorage)
   useEffect(() => {
-    const storedBookings = localStorage.getItem('userBookings');
-    if (storedBookings) {
-      try {
-        const bookings = JSON.parse(storedBookings);
-        console.log('Loaded user bookings:', bookings);
-        setUserBookings(bookings);
-      } catch (error) {
-        console.error('Failed to load bookings:', error);
+    const loadBookings = async () => {
+      if (user?.id) {
+        try {
+          // Try to load from Supabase first
+          const supabaseBookings = await getUserBookings(user.id);
+          if (supabaseBookings && supabaseBookings.length > 0) {
+            console.log('Loaded bookings from Supabase:', supabaseBookings);
+            setUserBookings(supabaseBookings);
+            return;
+          }
+        } catch (error) {
+          console.error('Failed to load bookings from Supabase:', error);
+        }
       }
-    }
-  }, []);
+      
+      // Fallback to localStorage
+      const storedBookings = localStorage.getItem('userBookings');
+      if (storedBookings) {
+        try {
+          const bookings = JSON.parse(storedBookings);
+          console.log('Loaded user bookings from localStorage:', bookings);
+          setUserBookings(bookings);
+        } catch (error) {
+          console.error('Failed to load bookings from localStorage:', error);
+        }
+      }
+    };
+    
+    loadBookings();
+  }, [user]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
