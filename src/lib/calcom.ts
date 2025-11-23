@@ -59,31 +59,50 @@ export async function createBooking(data: {
 
     const result = await response.json();
     console.log('Booking created successfully:', result);
+    console.log('User ID for Supabase sync:', data.userId);
+    console.log('Result structure:', JSON.stringify(result, null, 2));
     
     // Save booking to Supabase if userId is provided
-    if (data.userId && result.id) {
+    if (data.userId) {
       try {
+        // Extract booking ID from different possible response structures
+        const bookingId = result.id || result.booking?.id || result.data?.id;
+        
+        if (!bookingId) {
+          console.warn('No booking ID found in Cal.com response. Cannot save to Supabase.');
+          console.warn('Response structure:', result);
+          return result;
+        }
+        
         const startDate = new Date(data.start);
-        await saveBookingToSupabase({
-          calcom_booking_id: result.id.toString(),
+        console.log('Attempting to save booking to Supabase with ID:', bookingId);
+        
+        const supabaseData = {
+          calcom_booking_id: bookingId.toString(),
           user_id: data.userId,
-          tutor_id: data.metadata.tutorId,
+          tutor_id: data.metadata.tutorId || undefined,
           subject: data.metadata.subject || 'Nicht angegeben',
-          package: data.metadata.packageId,
+          package: data.metadata.packageId || 'Einzelstunde',
           date: startDate.toISOString().split('T')[0],
           time: startDate.toTimeString().split(' ')[0],
           location: data.metadata.location || 'online',
           contact_name: data.responses.name,
           contact_email: data.responses.email,
-          contact_phone: data.metadata.phone,
-          message: data.responses.notes,
-          status: 'scheduled'
-        });
-        console.log('Booking saved to Supabase');
+          contact_phone: data.metadata.phone || undefined,
+          message: data.responses.notes || undefined,
+          status: 'scheduled' as const
+        };
+        
+        console.log('Supabase data to save:', supabaseData);
+        
+        await saveBookingToSupabase(supabaseData);
+        console.log('✅ Booking successfully saved to Supabase');
       } catch (supabaseError) {
-        console.error('Failed to save booking to Supabase:', supabaseError);
+        console.error('❌ Failed to save booking to Supabase:', supabaseError);
         // Don't fail the entire booking if Supabase save fails
       }
+    } else {
+      console.warn('⚠️ No userId provided - booking not saved to Supabase');
     }
     
     return result;

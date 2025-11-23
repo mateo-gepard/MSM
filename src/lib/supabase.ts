@@ -23,16 +23,25 @@ export async function saveBookingToSupabase(bookingData: {
   status: 'scheduled' | 'completed' | 'cancelled';
 }) {
   try {
+    console.log('📝 Saving booking to Supabase...', bookingData);
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Has Anon Key:', !!supabaseAnonKey && supabaseAnonKey !== 'placeholder-anon-key');
+    
     const { data, error } = await supabase
       .from('bookings')
       .insert([bookingData])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase insert error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Booking saved to Supabase:', data);
     return data;
   } catch (error) {
-    console.error('Error saving booking to Supabase:', error);
+    console.error('❌ Error saving booking to Supabase:', error);
     throw error;
   }
 }
