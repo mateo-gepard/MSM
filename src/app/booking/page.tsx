@@ -184,6 +184,11 @@ function BookingContent() {
       case 2: return selectedDate && selectedTime;
       case 3: return selectedLocation;
       case 4: {
+        // If user is logged in, name and email are not required
+        if (user) {
+          return true; // Logged in users don't need to fill contact info
+        }
+        // For non-logged-in users, validate email and name
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return contactInfo.name && contactInfo.email && emailRegex.test(contactInfo.email);
       }
