@@ -269,9 +269,16 @@ function DashboardContent() {
       
       // Only call API if booking has a Cal.com booking ID (not a local mock ID)
       const bookingId = String(bookingToCancel.id);
+      let calcomResult = null;
+      
       if (bookingId && !bookingId.startsWith('booking_') && !bookingId.startsWith('mock-')) {
-        await cancelBooking(bookingId, 'User requested cancellation');
-        console.log('Booking cancelled in Cal.com successfully');
+        try {
+          calcomResult = await cancelBooking(bookingId, 'User requested cancellation');
+          console.log('✅ Booking cancelled in Cal.com successfully:', calcomResult);
+        } catch (calcomError) {
+          console.warn('⚠️ Cal.com cancellation failed, proceeding with local cancellation:', calcomError);
+          // Continue with local cancellation even if Cal.com fails
+        }
       } else {
         console.log('Local booking only (ID:', bookingId, '), skipping Cal.com API call');
       }
@@ -295,13 +302,39 @@ function DashboardContent() {
       // Close modal
       setShowCancelModal(false);
       setBookingToCancel(null);
+      
+      // Show success message
+      if (calcomResult?.warning) {
+        console.log('ℹ️ Booking cancelled locally with warning:', calcomResult.warning);
+      }
     } catch (error) {
       console.error('Failed to cancel booking:', error);
-      setCancelError(
-        error instanceof Error 
-          ? error.message 
-          : 'Stornierung fehlgeschlagen. Bitte versuche es später erneut.'
+      
+      // Even if error occurs, ask if user wants to cancel locally
+      const message = error instanceof Error ? error.message : 'Stornierung fehlgeschlagen';
+      const shouldCancelLocally = confirm(
+        `Cal.com Stornierung fehlgeschlagen: ${message}\n\nMöchtest du die Buchung trotzdem lokal stornieren? (Du solltest deinen Tutor separat kontaktieren.)`
       );
+      
+      if (shouldCancelLocally) {
+        // Force local cancellation
+        const updatedBookings = userBookings.map(b => 
+          b.id === bookingToCancel.id 
+            ? { ...b, status: 'cancelled' }
+            : b
+        );
+
+        if (user?.id) {
+          const storageKey = `userBookings_${user.id}`;
+          localStorage.setItem(storageKey, JSON.stringify(updatedBookings));
+        }
+        
+        setUserBookings(updatedBookings);
+        setShowCancelModal(false);
+        setBookingToCancel(null);
+      } else {
+        setCancelError(message);
+      }
     } finally {
       setIsCancelling(false);
     }
