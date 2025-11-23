@@ -83,14 +83,19 @@ function BookingContent() {
       }
     }
     
-    // Check if user has existing bookings
+    // Check if user has existing bookings (only count active/scheduled bookings)
     if (user?.id) {
       const storageKey = `userBookings_${user.id}`;
       const storedBookings = localStorage.getItem(storageKey);
       if (storedBookings) {
         try {
           const bookings = JSON.parse(storedBookings);
-          setHasExistingBookings(bookings.length > 0);
+          // Only count scheduled or completed bookings (not cancelled)
+          const activeBookings = bookings.filter((b: any) => 
+            b.status === 'scheduled' || b.status === 'completed'
+          );
+          setHasExistingBookings(activeBookings.length > 0);
+          console.log('Active bookings check:', activeBookings.length, 'active of', bookings.length, 'total');
         } catch (error) {
           console.error('Failed to load bookings:', error);
         }
@@ -297,6 +302,7 @@ function BookingContent() {
           userId: user?.id // Pass Supabase User ID for synchronization
         });
         console.log('Booking created successfully:', bookingResult);
+        console.log('Cal.com Booking ID:', bookingResult?.id || bookingResult?.booking?.id || bookingResult?.data?.id);
       }
       
       // Store booking data in localStorage for dashboard display (user-specific)
@@ -322,9 +328,20 @@ function BookingContent() {
         localStorage.removeItem('rescheduleBookingId');
       } else {
         // Create new booking
+        // Try to extract Cal.com booking ID from multiple possible locations
+        const calcomBookingId = bookingResult?.id || 
+                                bookingResult?.booking?.id || 
+                                bookingResult?.data?.id ||
+                                bookingResult?.uid ||
+                                `booking_${Date.now()}`;
+        
+        console.log('Storing booking with ID:', calcomBookingId);
+        console.log('Is Cal.com ID:', !calcomBookingId.startsWith('booking_'));
+        
         existingBookings.push({
           ...bookingData,
-          id: bookingResult.id || `booking_${Date.now()}`,
+          id: calcomBookingId,
+          calcomBookingId: calcomBookingId.startsWith('booking_') ? null : calcomBookingId, // Store separately for clarity
           status: 'scheduled',
           createdAt: new Date().toISOString()
         });
@@ -657,8 +674,19 @@ function BookingContent() {
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">Wähle ein Paket</h2>
               {hasExistingBookings && (
-                <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg text-blue-200 text-sm">
-                  💡 Die kostenlose Probestunde ist nur für Neukunden verfügbar.
+                <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-blue-200 font-semibold mb-1">
+                        Probestunde nicht verfügbar
+                      </div>
+                      <div className="text-blue-300 text-sm">
+                        Die kostenlose Probestunde ist nur für Neukunden verfügbar. 
+                        Du hast bereits eine oder mehrere Buchungen in deinem Account.
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -690,6 +718,18 @@ function BookingContent() {
                   </button>
                 ))}
               </div>
+              
+              {/* Show disabled trial card if user has bookings */}
+              {hasExistingBookings && (
+                <div className="mt-4 p-6 rounded-xl bg-gray-800/30 border-2 border-gray-600/30 opacity-50 cursor-not-allowed">
+                  <div className="text-2xl font-bold mb-2 text-gray-500">Probestunde</div>
+                  <div className="text-3xl font-bold mb-2 text-gray-500">€0</div>
+                  <div className="text-sm text-gray-500 mb-3">Nur für Neukunden</div>
+                  <div className="text-xs text-gray-600">
+                    Diese Option ist nicht mehr verfügbar, da du bereits Buchungen hast.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
