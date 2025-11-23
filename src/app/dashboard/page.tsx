@@ -264,83 +264,63 @@ function DashboardContent() {
     setCancelError(null);
 
     try {
-      // Get the Cal.com booking ID (if it exists)
+      console.log('🚫 Starting cancellation process for:', bookingToCancel.id);
+
+      // Get the actual Cal.com booking ID (if it exists)
       const calcomId = bookingToCancel.calcomBookingId || bookingToCancel.id;
-      const bookingId = String(calcomId);
+      const isLocalBooking = String(calcomId).startsWith('booking_') || String(calcomId).startsWith('mock-');
       
-      console.log('Cancelling booking:', {
+      console.log('📋 Booking details:', {
         localId: bookingToCancel.id,
         calcomId: calcomId,
-        bookingId: bookingId
+        isLocalBooking: isLocalBooking
       });
-      
-      let calcomResult = null;
-      
-      // Only call Cal.com API if booking has a real Cal.com booking ID
-      if (bookingId && !bookingId.startsWith('booking_') && !bookingId.startsWith('mock-')) {
+
+      let result = null;
+
+      // Try to cancel in Cal.com (if it's not a local-only booking)
+      if (!isLocalBooking) {
         try {
-          calcomResult = await cancelBooking(bookingId, 'User requested cancellation');
-          console.log('✅ Booking cancelled in Cal.com successfully:', calcomResult);
-        } catch (calcomError) {
-          console.warn('⚠️ Cal.com cancellation failed, proceeding with local cancellation:', calcomError);
-          // Continue with local cancellation even if Cal.com fails
+          result = await cancelBooking(String(calcomId), 'User requested cancellation');
+          console.log('✅ Cancellation result:', result);
+        } catch (error) {
+          console.warn('⚠️ Cal.com cancellation failed, continuing with local cancellation:', error);
         }
       } else {
-        console.log('Local booking only (ID:', bookingId, '), skipping Cal.com API call');
+        console.log('ℹ️ Local booking only, skipping Cal.com API call');
       }
 
-      // Update local state regardless of API call
+      // Update local state (always succeed locally)
       const updatedBookings = userBookings.map(b => 
         b.id === bookingToCancel.id 
           ? { ...b, status: 'cancelled' }
           : b
       );
 
-      // Save to localStorage (user-specific)
+      // Save to localStorage
       if (user?.id) {
         const storageKey = `userBookings_${user.id}`;
         localStorage.setItem(storageKey, JSON.stringify(updatedBookings));
+        console.log('💾 Local storage updated');
       }
       
-      // Update state
+      // Update React state
       setUserBookings(updatedBookings);
       
       // Close modal
       setShowCancelModal(false);
       setBookingToCancel(null);
       
-      // Show success message
-      if (calcomResult?.warning) {
-        console.log('ℹ️ Booking cancelled locally with warning:', calcomResult.warning);
-      }
-    } catch (error) {
-      console.error('Failed to cancel booking:', error);
-      
-      // Even if error occurs, ask if user wants to cancel locally
-      const message = error instanceof Error ? error.message : 'Stornierung fehlgeschlagen';
-      const shouldCancelLocally = confirm(
-        `Cal.com Stornierung fehlgeschlagen: ${message}\n\nMöchtest du die Buchung trotzdem lokal stornieren? (Du solltest deinen Tutor separat kontaktieren.)`
-      );
-      
-      if (shouldCancelLocally) {
-        // Force local cancellation
-        const updatedBookings = userBookings.map(b => 
-          b.id === bookingToCancel.id 
-            ? { ...b, status: 'cancelled' }
-            : b
-        );
+      console.log('✅ Cancellation completed successfully');
 
-        if (user?.id) {
-          const storageKey = `userBookings_${user.id}`;
-          localStorage.setItem(storageKey, JSON.stringify(updatedBookings));
-        }
-        
-        setUserBookings(updatedBookings);
-        setShowCancelModal(false);
-        setBookingToCancel(null);
-      } else {
-        setCancelError(message);
+      // Show info message if Cal.com sync failed
+      if (result?.localOnly && result?.calcomError) {
+        console.log('ℹ️ Cal.com sync failed but local cancellation succeeded');
       }
+
+    } catch (error) {
+      console.error('❌ Cancellation process failed:', error);
+      setCancelError(error instanceof Error ? error.message : 'Stornierung fehlgeschlagen');
     } finally {
       setIsCancelling(false);
     }
