@@ -63,11 +63,16 @@ export function FeaturesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="frosted-glass rounded-2xl p-8 transition-colors duration-300"
+              whileHover={{ scale: 1.05, y: -5 }}
+              className="frosted-glass rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:shadow-accent/10 cursor-default"
             >
-              <div className="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-4">
+              <motion.div
+                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 0.5 }}
+                className="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-4"
+              >
                 <feature.icon className="w-7 h-7 text-accent" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
               <p className="text-gray-400">{feature.description}</p>
             </motion.div>
