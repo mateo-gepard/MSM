@@ -46,6 +46,7 @@ function BookingContent() {
   const [bookingHistoryLoaded, setBookingHistoryLoaded] = useState(false);
   const [isReschedule, setIsReschedule] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
+  const [cameFromMatching, setCameFromMatching] = useState(false); // Track if user came from matching wizard
 
   // Redirect to login if user is not authenticated (except when loading)
   useEffect(() => {
@@ -97,6 +98,7 @@ function BookingContent() {
     if (stored) {
       const data = JSON.parse(stored);
       setMatchingData(data);
+      setCameFromMatching(true); // Mark that user came from matching
       console.log('Matching data loaded:', data);
       
       // Map subject IDs to full names
@@ -513,7 +515,7 @@ function BookingContent() {
         )}
         
         {/* Matching Banner */}
-        {matchingData && selectedSubject && currentStep === 0 && !isReschedule && (
+        {cameFromMatching && matchingData && selectedSubject && currentStep === 0 && !isReschedule && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
