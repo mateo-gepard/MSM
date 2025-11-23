@@ -301,7 +301,16 @@ function DashboardContent() {
 
   // Don't render if not authenticated (will redirect)
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center">
+        <div className="bg-secondary-dark/80 p-8 rounded-xl shadow-xl text-center">
+          <User className="w-10 h-10 mx-auto mb-4 text-accent" />
+          <h2 className="text-2xl font-bold text-white mb-2">Login erforderlich</h2>
+          <p className="text-gray-300 mb-4">Bitte melde dich an, um dein Dashboard zu sehen.</p>
+          <a href="/login" className="inline-block px-6 py-2 bg-accent text-white rounded-lg font-semibold hover:bg-accent/80 transition">Zum Login</a>
+        </div>
+      </div>
+    );
   }
 
   const tabs = [

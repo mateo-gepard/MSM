@@ -334,11 +334,44 @@ function BookingContent() {
     }
   };
 
-  const availableTimes = [
-    '09:00', '10:00', '11:00', '12:00', 
-    '13:00', '14:00', '15:00', '16:00', 
-    '17:00', '18:00', '19:00'
-  ];
+  // Dynamische Zeitslots basierend auf ausgewähltem Tutor und Datum
+  const getAvailableTimes = () => {
+    if (!selectedTutor || !selectedDate) {
+      // Fallback zu allen Zeiten wenn kein Tutor oder Datum ausgewählt
+      return [
+        '09:00', '10:00', '11:00', '12:00', 
+        '13:00', '14:00', '15:00', '16:00', 
+        '17:00', '18:00', '19:00'
+      ];
+    }
+
+    const tutor = tutors.find(t => t.id === selectedTutor);
+    if (!tutor || !tutor.availableSlots) {
+      // Fallback wenn Tutor keine Slots definiert hat
+      return [
+        '09:00', '10:00', '11:00', '12:00', 
+        '13:00', '14:00', '15:00', '16:00', 
+        '17:00', '18:00', '19:00'
+      ];
+    }
+
+    // Wochentag aus dem ausgewählten Datum ermitteln
+    const dateObj = new Date(selectedDate);
+    const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayMap[dateObj.getDay()];
+
+    // Zeitslots für den entsprechenden Wochentag finden
+    const daySlot = tutor.availableSlots.find(slot => slot.day === dayName);
+    
+    if (daySlot && daySlot.times.length > 0) {
+      return daySlot.times;
+    }
+
+    // Wenn für diesen Tag keine Slots verfügbar sind, leeres Array zurückgeben
+    return [];
+  };
+
+  const availableTimes = getAvailableTimes();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-32">
@@ -656,7 +689,11 @@ function BookingContent() {
                   <input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      // Reset time when date changes to revalidate availability
+                      setSelectedTime('');
+                    }}
                     min={new Date().toISOString().split('T')[0]}
                     className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
                   />
@@ -668,11 +705,43 @@ function BookingContent() {
                     value={selectedTime}
                     onChange={(e) => setSelectedTime(e.target.value)}
                     className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                    disabled={!selectedDate}
                   />
                 </div>
               </div>
+              
+              {/* Verfügbarkeitshinweis */}
+              {selectedDate && availableTimes.length === 0 && (
+                <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold mb-1">Keine Verfügbarkeit an diesem Tag</p>
+                      <p className="text-sm">
+                        {tutors.find(t => t.id === selectedTutor)?.name} hat an diesem Wochentag keine verfügbaren Zeitslots. 
+                        Bitte wähle ein anderes Datum oder kontaktiere uns für individuelle Terminabsprachen.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Verfügbare Zeitslots anzeigen */}
+              {selectedDate && availableTimes.length > 0 && (
+                <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <p className="text-green-200 font-semibold mb-2">Verfügbare Zeitslots für diesen Tag:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableTimes.map(time => (
+                      <span key={time} className="px-3 py-1 bg-green-500/20 text-green-200 rounded-full text-sm">
+                        {time}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <p className="text-gray-400 text-sm mt-4">
-                * Die Verfügbarkeit wird nach Auswahl automatisch geprüft
+                * Die verfügbaren Zeiten basieren auf den Präferenzen des Tutors
               </p>
             </div>
           )}

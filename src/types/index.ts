@@ -8,6 +8,11 @@ export interface Tutor {
   bio: string;
   languages: string[];
   availability: string;
+  availableSlots?: {
+    day: string; // 'monday', 'tuesday', etc.
+    times: string[]; // ['09:00', '10:00', '11:00']
+  }[];
+  calcomUsername?: string; // For Cal.com integration
 }
 
 export interface Subject {

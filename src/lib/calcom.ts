@@ -4,6 +4,67 @@ import { saveBookingToSupabase, updateBookingStatus, deleteBooking, supabase } f
 const CALCOM_API_PROXY = '/api/bookings';
 const CALCOM_API_BASE = 'https://api.cal.com/v1'; // For direct server-side calls if needed
 
+/**
+ * Fetch real-time availability slots from Cal.com for a specific tutor and date range
+ * @param calcomUsername - The Cal.com username of the tutor (e.g., "alexander-schmidt")
+ * @param eventTypeSlug - The event type slug (e.g., "60min")
+ * @param dateFrom - Start date in YYYY-MM-DD format
+ * @param dateTo - End date in YYYY-MM-DD format
+ * @returns Array of available time slots
+ */
+export async function getCalcomAvailability(
+  calcomUsername: string,
+  eventTypeSlug: string,
+  dateFrom: string,
+  dateTo: string
+): Promise<string[]> {
+  try {
+    console.log(`Fetching Cal.com availability for ${calcomUsername}/${eventTypeSlug}`);
+    
+    // Cal.com API endpoint for public availability
+    const url = `https://cal.com/api/trpc/public/slots.getSchedule?input=${encodeURIComponent(
+      JSON.stringify({
+        json: {
+          isTeamEvent: false,
+          usernameList: [calcomUsername],
+          eventTypeSlug: eventTypeSlug,
+          startTime: `${dateFrom}T00:00:00.000Z`,
+          endTime: `${dateTo}T23:59:59.999Z`,
+          timeZone: 'Europe/Berlin'
+        }
+      })
+    )}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch Cal.com availability:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    
+    // Extract time slots from Cal.com response
+    if (data.result?.data?.json?.slots) {
+      const slots = Object.values(data.result.data.json.slots).flat() as any[];
+      return slots.map((slot: any) => {
+        const time = new Date(slot.time);
+        return time.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', hour12: false });
+      });
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error fetching Cal.com availability:', error);
+    return [];
+  }
+}
+
 export async function createBooking(data: {
   eventTypeId: number;
   start: string; // ISO 8601
