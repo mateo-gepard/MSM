@@ -69,15 +69,33 @@ export async function updateBookingStatus(
   try {
     console.log(`Updating booking status: ${calcomBookingId} → ${status}`);
     
-    const { data, error } = await supabase
+    // Try updating by calcom_booking_id first
+    let { data, error } = await supabase
       .from('bookings')
       .update({ status })
       .eq('calcom_booking_id', calcomBookingId)
       .select();
 
     if (error) {
-      console.error('Supabase update error:', error);
-      throw error;
+      console.error('Supabase update error (by calcom_booking_id):', error);
+    }
+    
+    // If no rows updated, try by id field as fallback
+    if (!data || data.length === 0) {
+      console.log(`⚠️ Booking not found by calcom_booking_id, trying by id field...`);
+      const result = await supabase
+        .from('bookings')
+        .update({ status })
+        .eq('id', calcomBookingId)
+        .select();
+      
+      data = result.data;
+      error = result.error;
+      
+      if (error) {
+        console.error('Supabase update error (by id):', error);
+        throw error;
+      }
     }
     
     // Check if booking was found and updated
