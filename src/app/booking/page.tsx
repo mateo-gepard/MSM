@@ -458,23 +458,33 @@ function BookingContent() {
             <div>
               <h2 className="text-2xl font-bold text-white mb-6">Wähle Fach und Tutor</h2>
               
-              {/* Subject Selection */}
-              <div className="mb-6">
-                <label className="block text-white font-semibold mb-2 text-sm">Fach</label>
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => {
-                    setSelectedSubject(e.target.value);
-                    setSelectedTutor(''); // Reset tutor when subject changes
-                  }}
-                  className="w-full p-2.5 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none text-sm"
-                >
-                  <option value="">Fach auswählen...</option>
-                  {Array.from(new Set(tutors.flatMap(t => t.subjects))).map(subject => (
-                    <option key={subject} value={subject}>{subject}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Subject Selection - Hide if coming from matching */}
+              {!matchingData && (
+                <div className="mb-6">
+                  <label className="block text-white font-semibold mb-2 text-sm">Fach</label>
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => {
+                      setSelectedSubject(e.target.value);
+                      setSelectedTutor(''); // Reset tutor when subject changes
+                    }}
+                    className="w-full p-2.5 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none text-sm"
+                  >
+                    <option value="">Fach auswählen...</option>
+                    {Array.from(new Set(tutors.flatMap(t => t.subjects))).map(subject => (
+                      <option key={subject} value={subject}>{subject}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* Show selected subject if from matching */}
+              {matchingData && selectedSubject && (
+                <div className="mb-6 p-3 bg-accent/10 border border-accent/30 rounded-lg">
+                  <div className="text-xs text-gray-400 mb-1">Ausgewähltes Fach</div>
+                  <div className="text-white font-semibold">{selectedSubject}</div>
+                </div>
+              )}
 
               {/* Tutor Selection */}
               {selectedSubject && (

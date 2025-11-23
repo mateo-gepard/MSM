@@ -429,15 +429,17 @@ function DashboardContent() {
               {/* Bookings Tab */}
               {activeTab === 'bookings' && (
                 <div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                    <h2 className="text-2xl font-bold text-white">Meine Buchungen</h2>
-                    <Link href="/booking">
-                      <Button size="sm" className="flex items-center">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Neue Buchung
-                      </Button>
-                    </Link>
-                  </div>
+                  {userBookings.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                      <h2 className="text-2xl font-bold text-white">Meine Buchungen</h2>
+                      <Link href="/booking">
+                        <Button size="sm" className="flex items-center">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Neue Buchung
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
 
                   {/* Filter Buttons */}
                   {userBookings.length > 0 && (

@@ -171,7 +171,7 @@ export default function MatchingPage() {
                       <button
                         key={subject.id}
                         onClick={() => toggleSubject(subject.id)}
-                        className={`p-4 rounded-xl transition-colors duration-300 border-2 flex flex-col items-center justify-center ${
+                        className={`p-6 rounded-xl transition-colors duration-300 border-2 flex flex-col items-center justify-center min-h-[120px] ${
                           selectedSubjects.includes(subject.id)
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
