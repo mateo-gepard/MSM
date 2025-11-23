@@ -194,7 +194,35 @@ function DashboardContent() {
           const supabaseBookings = await getUserBookings(user.id);
           if (supabaseBookings && supabaseBookings.length > 0) {
             console.log('Loaded bookings from Supabase:', supabaseBookings);
-            setUserBookings(supabaseBookings);
+            
+            // Convert Supabase format to localStorage format
+            const convertedBookings = supabaseBookings.map((booking: any) => ({
+              id: booking.id,
+              calcomBookingId: booking.calcom_booking_id, // ← Convert snake_case to camelCase
+              tutorId: booking.tutor_id,
+              subject: booking.subject,
+              packageId: booking.package,
+              date: booking.date,
+              time: booking.time,
+              location: booking.location,
+              contact: {
+                name: booking.contact_name,
+                email: booking.contact_email,
+                phone: booking.contact_phone,
+                message: booking.message
+              },
+              status: booking.status,
+              createdAt: booking.created_at,
+              updatedAt: booking.updated_at
+            }));
+            
+            console.log('Converted bookings:', convertedBookings);
+            setUserBookings(convertedBookings);
+            
+            // Also sync to localStorage for offline access
+            const storageKey = `userBookings_${user.id}`;
+            localStorage.setItem(storageKey, JSON.stringify(convertedBookings));
+            
             return;
           }
         } catch (error) {
@@ -266,13 +294,16 @@ function DashboardContent() {
     try {
       console.log('🚫 Starting cancellation process for:', bookingToCancel.id);
 
-      // Get the actual Cal.com booking ID (if it exists)
-      const calcomId = bookingToCancel.calcomBookingId || bookingToCancel.id;
-      const isLocalBooking = String(calcomId).startsWith('booking_') || String(calcomId).startsWith('mock-');
+      // Get the actual Cal.com booking ID - prefer calcomBookingId field
+      let calcomIdToUse = bookingToCancel.calcomBookingId || bookingToCancel.id;
+      
+      // Check if this is a local-only booking (starts with 'booking_' or 'mock-')
+      const isLocalBooking = String(calcomIdToUse).startsWith('booking_') || String(calcomIdToUse).startsWith('mock-');
       
       console.log('📋 Booking details:', {
         localId: bookingToCancel.id,
-        calcomId: calcomId,
+        calcomBookingId: bookingToCancel.calcomBookingId,
+        calcomIdToUse: calcomIdToUse,
         isLocalBooking: isLocalBooking
       });
 
@@ -281,7 +312,7 @@ function DashboardContent() {
       // Try to cancel in Cal.com (if it's not a local-only booking)
       if (!isLocalBooking) {
         try {
-          result = await cancelBooking(String(calcomId), 'User requested cancellation');
+          result = await cancelBooking(String(calcomIdToUse), 'User requested cancellation');
           console.log('✅ Cancellation result:', result);
         } catch (error) {
           console.warn('⚠️ Cal.com cancellation failed, continuing with local cancellation:', error);
