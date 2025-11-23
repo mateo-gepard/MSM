@@ -400,6 +400,7 @@ function BookingContent() {
           },
           metadata: {
             tutorId: selectedTutor,
+            tutorName: selectedTutorData.name,
             packageId: selectedPackage,
             subject: selectedSubject,
             location: selectedLocation,

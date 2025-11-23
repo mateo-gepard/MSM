@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
 import { cancelBooking } from '@/lib/calcom';
 import { getUserBookings, supabase } from '@/lib/supabase';
+import { tutors } from '@/data/mockData';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -196,25 +197,41 @@ function DashboardContent() {
             console.log('Loaded bookings from Supabase:', supabaseBookings);
             
             // Convert Supabase format to localStorage format
-            const convertedBookings = supabaseBookings.map((booking: any) => ({
-              id: booking.id,
-              calcomBookingId: booking.calcom_booking_id, // ← Convert snake_case to camelCase
-              tutorId: booking.tutor_id,
-              subject: booking.subject,
-              packageId: booking.package,
-              date: booking.date,
-              time: booking.time,
-              location: booking.location,
-              contact: {
-                name: booking.contact_name,
-                email: booking.contact_email,
-                phone: booking.contact_phone,
-                message: booking.message
-              },
-              status: booking.status,
-              createdAt: booking.created_at,
-              updatedAt: booking.updated_at
-            }));
+            const convertedBookings = supabaseBookings.map((booking: any) => {
+              // Try to get tutor name from Supabase, fallback to finding by ID
+              let tutorName = booking.tutor_name;
+              
+              if (!tutorName && booking.tutor_id) {
+                const tutor = tutors.find(t => t.id === booking.tutor_id);
+                tutorName = tutor?.name || 'Tutor nicht gefunden';
+              }
+              
+              if (!tutorName) {
+                tutorName = 'Tutor nicht angegeben';
+              }
+              
+              return {
+                id: booking.id,
+                calcomBookingId: booking.calcom_booking_id,
+                tutorId: booking.tutor_id,
+                tutorName: tutorName,
+                subject: booking.subject,
+                packageId: booking.package,
+                packageName: booking.package,
+                date: booking.date,
+                time: booking.time,
+                location: booking.location,
+                contact: {
+                  name: booking.contact_name,
+                  email: booking.contact_email,
+                  phone: booking.contact_phone,
+                  message: booking.message
+                },
+                status: booking.status,
+                createdAt: booking.created_at,
+                updatedAt: booking.updated_at
+              };
+            });
             
             console.log('Converted bookings:', convertedBookings);
             setUserBookings(convertedBookings);

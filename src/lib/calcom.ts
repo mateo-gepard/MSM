@@ -75,6 +75,7 @@ export async function createBooking(data: {
   };
   metadata: {
     tutorId: string;
+    tutorName?: string;
     packageId: string;
     subject?: string;
     location?: string;
@@ -143,6 +144,7 @@ export async function createBooking(data: {
               calcom_booking_id: localBookingId,
               user_id: data.userId,
               tutor_id: undefined,
+              tutor_name: data.metadata.tutorName || undefined,
               subject: data.metadata.subject || 'Nicht angegeben',
               package: data.metadata.packageId || 'Einzelstunde',
               date: startDate.toISOString().split('T')[0],
@@ -219,6 +221,7 @@ export async function createBooking(data: {
           calcom_booking_id: bookingId.toString(),
           user_id: data.userId,
           tutor_id: tutorId,
+          tutor_name: data.metadata.tutorName || undefined,
           subject: data.metadata.subject || 'Nicht angegeben',
           package: data.metadata.packageId || 'Einzelstunde',
           date: startDate.toISOString().split('T')[0],

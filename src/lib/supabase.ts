@@ -11,6 +11,7 @@ export async function saveBookingToSupabase(bookingData: {
   calcom_booking_id: string;
   user_id: string;
   tutor_id?: string;
+  tutor_name?: string;
   subject: string;
   package?: string;
   date: string;
