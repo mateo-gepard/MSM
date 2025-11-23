@@ -8,6 +8,9 @@ export async function DELETE(
     const { bookingId } = await context.params;
     const apiKey = process.env.CALCOM_API_KEY;
 
+    console.log(`[API] Cancel request for booking: ${bookingId}`);
+    console.log(`[API] Has Cal.com API key: ${!!apiKey}`);
+
     if (!apiKey) {
       console.warn('[API] Cal.com API key not configured - treating as local booking');
       return NextResponse.json({
@@ -25,6 +28,8 @@ export async function DELETE(
     // Cal.com API v2 endpoint for cancellation (updated format)
     const url = `https://api.cal.com/v1/bookings/${bookingId}/cancel?apiKey=${apiKey}`;
     
+    console.log(`[API] Calling Cal.com API: POST ${url.replace(apiKey, 'HIDDEN')}`);
+    
     const response = await fetch(url, {
       method: 'POST',  // Changed from DELETE to POST (Cal.com uses POST for cancellations)
       headers: {
@@ -35,6 +40,8 @@ export async function DELETE(
         allRemainingBookings: false
       })
     });
+
+    console.log(`[API] Cal.com response status: ${response.status}`);
 
     // Try to parse response
     let data;
@@ -80,13 +87,21 @@ export async function DELETE(
   } catch (error) {
     console.error('[API] Cancel booking error:', error);
     
+    // Get bookingId safely
+    let bookingId: string | undefined;
+    try {
+      bookingId = (await context.params).bookingId;
+    } catch {
+      bookingId = 'unknown';
+    }
+    
     // Return partial success - at least mark as cancelled locally
     return NextResponse.json(
       { 
         success: true,
         warning: 'Cal.com sync failed but local cancellation succeeded',
         error: error instanceof Error ? error.message : 'Cal.com API error',
-        bookingId: (await context.params).bookingId
+        bookingId
       },
       { status: 200 }  // Return 200 so local cancellation still works
     );

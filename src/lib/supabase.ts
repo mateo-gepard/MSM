@@ -67,15 +67,27 @@ export async function updateBookingStatus(
   status: 'scheduled' | 'completed' | 'cancelled'
 ) {
   try {
+    console.log(`Updating booking status: ${calcomBookingId} → ${status}`);
+    
     const { data, error } = await supabase
       .from('bookings')
       .update({ status })
       .eq('calcom_booking_id', calcomBookingId)
-      .select()
-      .single();
+      .select();
 
-    if (error) throw error;
-    return data;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
+    
+    // Check if booking was found and updated
+    if (!data || data.length === 0) {
+      console.warn(`⚠️ Booking ${calcomBookingId} not found in Supabase (may be local-only)`);
+      return null; // Return null instead of throwing
+    }
+    
+    console.log(`✅ Booking status updated in Supabase:`, data[0]);
+    return data[0];
   } catch (error) {
     console.error('Error updating booking status:', error);
     throw error;
