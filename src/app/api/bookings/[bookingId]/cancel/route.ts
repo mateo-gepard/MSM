@@ -4,8 +4,11 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ bookingId: string }> }
 ) {
+  let bookingId: string = 'unknown';
+  
   try {
-    const { bookingId } = await context.params;
+    const params = await context.params;
+    bookingId = params.bookingId;
     const apiKey = process.env.CALCOM_API_KEY;
 
     console.log(`[API] Cancel request for booking: ${bookingId}`);
@@ -30,28 +33,44 @@ export async function DELETE(
     
     console.log(`[API] Calling Cal.com API: POST ${url.replace(apiKey, 'HIDDEN')}`);
     
-    const response = await fetch(url, {
-      method: 'POST',  // Changed from DELETE to POST (Cal.com uses POST for cancellations)
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        cancellationReason: reason,
-        allRemainingBookings: false
-      })
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cancellationReason: reason,
+          allRemainingBookings: false
+        })
+      });
+    } catch (fetchError) {
+      console.error('[API] Fetch to Cal.com failed:', fetchError);
+      // Return success for local cancellation even if Cal.com is unreachable
+      return NextResponse.json({
+        success: true,
+        warning: 'Cal.com unreachable but local cancellation succeeded',
+        bookingId
+      }, { status: 200 });
+    }
 
     console.log(`[API] Cal.com response status: ${response.status}`);
 
     // Try to parse response
     let data;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      console.log('[API] Non-JSON response:', text);
-      data = { message: text };
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.log('[API] Non-JSON response:', text);
+        data = { message: text };
+      }
+    } catch (parseError) {
+      console.error('[API] Failed to parse response:', parseError);
+      data = { error: 'Failed to parse response' };
     }
 
     if (!response.ok) {
@@ -64,17 +83,17 @@ export async function DELETE(
           success: true,
           message: 'Local booking cancelled (not found in Cal.com)',
           bookingId
-        });
+        }, { status: 200 });
       }
       
-      return NextResponse.json(
-        { 
-          error: data.message || data.error || 'Cancellation failed', 
-          details: data,
-          bookingId
-        },
-        { status: response.status }
-      );
+      // For any other error, still return success for local cancellation
+      console.warn('[API] Cal.com returned error, proceeding with local cancellation');
+      return NextResponse.json({
+        success: true,
+        warning: 'Cal.com sync failed but local cancellation succeeded',
+        calcomError: data.message || data.error,
+        bookingId
+      }, { status: 200 });
     }
 
     console.log('[API] Booking cancelled successfully in Cal.com:', data);
@@ -86,24 +105,17 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('[API] Cancel booking error:', error);
+    console.error('[API] Error stack:', error instanceof Error ? error.stack : 'No stack');
     
-    // Get bookingId safely
-    let bookingId: string | undefined;
-    try {
-      bookingId = (await context.params).bookingId;
-    } catch {
-      bookingId = 'unknown';
-    }
-    
-    // Return partial success - at least mark as cancelled locally
+    // Always return success for local cancellation
     return NextResponse.json(
       { 
         success: true,
         warning: 'Cal.com sync failed but local cancellation succeeded',
-        error: error instanceof Error ? error.message : 'Cal.com API error',
+        error: error instanceof Error ? error.message : 'Unknown error',
         bookingId
       },
-      { status: 200 }  // Return 200 so local cancellation still works
+      { status: 200 }
     );
   }
 }
