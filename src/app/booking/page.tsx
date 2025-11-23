@@ -448,7 +448,7 @@ function BookingContent() {
           </div>
         </div>
 
-        <FrostedCard className="p-8">
+        <FrostedCard className="p-8" hover={false}>
           {/* Step 0: Subject & Tutor */}
           {currentStep === 0 && (
             <div>

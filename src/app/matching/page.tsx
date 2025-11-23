@@ -160,7 +160,7 @@ export default function MatchingPage() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <FrostedCard className="p-8">
+            <FrostedCard className="p-8" hover={false}>
               {/* Step 1: Subjects */}
               {currentStep === 1 && (
                 <div>
@@ -171,14 +171,14 @@ export default function MatchingPage() {
                       <button
                         key={subject.id}
                         onClick={() => toggleSubject(subject.id)}
-                        className={`p-4 rounded-xl transition-all duration-300 border-2 ${
+                        className={`p-4 rounded-xl transition-colors duration-300 border-2 flex flex-col items-center justify-center ${
                           selectedSubjects.includes(subject.id)
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
                         <div className="text-3xl mb-2">{getIcon(subject.icon)}</div>
-                        <div className="font-semibold">{subject.name}</div>
+                        <div className="font-semibold text-center">{subject.name}</div>
                       </button>
                     ))}
                   </div>
@@ -195,7 +195,7 @@ export default function MatchingPage() {
                       <button
                         key={goal.id}
                         onClick={() => toggleGoal(goal.id)}
-                        className={`p-6 rounded-xl transition-all duration-300 text-left border-2 ${
+                        className={`p-6 rounded-xl transition-colors duration-300 text-left border-2 ${
                           selectedGoals.includes(goal.id)
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
@@ -221,7 +221,7 @@ export default function MatchingPage() {
                       <button
                         key={style.id}
                         onClick={() => setSelectedLearningStyle(style.id)}
-                        className={`p-6 rounded-xl transition-all duration-300 text-left border-2 ${
+                        className={`p-6 rounded-xl transition-colors duration-300 text-left border-2 ${
                           selectedLearningStyle === style.id
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
@@ -250,7 +250,7 @@ export default function MatchingPage() {
                       <button
                         key={urgency.id}
                         onClick={() => setSelectedUrgency(urgency.id)}
-                        className={`p-6 rounded-xl transition-all duration-300 text-left border-2 ${
+                        className={`p-6 rounded-xl transition-colors duration-300 text-left border-2 ${
                           selectedUrgency === urgency.id
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
@@ -279,7 +279,7 @@ export default function MatchingPage() {
                       <button
                         key={lang.id}
                         onClick={() => toggleLanguage(lang.id)}
-                        className={`p-6 rounded-xl transition-all duration-300 border-2 ${
+                        className={`p-6 rounded-xl transition-colors duration-300 border-2 ${
                           selectedLanguages.includes(lang.id)
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'

@@ -355,7 +355,7 @@ function DashboardContent() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <FrostedCard className="p-4">
+            <FrostedCard className="p-4" hover={false}>
               <nav className="space-y-2">
                 {tabs.map((tab) => (
                   <button
@@ -405,7 +405,7 @@ function DashboardContent() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <FrostedCard className="p-6">
+            <FrostedCard className="p-6" hover={false}>
               {/* Bookings Tab */}
               {activeTab === 'bookings' && (
                 <div>
