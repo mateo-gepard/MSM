@@ -71,26 +71,14 @@ export function Hero() {
             className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
           >
             <Link href="/matching">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <Button size="lg" variant="primary" className="shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30">
-                  Erstgespräch buchen
-                </Button>
-              </motion.div>
+              <Button size="lg" variant="primary">
+                Erstgespräch buchen
+              </Button>
             </Link>
             <Link href="#tutors">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <Button size="lg" variant="outline">
-                  Tutoren kennenlernen
-                </Button>
-              </motion.div>
+              <Button size="lg" variant="outline">
+                Tutoren kennenlernen
+              </Button>
             </Link>
           </motion.div>
 
@@ -101,25 +89,26 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto"
           >
-            {[
-              { icon: Award, value: "50+", label: "Auszeichnungen", delay: 0.5 },
-              { icon: Users, value: "6", label: "Elite-Tutoren", delay: 0.6 },
-              { icon: Star, value: "5.0", label: "Bewertung", delay: 0.7 },
-              { icon: TrendingUp, value: "98%", label: "Erfolgsrate", delay: 0.8 },
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: stat.delay }}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="frosted-glass rounded-2xl p-6 cursor-default"
-              >
-                <stat.icon className="w-8 h-8 text-accent mx-auto mb-2" />
-                <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-400">{stat.label}</div>
-              </motion.div>
-            ))}
+            <div className="frosted-glass rounded-2xl p-6">
+              <Award className="w-8 h-8 text-accent mx-auto mb-2" />
+              <div className="text-3xl font-bold text-white mb-1">50+</div>
+              <div className="text-sm text-gray-400">Auszeichnungen</div>
+            </div>
+            <div className="frosted-glass rounded-2xl p-6">
+              <Users className="w-8 h-8 text-accent mx-auto mb-2" />
+              <div className="text-3xl font-bold text-white mb-1">6</div>
+              <div className="text-sm text-gray-400">Elite-Tutoren</div>
+            </div>
+            <div className="frosted-glass rounded-2xl p-6">
+              <Star className="w-8 h-8 text-accent mx-auto mb-2" />
+              <div className="text-3xl font-bold text-white mb-1">5.0</div>
+              <div className="text-sm text-gray-400">Bewertung</div>
+            </div>
+            <div className="frosted-glass rounded-2xl p-6">
+              <TrendingUp className="w-8 h-8 text-accent mx-auto mb-2" />
+              <div className="text-3xl font-bold text-white mb-1">98%</div>
+              <div className="text-sm text-gray-400">Erfolgsrate</div>
+            </div>
           </motion.div>
         </div>
       </div>

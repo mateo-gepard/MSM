@@ -8,10 +8,6 @@
   --foreground: #171717;
 }
 
-* {
-  scroll-behavior: smooth;
-}
-
 @theme inline {
   --color-primary-dark: var(--primary-dark);
   --color-secondary-dark: var(--secondary-dark);

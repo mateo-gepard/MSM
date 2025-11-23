@@ -9,7 +9,6 @@ import { getUserBookings } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
-import { Toast } from '@/components/ui/Toast';
 import { tutors, packages } from '@/data/mockData';
 import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Monitor, Home } from 'lucide-react';
 import { TutorCard } from '@/components/tutors/TutorCard';
@@ -29,7 +28,6 @@ function BookingContent() {
   const [matchingData, setMatchingData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info'; message: string } | null>(null);
   
   // Booking data
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -462,25 +460,11 @@ function BookingContent() {
       // Clear matching data
       localStorage.removeItem('matchingData');
 
-      // Show success toast
-      setToastMessage({
-        type: 'success',
-        message: isReschedule ? 'Buchung erfolgreich umgebucht!' : 'Buchung erfolgreich erstellt!'
-      });
-
-      // Redirect to dashboard after short delay
-      setTimeout(() => {
-        router.push(`/dashboard?${isReschedule ? 'rescheduleSuccess' : 'bookingSuccess'}=true`);
-      }, 1500);
+      // Redirect to dashboard
+      router.push(`/dashboard?${isReschedule ? 'rescheduleSuccess' : 'bookingSuccess'}=true`);
     } catch (error) {
       console.error('Booking failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      
-      // Show error toast
-      setToastMessage({
-        type: 'error',
-        message: errorMessage
-      });
       
       // If trial booking is rejected, scroll to package selection and highlight the error
       if (errorMessage.includes('Probestunde') || errorMessage.includes('Neukunden')) {
@@ -512,15 +496,6 @@ function BookingContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-32">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <Toast
-          type={toastMessage.type}
-          message={toastMessage.message}
-          onClose={() => setToastMessage(null)}
-        />
-      )}
-
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Reschedule Banner */}
         {isReschedule && (

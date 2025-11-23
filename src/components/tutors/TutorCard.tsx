@@ -4,7 +4,6 @@ import { Tutor } from '@/types';
 import { FrostedCard } from '../ui/FrostedCard';
 import { Award, Clock } from 'lucide-react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 
 interface TutorCardProps {
   tutor: Tutor;
@@ -20,14 +19,12 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
   };
 
   return (
-    <motion.div 
+    <div 
       className={onSelect ? 'cursor-pointer' : ''}
       onClick={onSelect ? handleClick : undefined}
-      whileHover={onSelect ? { scale: 1.03, y: -5 } : {}}
-      transition={{ duration: 0.3, ease: "easeOut" }}
     >
       <FrostedCard 
-        className={`group transition-all ${onSelect ? 'hover:shadow-2xl hover:shadow-accent/30' : ''}`}
+        className={`group transition-all ${onSelect ? 'hover:shadow-xl hover:shadow-accent/20 hover:scale-[1.02]' : ''}`}
       >
         <div className="relative h-48 w-full mb-4 rounded-xl overflow-hidden">
           <Image
@@ -35,13 +32,13 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
             alt={tutor.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            className="object-cover transition-opacity duration-500 group-hover:opacity-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/90 via-primary-dark/40 to-transparent transition-opacity duration-300 group-hover:opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
-            <h3 className="text-xl font-bold text-white mb-1 group-hover:text-accent transition-colors duration-300">{tutor.name}</h3>
+            <h3 className="text-xl font-bold text-white mb-1">{tutor.name}</h3>
             <div className="flex items-center gap-2 text-accent text-sm font-semibold">
-              <span className="px-2 py-0.5 bg-accent/20 rounded-full backdrop-blur-sm">€{tutor.hourlyRate}/Std</span>
+              <span>€{tutor.hourlyRate}/Std</span>
             </div>
           </div>
         </div>
@@ -91,15 +88,12 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
         </div>
 
         {onSelect && (
-          <motion.div 
-            className="mt-4 w-full py-2 bg-gradient-to-r from-accent/10 to-accent/20 text-accent rounded-lg text-sm font-semibold text-center group-hover:from-accent group-hover:to-accent group-hover:text-white transition-all duration-300"
-            whileHover={{ scale: 1.02 }}
-          >
+          <div className="mt-4 w-full py-2 bg-accent/10 text-accent rounded-lg text-sm font-semibold text-center">
             Klicken zum Auswählen ➜
-          </motion.div>
+          </div>
         )}
       </FrostedCard>
-    </motion.div>
+    </div>
   );
 }
 
