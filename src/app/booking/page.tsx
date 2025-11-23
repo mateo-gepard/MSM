@@ -90,12 +90,12 @@ function BookingContent() {
       if (storedBookings) {
         try {
           const bookings = JSON.parse(storedBookings);
-          // Only count scheduled or completed bookings (not cancelled)
-          const activeBookings = bookings.filter((b: any) => 
-            b.status === 'scheduled' || b.status === 'completed'
-          );
-          setHasExistingBookings(activeBookings.length > 0);
-          console.log('Active bookings check:', activeBookings.length, 'active of', bookings.length, 'total');
+          // Count ALL bookings (including cancelled) to prevent trial booking abuse
+          setHasExistingBookings(bookings.length > 0);
+          console.log('Booking history check:', bookings.length, 'total bookings found');
+          if (bookings.length > 0) {
+            console.log('Trial booking blocked: User has booking history (including cancelled bookings)');
+          }
         } catch (error) {
           console.error('Failed to load bookings:', error);
         }
@@ -651,7 +651,7 @@ function BookingContent() {
                       </div>
                       <div className="text-blue-300 text-sm">
                         Die kostenlose Probestunde ist nur für Neukunden verfügbar. 
-                        Du hast bereits eine oder mehrere Buchungen in deinem Account.
+                        Du hast bereits eine Buchungshistorie (auch stornierte Buchungen zählen).
                       </div>
                     </div>
                   </div>
@@ -694,7 +694,7 @@ function BookingContent() {
                   <div className="text-3xl font-bold mb-2 text-gray-500">€0</div>
                   <div className="text-sm text-gray-500 mb-3">Nur für Neukunden</div>
                   <div className="text-xs text-gray-600">
-                    Diese Option ist nicht mehr verfügbar, da du bereits Buchungen hast.
+                    Diese Option ist nicht verfügbar, da du bereits eine Buchungshistorie hast (inkl. stornierte Buchungen).
                   </div>
                 </div>
               )}
