@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, signUp, sendMagicLink, resetPassword } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { FrostedCard } from '@/components/ui/FrostedCard';
-import { Mail, Lock, User, ArrowRight, KeyRound, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, KeyRound, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'login' | 'signup' | 'magic' | 'reset'>('login');
@@ -379,5 +379,17 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-accent animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
