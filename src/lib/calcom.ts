@@ -239,13 +239,42 @@ export async function cancelBooking(bookingId: string, reason?: string) {
     // Always try to parse response
     const result = await response.json().catch(() => ({ success: false }));
     
-    if (!response.ok && !result.success) {
+    // If the API returned success=true (even with warnings), accept it
+    if (result.success) {
+      console.log('✅ Booking cancelled successfully:', result);
+      
+      // Update booking status in Supabase
+      try {
+        await updateBookingStatus(bookingId, 'cancelled');
+        console.log('✅ Booking status updated in Supabase');
+      } catch (supabaseError) {
+        console.warn('⚠️ Failed to update booking status in Supabase:', supabaseError);
+        // Don't throw - cancellation succeeded
+      }
+      
+      return result;
+    }
+    
+    // If response is not OK and no success flag
+    if (!response.ok) {
       console.error('Cal.com Cancel Error Response:', result);
       
       // If booking not found in Cal.com, treat as local-only booking
       if (response.status === 404 || result.error?.includes('not found')) {
         console.log('Booking not found in Cal.com - treating as local booking');
         return { success: true, localOnly: true, bookingId };
+      }
+      
+      // If it's a 500 error, try local cancellation anyway
+      if (response.status === 500) {
+        console.warn('⚠️ Cal.com API returned 500, proceeding with local cancellation');
+        try {
+          await updateBookingStatus(bookingId, 'cancelled');
+          console.log('✅ Booking marked as cancelled locally (Cal.com unavailable)');
+          return { success: true, warning: 'Cal.com unavailable but local cancellation succeeded', bookingId };
+        } catch (supabaseError) {
+          console.error('❌ Failed to update Supabase:', supabaseError);
+        }
       }
       
       throw new Error(result.error || result.message || 'Stornierung fehlgeschlagen');
