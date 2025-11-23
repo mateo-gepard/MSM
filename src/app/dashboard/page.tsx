@@ -264,13 +264,19 @@ function DashboardContent() {
     setCancelError(null);
 
     try {
-      // Call Cal.com API to cancel the booking
-      console.log('Cancelling booking with Cal.com:', bookingToCancel.id);
+      // Get the Cal.com booking ID (if it exists)
+      const calcomId = bookingToCancel.calcomBookingId || bookingToCancel.id;
+      const bookingId = String(calcomId);
       
-      // Only call API if booking has a Cal.com booking ID (not a local mock ID)
-      const bookingId = String(bookingToCancel.id);
+      console.log('Cancelling booking:', {
+        localId: bookingToCancel.id,
+        calcomId: calcomId,
+        bookingId: bookingId
+      });
+      
       let calcomResult = null;
       
+      // Only call Cal.com API if booking has a real Cal.com booking ID
       if (bookingId && !bookingId.startsWith('booking_') && !bookingId.startsWith('mock-')) {
         try {
           calcomResult = await cancelBooking(bookingId, 'User requested cancellation');

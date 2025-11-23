@@ -324,11 +324,11 @@ function BookingContent() {
       } else {
         // Create new booking
         // Try to extract Cal.com booking ID from multiple possible locations
-        const calcomBookingId = bookingResult?.id || 
+        const calcomBookingId = String(bookingResult?.id || 
                                 bookingResult?.booking?.id || 
                                 bookingResult?.data?.id ||
                                 bookingResult?.uid ||
-                                `booking_${Date.now()}`;
+                                `booking_${Date.now()}`);
         
         console.log('Storing booking with ID:', calcomBookingId);
         console.log('Is Cal.com ID:', !calcomBookingId.startsWith('booking_'));
