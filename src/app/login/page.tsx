@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, signUp, sendMagicLink, resetPassword } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { FrostedCard } from '@/components/ui/FrostedCard';
-import { Mail, Lock, User, ArrowRight, KeyRound } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, KeyRound, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'login' | 'signup' | 'magic' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,6 +19,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  const [showLoginRequired, setShowLoginRequired] = useState(false);
+
+  useEffect(() => {
+    const redirect = searchParams.get('redirect');
+    const message = searchParams.get('message');
+    
+    if (redirect) {
+      setRedirectUrl(redirect);
+    }
+    
+    if (message === 'login-required') {
+      setShowLoginRequired(true);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +46,8 @@ export default function LoginPage() {
       setError(authError.message);
       setLoading(false);
     } else if (data.user) {
-      router.push('/dashboard');
+      // Redirect to the saved URL or dashboard
+      router.push(redirectUrl || '/dashboard');
     }
   };
 
@@ -44,6 +61,12 @@ export default function LoginPage() {
     if (authError) {
       setError(authError.message);
       setLoading(false);
+    } else if (data.user) {
+      // Redirect after signup
+      setSuccess('Account erstellt! Du wirst weitergeleitet...');
+      setTimeout(() => {
+        router.push(redirectUrl || '/dashboard');
+      }, 1500);
     } else {
       setSuccess('Account erstellt! Bitte überprüfe deine E-Mail zur Bestätigung.');
       setLoading(false);
@@ -106,6 +129,24 @@ export default function LoginPage() {
           </div>
 
           <FrostedCard className="p-8">
+            {/* Login Required Message */}
+            {showLoginRequired && (
+              <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-blue-200 font-semibold mb-1">
+                      Login erforderlich
+                    </div>
+                    <div className="text-blue-300 text-sm">
+                      Um eine Buchung abzuschließen, musst du eingeloggt sein. 
+                      Deine Auswahl (Tutor & Fach) wird nach dem Login wiederhergestellt.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Error Message */}
             {error && (
               <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">

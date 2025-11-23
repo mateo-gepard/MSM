@@ -17,14 +17,13 @@ const bookingSteps = [
   'Fach & Tutor',
   'Service',
   'Termin',
-  'Ort',
-  'Kontakt'
+  'Ort'
 ];
 
 function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [matchingData, setMatchingData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,8 +47,51 @@ function BookingContent() {
   const [isReschedule, setIsReschedule] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
 
+  // Redirect to login if user is not authenticated (except when loading)
+  useEffect(() => {
+    if (!loading && !user) {
+      // Save current booking data to localStorage before redirect
+      const bookingData = {
+        subject: selectedSubject,
+        tutor: selectedTutor,
+        package: selectedPackage,
+        date: selectedDate,
+        time: selectedTime,
+        location: selectedLocation
+      };
+      
+      if (selectedSubject || selectedTutor) {
+        localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+        console.log('💾 Saved pending booking data before login redirect');
+      }
+      
+      // Redirect to login with return URL
+      router.push('/login?redirect=/booking&message=login-required');
+    }
+  }, [loading, user, router, selectedSubject, selectedTutor, selectedPackage, selectedDate, selectedTime, selectedLocation]);
+
   // First useEffect: Handle reschedule and matching data (doesn't need user)
   useEffect(() => {
+    // Restore pending booking data after login
+    const pendingBooking = localStorage.getItem('pendingBooking');
+    if (pendingBooking && user) {
+      try {
+        const data = JSON.parse(pendingBooking);
+        if (data.subject) setSelectedSubject(data.subject);
+        if (data.tutor) setSelectedTutor(data.tutor);
+        if (data.package) setSelectedPackage(data.package);
+        if (data.date) setSelectedDate(data.date);
+        if (data.time) setSelectedTime(data.time);
+        if (data.location) setSelectedLocation(data.location);
+        
+        // Clear the pending booking
+        localStorage.removeItem('pendingBooking');
+        console.log('✅ Restored pending booking data after login');
+      } catch (error) {
+        console.error('Failed to restore pending booking:', error);
+      }
+    }
+    
     // Load matching data from wizard if available
     const stored = localStorage.getItem('matchingData');
     if (stored) {
@@ -235,15 +277,6 @@ function BookingContent() {
       }
       case 2: return selectedDate && selectedTime;
       case 3: return selectedLocation;
-      case 4: {
-        // If user is logged in, name and email are not required
-        if (user) {
-          return true; // Logged in users don't need to fill contact info
-        }
-        // For non-logged-in users, validate email and name
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return contactInfo.name && contactInfo.email && emailRegex.test(contactInfo.email);
-      }
       default: return false;
     }
   };
@@ -904,81 +937,6 @@ function BookingContent() {
                   <p className="text-sm opacity-80">In München oder Umgebung</p>
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Step 4: Contact Info */}
-          {currentStep === 4 && (
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-6">Kontaktinformationen</h2>
-              {user ? (
-                // Logged-in users: Show confirmation message only
-                <div className="space-y-4">
-                  <div className="p-6 bg-accent/10 border border-accent/30 rounded-xl">
-                    <p className="text-white text-center">
-                      ✓ Du bist eingeloggt als <strong>{user.email}</strong>
-                    </p>
-                    <p className="text-gray-400 text-sm text-center mt-2">
-                      Deine Kontaktdaten werden automatisch verwendet.
-                    </p>
-                  </div>
-                  
-                  {!user.user_metadata?.name && (
-                    <div className="p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-xl">
-                      <p className="text-yellow-200 text-sm">
-                        ⚠️ <strong>Kein Name hinterlegt:</strong> Bitte gehe nach der Buchung zu <strong>Dashboard → Profil</strong> und trage deinen Namen ein, damit er bei zukünftigen Buchungen verwendet wird.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Non-logged-in users: Show full contact form
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-white font-semibold mb-2">Name *</label>
-                    <input
-                      type="text"
-                      value={contactInfo.name}
-                      onChange={(e) => setContactInfo({...contactInfo, name: e.target.value})}
-                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                      placeholder="Dein vollständiger Name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white font-semibold mb-2">E-Mail *</label>
-                    <input
-                      type="email"
-                      value={contactInfo.email}
-                      onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                      placeholder="deine@email.de"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white font-semibold mb-2">Telefon</label>
-                    <input
-                      type="tel"
-                      value={contactInfo.phone}
-                      onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
-                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                      placeholder="+49 ..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white font-semibold mb-2">Nachricht (optional)</label>
-                    <textarea
-                      value={contactInfo.message}
-                      onChange={(e) => setContactInfo({...contactInfo, message: e.target.value})}
-                      rows={4}
-                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                      placeholder="Besondere Wünsche oder Anmerkungen..."
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </FrostedCard>
