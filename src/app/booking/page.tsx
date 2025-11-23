@@ -190,12 +190,7 @@ function BookingContent() {
     switch (currentStep) {
       case 0: return selectedSubject && selectedTutor;
       case 1: return selectedPackage;
-      case 2: {
-        // Date and time must be selected and time must be in available slots
-        if (!selectedDate || !selectedTime) return false;
-        const times = getAvailableTimes();
-        return times.includes(selectedTime);
-      }
+      case 2: return selectedDate && selectedTime;
       case 3: return selectedLocation;
       case 4: {
         // If user is logged in, name and email are not required
@@ -361,45 +356,18 @@ function BookingContent() {
     }
   };
 
-  // Dynamische Zeitslots basierend auf ausgewähltem Tutor und Datum
+  // Alle Zeiten sind immer verfügbar (09:00 - 20:00)
   const getAvailableTimes = (): string[] => {
-    if (!selectedTutor || !selectedDate) {
+    if (!selectedDate) {
       return [];
     }
 
-    const tutor = tutors.find(t => t.id === selectedTutor);
-    if (!tutor || !tutor.availableSlots || tutor.availableSlots.length === 0) {
-      // Fallback wenn Tutor keine Slots definiert hat
-      return [
-        '09:00', '10:00', '11:00', '12:00', 
-        '13:00', '14:00', '15:00', '16:00', 
-        '17:00', '18:00', '19:00'
-      ];
-    }
-
-    try {
-      // Wochentag aus dem ausgewählten Datum ermitteln
-      const dateObj = new Date(selectedDate + 'T00:00:00');
-      const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const dayName = dayMap[dateObj.getDay()];
-
-      console.log('Selected date:', selectedDate, 'Day:', dayName, 'Day index:', dateObj.getDay());
-
-      // Zeitslots für den entsprechenden Wochentag finden
-      const daySlot = tutor.availableSlots.find(slot => slot.day === dayName);
-      
-      console.log('Found day slot:', daySlot);
-
-      if (daySlot && Array.isArray(daySlot.times) && daySlot.times.length > 0) {
-        return daySlot.times.sort();
-      }
-
-      // Wenn für diesen Tag keine Slots verfügbar sind
-      return [];
-    } catch (error) {
-      console.error('Error calculating available times:', error);
-      return [];
-    }
+    // Feste Zeitslots von 9:00 bis 20:00 Uhr
+    return [
+      '09:00', '10:00', '11:00', '12:00', 
+      '13:00', '14:00', '15:00', '16:00', 
+      '17:00', '18:00', '19:00', '20:00'
+    ];
   };
 
   const availableTimes = getAvailableTimes();
@@ -759,47 +727,29 @@ function BookingContent() {
                 <div className="mb-6">
                   <label className="block text-white font-semibold mb-3">Verfügbare Uhrzeiten</label>
                   
-                  {availableTimes.length === 0 ? (
-                    <div className="p-6 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-semibold mb-1">Keine Verfügbarkeit an diesem Tag</p>
-                          <p className="text-sm">
-                            {tutors.find(t => t.id === selectedTutor)?.name} hat am{' '}
-                            {new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}{' '}
-                            keine verfügbaren Zeitslots. Bitte wähle ein anderes Datum.
-                          </p>
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {availableTimes.map(time => (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => setSelectedTime(time)}
+                        className={`p-4 rounded-lg font-semibold transition-all border-2 ${
+                          selectedTime === time
+                            ? 'bg-accent text-white border-accent shadow-lg scale-105'
+                            : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark hover:border-accent/50 border-white/20'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {selectedTime && (
+                    <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                      <p className="text-green-200 text-sm">
+                        ✓ Ausgewählt: <strong>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> um <strong>{selectedTime} Uhr</strong>
+                      </p>
                     </div>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                        {availableTimes.map(time => (
-                          <button
-                            key={time}
-                            type="button"
-                            onClick={() => setSelectedTime(time)}
-                            className={`p-4 rounded-lg font-semibold transition-all border-2 ${
-                              selectedTime === time
-                                ? 'bg-accent text-white border-accent shadow-lg scale-105'
-                                : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark hover:border-accent/50 border-white/20'
-                            }`}
-                          >
-                            {time}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      {selectedTime && (
-                        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                          <p className="text-green-200 text-sm">
-                            ✓ Ausgewählt: <strong>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> um <strong>{selectedTime} Uhr</strong>
-                          </p>
-                        </div>
-                      )}
-                    </>
                   )}
                 </div>
               )}
