@@ -2,7 +2,7 @@
 
 import { Tutor } from '@/types';
 import { FrostedCard } from '../ui/FrostedCard';
-import { Award, Globe, Clock } from 'lucide-react';
+import { Award, Clock } from 'lucide-react';
 import Image from 'next/image';
 
 interface TutorCardProps {
@@ -78,7 +78,6 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
           {/* Footer */}
           <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
             <div className="flex items-center gap-1 text-gray-400">
-              <Globe className="w-3 h-3" />
               <span>{tutor.languages.join(', ')}</span>
             </div>
             <div className="flex items-center gap-1 text-gray-400">

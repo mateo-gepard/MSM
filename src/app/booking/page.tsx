@@ -336,7 +336,7 @@ function BookingContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-32">
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Reschedule Banner */}
         {isReschedule && (
@@ -653,16 +653,12 @@ function BookingContent() {
                 </div>
                 <div>
                   <label className="block text-white font-semibold mb-2">Uhrzeit</label>
-                  <select
+                  <input
+                    type="time"
                     value={selectedTime}
                     onChange={(e) => setSelectedTime(e.target.value)}
                     className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                  >
-                    <option value="">Uhrzeit wählen...</option>
-                    {availableTimes.map(time => (
-                      <option key={time} value={time}>{time} Uhr</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               <p className="text-gray-400 text-sm mt-4">
@@ -709,27 +705,31 @@ function BookingContent() {
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">Kontaktinformationen</h2>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-white font-semibold mb-2">Name *</label>
-                  <input
-                    type="text"
-                    value={contactInfo.name}
-                    onChange={(e) => setContactInfo({...contactInfo, name: e.target.value})}
-                    className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                    placeholder="Dein vollständiger Name"
-                  />
-                </div>
+                {!user && (
+                  <>
+                    <div>
+                      <label className="block text-white font-semibold mb-2">Name *</label>
+                      <input
+                        type="text"
+                        value={contactInfo.name}
+                        onChange={(e) => setContactInfo({...contactInfo, name: e.target.value})}
+                        className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                        placeholder="Dein vollständiger Name"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-white font-semibold mb-2">E-Mail *</label>
-                  <input
-                    type="email"
-                    value={contactInfo.email}
-                    onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-                    className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                    placeholder="deine@email.de"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-white font-semibold mb-2">E-Mail *</label>
+                      <input
+                        type="email"
+                        value={contactInfo.email}
+                        onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
+                        className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                        placeholder="deine@email.de"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="block text-white font-semibold mb-2">Telefon</label>
@@ -758,35 +758,37 @@ function BookingContent() {
         </FrostedCard>
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-            disabled={currentStep === 0 || isSubmitting}
-          >
-            <ChevronLeft className="w-5 h-5 mr-2" />
-            Zurück
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleNext}
-            disabled={!canProceed() || isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                {isReschedule ? 'Wird umgebucht...' : 'Wird gebucht...'}
-              </>
-            ) : (
-              <>
-                {currentStep === bookingSteps.length - 1 
-                  ? (isReschedule ? 'Umbuchung abschließen' : 'Buchung abschließen')
-                  : 'Weiter'
-                }
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </>
-            )}
-          </Button>
+        <div className="fixed bottom-0 left-0 right-0 bg-primary-dark/95 backdrop-blur-md border-t border-white/10 p-4 z-50">
+          <div className="max-w-4xl mx-auto flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+              disabled={currentStep === 0 || isSubmitting}
+            >
+              <ChevronLeft className="w-5 h-5 mr-2" />
+              Zurück
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleNext}
+              disabled={!canProceed() || isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  {isReschedule ? 'Wird umgebucht...' : 'Wird gebucht...'}
+                </>
+              ) : (
+                <>
+                  {currentStep === bookingSteps.length - 1 
+                    ? (isReschedule ? 'Umbuchung abschließen' : 'Buchung abschließen')
+                    : 'Weiter'
+                  }
+                  <ChevronRight className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
