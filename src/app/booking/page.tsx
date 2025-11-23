@@ -714,55 +714,64 @@ function BookingContent() {
           {currentStep === 4 && (
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">Kontaktinformationen</h2>
-              <div className="space-y-4">
-                {!user && (
-                  <>
-                    <div>
-                      <label className="block text-white font-semibold mb-2">Name *</label>
-                      <input
-                        type="text"
-                        value={contactInfo.name}
-                        onChange={(e) => setContactInfo({...contactInfo, name: e.target.value})}
-                        className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                        placeholder="Dein vollständiger Name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-white font-semibold mb-2">E-Mail *</label>
-                      <input
-                        type="email"
-                        value={contactInfo.email}
-                        onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-                        className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                        placeholder="deine@email.de"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label className="block text-white font-semibold mb-2">Telefon</label>
-                  <input
-                    type="tel"
-                    value={contactInfo.phone}
-                    onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
-                    className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                    placeholder="+49 ..."
-                  />
+              {user ? (
+                // Logged-in users: Show confirmation message only
+                <div className="p-6 bg-accent/10 border border-accent/30 rounded-xl">
+                  <p className="text-white text-center">
+                    ✓ Du bist eingeloggt als <strong>{user.email}</strong>
+                  </p>
+                  <p className="text-gray-400 text-sm text-center mt-2">
+                    Deine Kontaktdaten werden automatisch verwendet.
+                  </p>
                 </div>
+              ) : (
+                // Non-logged-in users: Show full contact form
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Name *</label>
+                    <input
+                      type="text"
+                      value={contactInfo.name}
+                      onChange={(e) => setContactInfo({...contactInfo, name: e.target.value})}
+                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      placeholder="Dein vollständiger Name"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-white font-semibold mb-2">Nachricht (optional)</label>
-                  <textarea
-                    value={contactInfo.message}
-                    onChange={(e) => setContactInfo({...contactInfo, message: e.target.value})}
-                    rows={4}
-                    className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                    placeholder="Besondere Wünsche oder Anmerkungen..."
-                  />
+                  <div>
+                    <label className="block text-white font-semibold mb-2">E-Mail *</label>
+                    <input
+                      type="email"
+                      value={contactInfo.email}
+                      onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
+                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      placeholder="deine@email.de"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Telefon</label>
+                    <input
+                      type="tel"
+                      value={contactInfo.phone}
+                      onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
+                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      placeholder="+49 ..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Nachricht (optional)</label>
+                    <textarea
+                      value={contactInfo.message}
+                      onChange={(e) => setContactInfo({...contactInfo, message: e.target.value})}
+                      rows={4}
+                      className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      placeholder="Besondere Wünsche oder Anmerkungen..."
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </FrostedCard>
