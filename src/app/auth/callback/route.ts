@@ -14,10 +14,17 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error && data.user) {
-      // Redirect with magic link flag
-      const redirectUrl = new URL(next, requestUrl.origin);
-      redirectUrl.searchParams.set('from_magic_link', '1');
-      return NextResponse.redirect(redirectUrl);
+      // Create response with redirect
+      const response = NextResponse.redirect(new URL(next, requestUrl.origin));
+      
+      // Set a cookie to indicate magic link login
+      response.cookies.set('magic_link_login', 'true', {
+        path: '/',
+        maxAge: 60, // 60 seconds should be enough
+        sameSite: 'lax'
+      });
+      
+      return response;
     }
   }
 

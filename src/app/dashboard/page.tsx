@@ -276,22 +276,21 @@ function DashboardContent() {
       const name = user.user_metadata?.name || '';
       setUserName(name);
       
-      // Check if user came from magic link (query param)
-      const searchParams = new URLSearchParams(window.location.search);
-      const fromMagicLink = searchParams.get('from_magic_link') === '1';
+      // Check if user came from magic link (cookie set by callback)
+      const hasMagicLinkCookie = document.cookie.includes('magic_link_login=true');
       
       console.log('Magic Link Banner Check:', {
-        url: window.location.href,
-        fromMagicLink,
+        hasMagicLinkCookie,
+        allCookies: document.cookie,
         sessionStorage: sessionStorage.getItem('show_password_banner')
       });
       
-      if (fromMagicLink) {
+      if (hasMagicLinkCookie) {
         console.log('Setting banner flag in sessionStorage');
         // Set session storage flag for this session
         sessionStorage.setItem('show_password_banner', 'true');
-        // Clean URL
-        window.history.replaceState({}, '', '/dashboard');
+        // Delete the cookie by setting it to expire
+        document.cookie = 'magic_link_login=; path=/; max-age=0';
       }
       
       // Check if we should show banner for this session
