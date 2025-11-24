@@ -280,7 +280,14 @@ function DashboardContent() {
       const searchParams = new URLSearchParams(window.location.search);
       const fromMagicLink = searchParams.get('from_magic_link') === '1';
       
+      console.log('Magic Link Banner Check:', {
+        url: window.location.href,
+        fromMagicLink,
+        sessionStorage: sessionStorage.getItem('show_password_banner')
+      });
+      
       if (fromMagicLink) {
+        console.log('Setting banner flag in sessionStorage');
         // Set session storage flag for this session
         sessionStorage.setItem('show_password_banner', 'true');
         // Clean URL
@@ -289,6 +296,8 @@ function DashboardContent() {
       
       // Check if we should show banner for this session
       const showBanner = sessionStorage.getItem('show_password_banner') === 'true';
+      
+      console.log('Should show banner:', showBanner);
       
       if (showBanner) {
         setShowPasswordPrompt(true);
