@@ -5,7 +5,10 @@ export async function signUp(email: string, password: string, name: string) {
     email,
     password,
     options: {
-      data: { name }
+      data: { 
+        name,
+        has_password: true // Mark that user signed up with password
+      }
     }
   });
   return { data, error };
@@ -47,7 +50,8 @@ export async function updatePassword(newPassword: string) {
   const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
     data: {
-      password_set_at: new Date().toISOString()
+      password_set_at: new Date().toISOString(),
+      has_password: true // Mark that user now has a password
     }
   });
   return { data, error };

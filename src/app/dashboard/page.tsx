@@ -280,28 +280,22 @@ function DashboardContent() {
       const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
       const hasSetPassword = localStorage.getItem(`passwordSet_${user.id}`);
       
-      // Don't show if user has dismissed or set password
+      // Don't show if user has dismissed or set password locally
       if (hasDismissed || hasSetPassword) {
         setShowPasswordPrompt(false);
         return;
       }
       
-      // Check if user only has email provider (magic link only)
-      // Users who set a password will have app_metadata with password recovery info
-      const identities = user.identities || [];
-      const hasOnlyEmailProvider = identities.length === 1 && identities[0]?.provider === 'email';
+      // Check if user has password flag in metadata
+      // This is set during signup with password or when password is set later
+      const hasPasswordFlag = user.user_metadata?.has_password === true;
       
-      // Additional check: if user has confirmed_at, they likely have a password
-      // Magic link users without password won't have email_confirmed_at in some cases
-      const emailConfirmed = user.email_confirmed_at;
-      const recoverySet = user.user_metadata?.password_set_at;
-      
-      // Only show banner if user truly only has magic link (no password recovery set)
-      if (hasOnlyEmailProvider && !recoverySet) {
+      if (hasPasswordFlag) {
+        setShowPasswordPrompt(false);
+      } else {
+        // User doesn't have password flag, show prompt
         setHasPassword(false);
         setShowPasswordPrompt(true);
-      } else {
-        setShowPasswordPrompt(false);
       }
     }
   }, [user]);
