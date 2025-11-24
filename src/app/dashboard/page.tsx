@@ -23,7 +23,9 @@ import {
   Clock,
   Loader2,
   Monitor,
-  Home
+  Home,
+  KeyRound,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -185,6 +187,8 @@ function DashboardContent() {
   const [userName, setUserName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true);
 
   // Load user bookings from Supabase (with fallback to localStorage)
   useEffect(() => {
@@ -266,11 +270,26 @@ function DashboardContent() {
     loadBookings();
   }, [user]);
 
-  // Load user name from metadata
+  // Load user name from metadata and check if user needs to set password
   useEffect(() => {
     if (user) {
       const name = user.user_metadata?.name || '';
       setUserName(name);
+      
+      // Check if user came from magic link (no password set)
+      // Users who signed up with magic link will have app_metadata.provider === 'email'
+      // but no password recovery email sent (they use magic links)
+      const provider = user.app_metadata?.provider;
+      const providers = user.app_metadata?.providers || [];
+      
+      // Show prompt if user only has email provider (magic link) and hasn't dismissed it
+      const hasOnlyEmailProvider = providers.length === 1 && providers.includes('email');
+      const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
+      
+      if (hasOnlyEmailProvider && !hasDismissed) {
+        setHasPassword(false);
+        setShowPasswordPrompt(true);
+      }
     }
   }, [user]);
 
@@ -284,6 +303,13 @@ function DashboardContent() {
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
+  };
+
+  const dismissPasswordPrompt = () => {
+    if (user?.id) {
+      localStorage.setItem(`passwordPromptDismissed_${user.id}`, 'true');
+      setShowPasswordPrompt(false);
+    }
   };
 
   // Umbuchen - redirect to booking page with pre-filled data
@@ -477,6 +503,52 @@ function DashboardContent() {
           >
             <Check className="w-5 h-5" />
             <span>Buchung erfolgreich umgebucht! Die Änderungen wurden gespeichert.</span>
+          </motion.div>
+        )}
+
+        {/* Password Prompt Banner */}
+        {showPasswordPrompt && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-6 bg-gradient-to-r from-accent/20 to-purple-500/20 border border-accent/50 rounded-xl"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
+                <KeyRound className="w-6 h-6 text-accent" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-white mb-2">
+                  Sichere deinen Account mit einem Passwort
+                </h3>
+                <p className="text-gray-300 mb-4">
+                  Du hast dich per Magic Link eingeloggt. Das ist praktisch, aber für mehr Sicherheit und schnelleren Zugriff 
+                  empfehlen wir dir, ein Passwort zu setzen. So kannst du dich auch ohne E-Mail-Link einloggen.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/reset-password">
+                    <Button size="sm" variant="primary">
+                      <KeyRound className="w-4 h-4 mr-2" />
+                      Passwort jetzt setzen
+                    </Button>
+                  </Link>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={dismissPasswordPrompt}
+                  >
+                    Später erinnern
+                  </Button>
+                </div>
+              </div>
+              <button
+                onClick={dismissPasswordPrompt}
+                className="flex-shrink-0 text-gray-400 hover:text-white transition-colors"
+                aria-label="Schließen"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </motion.div>
         )}
 
