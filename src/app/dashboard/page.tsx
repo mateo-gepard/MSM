@@ -280,12 +280,16 @@ function DashboardContent() {
       const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
       const hasSetPassword = localStorage.getItem(`passwordSet_${user.id}`);
       
+      const hasPasswordFlag = user.user_metadata?.has_password;
+      
       console.log('Password Banner Debug:', {
         userId: user.id,
-        hasPasswordFlag: user.user_metadata?.has_password,
-        hasDismissed,
-        hasSetPassword,
-        userMetadata: user.user_metadata
+        hasPasswordFlag: hasPasswordFlag,
+        hasPasswordType: typeof hasPasswordFlag,
+        hasDismissed: !!hasDismissed,
+        hasSetPassword: !!hasSetPassword,
+        fullMetadata: JSON.stringify(user.user_metadata),
+        willShowBanner: hasPasswordFlag === false && !hasDismissed && !hasSetPassword
       });
       
       // Hide if dismissed or password was set locally
@@ -295,16 +299,14 @@ function DashboardContent() {
         return;
       }
       
-      // Check has_password flag: true = has password, false = no password, undefined = unknown
-      const hasPasswordFlag = user.user_metadata?.has_password;
-      
       // Show banner if user explicitly has no password (false)
+      // Must be explicitly false, not just falsy
       if (hasPasswordFlag === false) {
-        console.log('Banner shown: user has no password');
+        console.log('Banner shown: user has no password (flag is false)');
         setHasPassword(false);
         setShowPasswordPrompt(true);
       } else {
-        console.log('Banner hidden: user has password or unknown status');
+        console.log(`Banner hidden: has_password flag is ${hasPasswordFlag} (type: ${typeof hasPasswordFlag})`);
         setShowPasswordPrompt(false);
       }
     }
