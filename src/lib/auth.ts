@@ -19,6 +19,14 @@ export async function signIn(email: string, password: string) {
     email,
     password
   });
+  
+  // Mark that user has password
+  if (!error && data.user) {
+    await supabase.auth.updateUser({
+      data: { has_password: true }
+    });
+  }
+  
   return { data, error };
 }
 

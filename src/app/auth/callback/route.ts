@@ -13,18 +13,14 @@ export async function GET(request: Request) {
     // Exchange the code for a session
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
-    // If successful and user doesn't have has_password flag, set it to false
+    // Mark that user logged in via magic link (no password)
     if (!error && data.user) {
       const hasPasswordFlag = data.user.user_metadata?.has_password;
       
-      // Only set flag if it's not already set
+      // If flag is not set yet, set to false (magic link user without password)
       if (hasPasswordFlag === undefined) {
-        // User logged in via magic link and doesn't have password flag
-        // Set it to false to indicate they need to set a password
         await supabase.auth.updateUser({
-          data: {
-            has_password: false
-          }
+          data: { has_password: false }
         });
       }
     }
