@@ -46,11 +46,8 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       setLoading(false);
       
-      // Mark password as set in localStorage to hide the banner
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        localStorage.setItem(`passwordSet_${user.id}`, 'true');
-      }
+      // Remove session banner flag since user now has password
+      sessionStorage.removeItem('show_password_banner');
       
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {

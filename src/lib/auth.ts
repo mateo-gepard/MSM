@@ -5,10 +5,7 @@ export async function signUp(email: string, password: string, name: string) {
     email,
     password,
     options: {
-      data: { 
-        name,
-        has_password: true // Mark that user signed up with password
-      }
+      data: { name }
     }
   });
   return { data, error };
@@ -19,14 +16,6 @@ export async function signIn(email: string, password: string) {
     email,
     password
   });
-  
-  // Mark that user has password
-  if (!error && data.user) {
-    await supabase.auth.updateUser({
-      data: { has_password: true }
-    });
-  }
-  
   return { data, error };
 }
 
@@ -54,13 +43,8 @@ export async function resetPassword(email: string) {
 }
 
 export async function updatePassword(newPassword: string) {
-  // Update password and set metadata flag
   const { data, error } = await supabase.auth.updateUser({
-    password: newPassword,
-    data: {
-      password_set_at: new Date().toISOString(),
-      has_password: true // Mark that user now has a password
-    }
+    password: newPassword
   });
   return { data, error };
 }

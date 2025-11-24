@@ -14,23 +14,9 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error && data.user) {
-      const currentFlag = data.user.user_metadata?.has_password;
-      
-      // If user doesn't have password flag set to true, update it to false
-      if (currentFlag !== true) {
-        await supabase.auth.updateUser({
-          data: { 
-            has_password: false,
-            last_magic_link_login: new Date().toISOString()
-          }
-        });
-      }
-      
-      // Add query param to indicate magic link login
+      // Redirect with magic link flag
       const redirectUrl = new URL(next, requestUrl.origin);
-      if (currentFlag !== true) {
-        redirectUrl.searchParams.set('magic_link', 'true');
-      }
+      redirectUrl.searchParams.set('from_magic_link', '1');
       return NextResponse.redirect(redirectUrl);
     }
   }

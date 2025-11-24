@@ -276,51 +276,23 @@ function DashboardContent() {
       const name = user.user_metadata?.name || '';
       setUserName(name);
       
-      // Check for magic_link query param (set by callback route)
+      // Check if user came from magic link (query param)
       const searchParams = new URLSearchParams(window.location.search);
-      const isMagicLinkLogin = searchParams.get('magic_link') === 'true';
+      const fromMagicLink = searchParams.get('from_magic_link') === '1';
       
-      // Check if user should see password prompt
-      const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
-      const hasSetPassword = localStorage.getItem(`passwordSet_${user.id}`);
-      
-      const hasPasswordFlag = user.user_metadata?.has_password;
-      
-      console.log('Password Banner Debug:', {
-        userId: user.id,
-        hasPasswordFlag: hasPasswordFlag,
-        hasPasswordType: typeof hasPasswordFlag,
-        isMagicLinkLogin: isMagicLinkLogin,
-        hasDismissed: !!hasDismissed,
-        hasSetPassword: !!hasSetPassword,
-        fullMetadata: JSON.stringify(user.user_metadata),
-        willShowBanner: (hasPasswordFlag === false || isMagicLinkLogin) && !hasDismissed && !hasSetPassword
-      });
-      
-      // Hide if dismissed or password was set locally
-      if (hasDismissed || hasSetPassword) {
-        console.log('Banner hidden: dismissed or password set locally');
-        setShowPasswordPrompt(false);
-        // Clean up URL
-        if (isMagicLinkLogin) {
-          window.history.replaceState({}, '', '/dashboard');
-        }
-        return;
+      if (fromMagicLink) {
+        // Set session storage flag for this session
+        sessionStorage.setItem('show_password_banner', 'true');
+        // Clean URL
+        window.history.replaceState({}, '', '/dashboard');
       }
       
-      // Show banner if:
-      // 1. User explicitly has no password (flag is false) OR
-      // 2. User just logged in via magic link (query param present)
-      if (hasPasswordFlag === false || isMagicLinkLogin) {
-        console.log('Banner shown: user has no password or magic link login');
-        setHasPassword(false);
+      // Check if we should show banner for this session
+      const showBanner = sessionStorage.getItem('show_password_banner') === 'true';
+      
+      if (showBanner) {
         setShowPasswordPrompt(true);
-        // Clean up URL after showing banner
-        if (isMagicLinkLogin) {
-          window.history.replaceState({}, '', '/dashboard');
-        }
       } else {
-        console.log(`Banner hidden: has_password flag is ${hasPasswordFlag} (type: ${typeof hasPasswordFlag})`);
         setShowPasswordPrompt(false);
       }
     }
@@ -339,10 +311,9 @@ function DashboardContent() {
   };
 
   const dismissPasswordPrompt = () => {
-    if (user?.id) {
-      localStorage.setItem(`passwordPromptDismissed_${user.id}`, 'true');
-      setShowPasswordPrompt(false);
-    }
+    // Just hide for this session
+    sessionStorage.removeItem('show_password_banner');
+    setShowPasswordPrompt(false);
   };
 
   // Umbuchen - redirect to booking page with pre-filled data
