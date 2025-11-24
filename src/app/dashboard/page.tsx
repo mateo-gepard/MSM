@@ -280,8 +280,17 @@ function DashboardContent() {
       const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
       const hasSetPassword = localStorage.getItem(`passwordSet_${user.id}`);
       
+      console.log('Password Banner Debug:', {
+        userId: user.id,
+        hasPasswordFlag: user.user_metadata?.has_password,
+        hasDismissed,
+        hasSetPassword,
+        userMetadata: user.user_metadata
+      });
+      
       // Hide if dismissed or password was set locally
       if (hasDismissed || hasSetPassword) {
+        console.log('Banner hidden: dismissed or password set locally');
         setShowPasswordPrompt(false);
         return;
       }
@@ -289,11 +298,13 @@ function DashboardContent() {
       // Check has_password flag: true = has password, false = no password, undefined = unknown
       const hasPasswordFlag = user.user_metadata?.has_password;
       
-      // Show banner only if user explicitly has no password (false)
+      // Show banner if user explicitly has no password (false)
       if (hasPasswordFlag === false) {
+        console.log('Banner shown: user has no password');
         setHasPassword(false);
         setShowPasswordPrompt(true);
       } else {
+        console.log('Banner hidden: user has password or unknown status');
         setShowPasswordPrompt(false);
       }
     }
