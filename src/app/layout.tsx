@@ -33,7 +33,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de" data-scroll-behavior="smooth">
+      <html lang="de" data-scroll-behavior="smooth">
+        <head>
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
