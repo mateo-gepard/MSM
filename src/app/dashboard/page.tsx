@@ -276,6 +276,10 @@ function DashboardContent() {
       const name = user.user_metadata?.name || '';
       setUserName(name);
       
+      // Check for magic_link query param (set by callback route)
+      const searchParams = new URLSearchParams(window.location.search);
+      const isMagicLinkLogin = searchParams.get('magic_link') === 'true';
+      
       // Check if user should see password prompt
       const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
       const hasSetPassword = localStorage.getItem(`passwordSet_${user.id}`);
@@ -286,25 +290,35 @@ function DashboardContent() {
         userId: user.id,
         hasPasswordFlag: hasPasswordFlag,
         hasPasswordType: typeof hasPasswordFlag,
+        isMagicLinkLogin: isMagicLinkLogin,
         hasDismissed: !!hasDismissed,
         hasSetPassword: !!hasSetPassword,
         fullMetadata: JSON.stringify(user.user_metadata),
-        willShowBanner: hasPasswordFlag === false && !hasDismissed && !hasSetPassword
+        willShowBanner: (hasPasswordFlag === false || isMagicLinkLogin) && !hasDismissed && !hasSetPassword
       });
       
       // Hide if dismissed or password was set locally
       if (hasDismissed || hasSetPassword) {
         console.log('Banner hidden: dismissed or password set locally');
         setShowPasswordPrompt(false);
+        // Clean up URL
+        if (isMagicLinkLogin) {
+          window.history.replaceState({}, '', '/dashboard');
+        }
         return;
       }
       
-      // Show banner if user explicitly has no password (false)
-      // Must be explicitly false, not just falsy
-      if (hasPasswordFlag === false) {
-        console.log('Banner shown: user has no password (flag is false)');
+      // Show banner if:
+      // 1. User explicitly has no password (flag is false) OR
+      // 2. User just logged in via magic link (query param present)
+      if (hasPasswordFlag === false || isMagicLinkLogin) {
+        console.log('Banner shown: user has no password or magic link login');
         setHasPassword(false);
         setShowPasswordPrompt(true);
+        // Clean up URL after showing banner
+        if (isMagicLinkLogin) {
+          window.history.replaceState({}, '', '/dashboard');
+        }
       } else {
         console.log(`Banner hidden: has_password flag is ${hasPasswordFlag} (type: ${typeof hasPasswordFlag})`);
         setShowPasswordPrompt(false);
