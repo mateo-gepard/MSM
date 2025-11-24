@@ -276,19 +276,20 @@ function DashboardContent() {
       const name = user.user_metadata?.name || '';
       setUserName(name);
       
-      // Check if user came from magic link (no password set)
-      // Users who signed up with magic link will have app_metadata.provider === 'email'
-      // but no password recovery email sent (they use magic links)
-      const provider = user.app_metadata?.provider;
-      const providers = user.app_metadata?.providers || [];
-      
-      // Show prompt if user only has email provider (magic link) and hasn't dismissed it
-      const hasOnlyEmailProvider = providers.length === 1 && providers.includes('email');
+      // Check if user should see password prompt
+      // Only show if: user hasn't dismissed it AND hasn't set password flag
       const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
+      const hasSetPassword = localStorage.getItem(`passwordSet_${user.id}`);
       
-      if (hasOnlyEmailProvider && !hasDismissed) {
-        setHasPassword(false);
-        setShowPasswordPrompt(true);
+      if (!hasDismissed && !hasSetPassword) {
+        // Check if user only has email provider (magic link only)
+        const identities = user.identities || [];
+        const hasOnlyEmailProvider = identities.length === 1 && identities[0]?.provider === 'email';
+        
+        if (hasOnlyEmailProvider) {
+          setHasPassword(false);
+          setShowPasswordPrompt(true);
+        }
       }
     }
   }, [user]);

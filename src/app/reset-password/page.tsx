@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { updatePassword } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Lock, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
@@ -44,6 +45,12 @@ export default function ResetPasswordPage() {
     } else {
       setSuccess(true);
       setLoading(false);
+      
+      // Mark password as set in localStorage to hide the banner
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        localStorage.setItem(`passwordSet_${user.id}`, 'true');
+      }
       
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {
