@@ -39,10 +39,10 @@ const urgencies = [
 ];
 
 const languages = [
-  { id: 'de', name: 'Deutsch', icon: 'Languages' },
-  { id: 'en', name: 'Englisch', icon: 'Globe' },
-  { id: 'es', name: 'Spanisch', icon: 'MessageCircle' },
-  { id: 'fr', name: 'Französisch', icon: 'MessageSquare' }
+  { id: 'de', name: 'Deutsch' },
+  { id: 'en', name: 'Englisch' },
+  { id: 'es', name: 'Spanisch' },
+  { id: 'fr', name: 'Französisch' }
 ];
 
 const steps = [
@@ -285,7 +285,7 @@ export default function MatchingPage() {
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
-                        <div className="text-3xl mb-2">{getIcon(lang.icon)}</div>
+                        {/* Removed language icon for premium minimal look */}
                         <div className="font-semibold">{lang.name}</div>
                       </button>
                     ))}

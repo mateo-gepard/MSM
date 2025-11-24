@@ -208,12 +208,10 @@ export const packages: Package[] = [
 export const subjects: Subject[] = [
   { id: 'math', name: 'Mathematik', icon: 'calculator' },
   { id: 'physics', name: 'Physik', icon: 'atom' },
-  { id: 'chemistry', name: 'Chemie', icon: 'flask-conical' },
   { id: 'biology', name: 'Biologie', icon: 'microscope' },
   { id: 'cs', name: 'Informatik', icon: 'code' },
   { id: 'english', name: 'Englisch', icon: 'languages' },
   { id: 'german', name: 'Deutsch', icon: 'book-open' },
   { id: 'spanish', name: 'Spanisch', icon: 'message-circle' },
-  { id: 'latin', name: 'Latein', icon: 'scroll' },
   { id: 'history', name: 'Geschichte', icon: 'landmark' }
 ];
