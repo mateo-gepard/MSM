@@ -43,8 +43,12 @@ export async function resetPassword(email: string) {
 }
 
 export async function updatePassword(newPassword: string) {
+  // Update password and set metadata flag
   const { data, error } = await supabase.auth.updateUser({
-    password: newPassword
+    password: newPassword,
+    data: {
+      password_set_at: new Date().toISOString()
+    }
   });
   return { data, error };
 }
