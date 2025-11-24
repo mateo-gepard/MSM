@@ -78,13 +78,14 @@ function LoginContent() {
     setLoading(true);
     setError('');
 
-    const { error: authError } = await sendMagicLink(email);
+    // Pass redirect URL to magic link
+    const { error: authError } = await sendMagicLink(email, redirectUrl || undefined);
     
     if (authError) {
       setError(authError.message);
       setLoading(false);
     } else {
-      setSuccess('Magic Link wurde gesendet! Überprüfe deine E-Mail.');
+      setSuccess('Magic Link wurde gesendet! Überprüfe deine E-Mail und klicke auf den Link.');
       setLoading(false);
     }
   };

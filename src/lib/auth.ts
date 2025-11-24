@@ -24,11 +24,12 @@ export async function signOut() {
   return { error };
 }
 
-export async function sendMagicLink(email: string) {
+export async function sendMagicLink(email: string, redirectTo?: string) {
+  const finalRedirect = redirectTo || '/dashboard';
   const { data, error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/dashboard`
+      emailRedirectTo: `${window.location.origin}${finalRedirect}`
     }
   });
   return { data, error };
