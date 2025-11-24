@@ -66,6 +66,7 @@ export default function MatchingPage() {
   const [selectedLearningStyle, setSelectedLearningStyle] = useState<string>('');
   const [selectedUrgency, setSelectedUrgency] = useState<string>('');
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedTutor, setSelectedTutor] = useState<string>('');
 
   const toggleSubject = (subjectId: string) => {
     setSelectedSubjects(prev =>
@@ -112,7 +113,8 @@ export default function MatchingPage() {
         goals: selectedGoals,
         learningStyle: selectedLearningStyle,
         urgency: selectedUrgency,
-        languages: selectedLanguages
+        languages: selectedLanguages,
+        selectedTutor: selectedTutor // Save selected tutor for booking wizard
       };
       localStorage.setItem('matchingData', JSON.stringify(matchingData));
       
@@ -337,11 +339,21 @@ export default function MatchingPage() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="bg-secondary-dark/50 rounded-xl p-6 border border-accent/20"
+                        onClick={() => setSelectedTutor(tutor.id)}
+                        className={`rounded-xl p-6 border-2 cursor-pointer transition-all duration-300 ${
+                          selectedTutor === tutor.id
+                            ? 'bg-accent/20 border-accent shadow-lg shadow-accent/20'
+                            : 'bg-secondary-dark/50 border-accent/20 hover:border-accent/40 hover:bg-secondary-dark/70'
+                        }`}
                       >
                         <div className="flex items-start gap-4">
                           <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
                             <img src={tutor.image} alt={tutor.name} className="w-full h-full object-cover" />
+                            {selectedTutor === tutor.id && (
+                              <div className="absolute inset-0 bg-accent/40 flex items-center justify-center">
+                                <CheckCircle className="w-8 h-8 text-white" />
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1">
                             <h3 className="text-xl font-bold text-white mb-1">{tutor.name}</h3>
@@ -359,6 +371,9 @@ export default function MatchingPage() {
                       </motion.div>
                     ))}
                   </div>
+                  <p className="text-center text-sm text-gray-400 mb-6">
+                    {selectedTutor ? '✓ Tutor ausgewählt - Du kannst später noch ändern' : 'Wähle einen Tutor aus (optional)'}
+                  </p>
 
                   {/* Summary */}
                   <div className="bg-primary-dark/50 rounded-xl p-6 space-y-3">

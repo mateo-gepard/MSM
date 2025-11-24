@@ -123,6 +123,12 @@ function BookingContent() {
         console.log('Auto-selected subject:', subjectName);
         // Stay at step 0 to let user choose tutor from sorted list
       }
+
+      // If tutor was selected in matching wizard, pre-select it
+      if (data.selectedTutor) {
+        setSelectedTutor(data.selectedTutor);
+        console.log('Auto-selected tutor from matching:', data.selectedTutor);
+      }
     }
 
     // Check for package param from pricing section
