@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { subjects } from '@/data/mockData';
+import { subjects, tutors } from '@/data/mockData';
 import { Button } from '@/components/ui/Button';
 import { FrostedCard } from '@/components/ui/FrostedCard';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -13,7 +14,9 @@ import {
   Brain, 
   Clock, 
   Languages,
-  BookOpen
+  BookOpen,
+  CheckCircle,
+  Sparkles
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 
@@ -50,11 +53,13 @@ const steps = [
   { id: 2, title: 'Ziel', icon: Target },
   { id: 3, title: 'Lernstil', icon: Brain },
   { id: 4, title: 'Zeitrahmen', icon: Clock },
-  { id: 5, title: 'Sprache', icon: Languages }
+  { id: 5, title: 'Sprache', icon: Languages },
+  { id: 6, title: 'Ergebnis', icon: CheckCircle }
 ];
 
 export default function MatchingPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
@@ -93,15 +98,15 @@ export default function MatchingPage() {
       case 3: return selectedLearningStyle !== '';
       case 4: return selectedUrgency !== '';
       case 5: return selectedLanguages.length > 0;
+      case 6: return true;
       default: return false;
     }
   };
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Store matching data and redirect to booking
       const matchingData = {
         subjects: selectedSubjects,
         goals: selectedGoals,
@@ -110,8 +115,23 @@ export default function MatchingPage() {
         languages: selectedLanguages
       };
       localStorage.setItem('matchingData', JSON.stringify(matchingData));
-      router.push('/booking');
+      
+      if (!user) {
+        router.push('/login?redirect=/booking&fromMatching=true');
+      } else {
+        router.push('/booking?fromMatching=true');
+      }
     }
+  };
+
+  const getRecommendedTutors = () => {
+    const subjectNames = selectedSubjects.map(id => 
+      subjects.find(s => s.id === id)?.name
+    ).filter(Boolean);
+    
+    return tutors.filter(tutor => 
+      tutor.subjects.some(subject => subjectNames.includes(subject))
+    ).slice(0, 3);
   };
 
   const getIcon = (iconName: string) => {
@@ -292,6 +312,86 @@ export default function MatchingPage() {
                   </div>
                 </div>
               )}
+
+              {/* Step 6: Results */}
+              {currentStep === 6 && (
+                <div>
+                  <div className="text-center mb-8">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", duration: 0.5 }}
+                      className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent/20 mb-4"
+                    >
+                      <Sparkles className="w-10 h-10 text-accent" />
+                    </motion.div>
+                    <h2 className="text-3xl font-bold text-white mb-2">Perfekte Matches gefunden!</h2>
+                    <p className="text-gray-400">Basierend auf deinen Angaben empfehlen wir diese Tutoren:</p>
+                  </div>
+
+                  {/* Recommended Tutors */}
+                  <div className="space-y-4 mb-8">
+                    {getRecommendedTutors().map((tutor, index) => (
+                      <motion.div
+                        key={tutor.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="bg-secondary-dark/50 rounded-xl p-6 border border-accent/20"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                            <img src={tutor.image} alt={tutor.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-white mb-1">{tutor.name}</h3>
+                            <p className="text-accent text-sm font-semibold mb-2">€{tutor.hourlyRate}/Std</p>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {tutor.subjects.map((subject, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-accent/20 text-accent text-xs rounded-lg">
+                                  {subject}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-gray-400 text-sm">{tutor.bio}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-primary-dark/50 rounded-xl p-6 space-y-3">
+                    <h3 className="text-lg font-semibold text-white mb-3">Deine Auswahl:</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-400">Fächer:</span>
+                        <span className="text-white ml-2">
+                          {selectedSubjects.map(id => subjects.find(s => s.id === id)?.name).join(', ')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Ziele:</span>
+                        <span className="text-white ml-2">
+                          {selectedGoals.map(id => goals.find(g => g.id === id)?.name).join(', ')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Lernstil:</span>
+                        <span className="text-white ml-2">
+                          {learningStyles.find(ls => ls.id === selectedLearningStyle)?.name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Zeitrahmen:</span>
+                        <span className="text-white ml-2">
+                          {urgencies.find(u => u.id === selectedUrgency)?.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </FrostedCard>
 
             {/* Navigation */}
@@ -309,7 +409,7 @@ export default function MatchingPage() {
                 onClick={handleNext}
                 disabled={!canProceed()}
               >
-                {currentStep === 5 ? 'Zum Booking' : 'Weiter'}
+                {currentStep === 6 ? 'Zur Buchung' : currentStep === 5 ? 'Ergebnis anzeigen' : 'Weiter'}
                 <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
