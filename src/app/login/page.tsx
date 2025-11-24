@@ -271,6 +271,22 @@ function LoginContent() {
             {/* Magic Link Form */}
             {mode === 'magic' && (
               <form onSubmit={handleMagicLink} className="space-y-4">
+                <div className="mb-4 p-4 bg-accent/10 border border-accent/30 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <KeyRound className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-white font-semibold mb-1">
+                        Login ohne Passwort
+                      </div>
+                      <div className="text-gray-300 text-sm">
+                        Gib deine E-Mail ein und erhalte einen Login-Link. 
+                        <strong className="text-accent"> Funktioniert auch wenn du noch keinen Account hast</strong> - 
+                        wir erstellen automatisch einen für dich.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-white font-semibold mb-2">E-Mail</label>
                   <div className="relative">
@@ -292,7 +308,7 @@ function LoginContent() {
                 </Button>
 
                 <p className="text-xs text-gray-400 text-center">
-                  Du erhältst einen Link zum Login per E-Mail
+                  Nach dem Klick auf den Link in deiner E-Mail bist du eingeloggt
                 </p>
               </form>
             )}

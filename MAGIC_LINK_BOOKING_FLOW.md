@@ -2,6 +2,9 @@
 
 ## Wie funktioniert der Magic Link Login mit Buchungen?
 
+### Wichtig: Magic Link erstellt automatisch einen Account!
+Wenn ein User zum ersten Mal einen Magic Link anfordert, wird **automatisch ein Account in Supabase erstellt**. Der User muss kein Passwort setzen und hat trotzdem einen permanenten Account.
+
 ### 1. User startet Buchung (ohne Account)
 - User durchläuft Matching Wizard oder geht direkt zu `/booking`
 - System erkennt: User ist nicht eingeloggt
@@ -66,6 +69,48 @@
   ```
 - **Fallback**: Falls Supabase nicht erreichbar, nutzt System localStorage
 - User sieht alle seine Buchungen im Dashboard
+
+## Zukünftige Logins
+
+### Der User HAT jetzt einen Account!
+Nach dem ersten Magic Link existiert der User-Account permanent in Supabase. Für zukünftige Logins gibt es mehrere Optionen:
+
+### Option 1: Magic Link (Empfohlen - kein Passwort nötig)
+1. User geht zu `/login`
+2. Klickt auf "Login ohne Passwort (Magic Link)"
+3. Gibt Email ein
+4. Bekommt neuen Magic Link per Email
+5. Klickt Link → sofort eingeloggt ✅
+
+**Vorteile:**
+- Kein Passwort merken
+- Sicher (Link läuft ab)
+- Funktioniert auch für neue User
+
+### Option 2: Passwort Login (Optional)
+User kann später ein Passwort setzen:
+1. Im Dashboard → "Passwort setzen"
+2. Oder via "Passwort vergessen" Flow
+3. Dann normal mit Email + Passwort einloggen
+
+### Option 3: Social Login (Falls aktiviert)
+- Google
+- GitHub
+- Etc.
+
+### UX-Verbesserung auf Login-Seite:
+Die Login-Seite zeigt jetzt einen Info-Banner bei Magic Link:
+```
+🔑 Login ohne Passwort
+Gib deine E-Mail ein und erhalte einen Login-Link.
+Funktioniert auch wenn du noch keinen Account hast - 
+wir erstellen automatisch einen für dich.
+```
+
+Dies macht klar, dass:
+- Magic Link für neue UND bestehende User funktioniert
+- Kein Passwort notwendig ist
+- Der Account automatisch erstellt wird
 
 ## Wichtige Code-Stellen
 
