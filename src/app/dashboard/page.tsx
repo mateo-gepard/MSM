@@ -280,22 +280,23 @@ function DashboardContent() {
       const hasDismissed = localStorage.getItem(`passwordPromptDismissed_${user.id}`);
       const hasSetPassword = localStorage.getItem(`passwordSet_${user.id}`);
       
-      // Don't show if user has dismissed or set password locally
+      // Always hide if dismissed or password was set locally
       if (hasDismissed || hasSetPassword) {
         setShowPasswordPrompt(false);
         return;
       }
       
-      // Check if user has password flag in metadata
-      // This is set during signup with password or when password is set later
-      const hasPasswordFlag = user.user_metadata?.has_password === true;
+      // Check if user has password flag in metadata (explicitly set to true)
+      const hasPasswordFlag = user.user_metadata?.has_password;
       
-      if (hasPasswordFlag) {
-        setShowPasswordPrompt(false);
-      } else {
-        // User doesn't have password flag, show prompt
+      // Only show banner if has_password is explicitly false
+      // Don't show if undefined (existing users before this feature)
+      if (hasPasswordFlag === false) {
         setHasPassword(false);
         setShowPasswordPrompt(true);
+      } else {
+        // Either has password or is existing user - don't show banner
+        setShowPasswordPrompt(false);
       }
     }
   }, [user]);
