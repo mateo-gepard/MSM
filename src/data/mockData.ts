@@ -3,17 +3,17 @@ import { Tutor, Package, Subject } from '@/types';
 export const tutors: Tutor[] = [
   {
     id: '1',
-    name: 'Alexander Schmidt',
-    subjects: ['Mathematik', 'Physik'],
+    name: 'Juan Rivera Chopinaud',
+    subjects: ['Mathematik', 'Physik', "Spanisch"],
     achievements: [
-      'Bundessieger Mathematik-Olympiade 2023',
-      'Gold-Medaille Internationale Physik-Olympiade',
-      'Student TU München (Mathematik)'
+      'Volle Punktzahl Mathematikolympiade deutschlandweit',
+      'International Baccalauréat',
+      'Internationale Physik Olympiade'
     ],
-    hourlyRate: 65,
+    hourlyRate: 39,
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
     bio: 'Olympiade-Sieger mit Leidenschaft für höhere Mathematik',
-    languages: ['Deutsch', 'Englisch'],
+    languages: ['Deutsch', 'Englisch', "Spanisch", "Französisch"],
     availability: 'Mo-Fr nachmittags',
     availableSlots: [
       { day: 'monday', times: ['14:00', '15:00', '16:00', '17:00'] },
@@ -187,7 +187,6 @@ export const packages: Package[] = [
       'Elterngespräche inklusive'
     ]
   },
-
 ];
 
 export const subjects: Subject[] = [

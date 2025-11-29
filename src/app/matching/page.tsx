@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { subjects, tutors } from '@/data/mockData';
 import { Button } from '@/components/ui/Button';
@@ -59,14 +59,38 @@ const steps = [
 
 export default function MatchingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const stepParam = searchParams.get('step');
+    return stepParam ? parseInt(stepParam) : 1;
+  });
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [selectedLearningStyle, setSelectedLearningStyle] = useState<string>('');
   const [selectedUrgency, setSelectedUrgency] = useState<string>('');
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedTutor, setSelectedTutor] = useState<string>('');
+
+  // Sync currentStep with URL
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('step', currentStep.toString());
+    window.history.replaceState({}, '', url.toString());
+  }, [currentStep]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const stepParam = new URLSearchParams(window.location.search).get('step');
+      if (stepParam) {
+        setCurrentStep(parseInt(stepParam));
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const toggleSubject = (subjectId: string) => {
     setSelectedSubjects(prev =>

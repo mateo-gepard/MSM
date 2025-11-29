@@ -24,7 +24,10 @@ function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const stepParam = searchParams.get('bookingStep');
+    return stepParam ? parseInt(stepParam) : 0;
+  });
   const [matchingData, setMatchingData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -47,6 +50,26 @@ function BookingContent() {
   const [isReschedule, setIsReschedule] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
   const [cameFromMatching, setCameFromMatching] = useState(false); // Track if user came from matching wizard
+
+  // Sync currentStep with URL
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('bookingStep', currentStep.toString());
+    window.history.replaceState({}, '', url.toString());
+  }, [currentStep]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const stepParam = new URLSearchParams(window.location.search).get('bookingStep');
+      if (stepParam) {
+        setCurrentStep(parseInt(stepParam));
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Redirect to login if user is not authenticated (except when loading)
   useEffect(() => {
