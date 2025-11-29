@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Target, Users, MessageCircle, Calendar, Trophy, Globe } from 'lucide-react';
+import { Target, Users, MessageCircle, Calendar, GraduationCap, Brain } from 'lucide-react';
 
 const features = [
   {
@@ -10,19 +10,19 @@ const features = [
     description: 'Jeder Schüler erhält einen individuellen Lernplan, abgestimmt auf seine Ziele und Bedürfnisse.'
   },
   {
-    icon: Trophy,
-    title: 'Olympiade-Niveau',
-    description: 'Unsere Tutoren sind selbst Wettbewerbs-Sieger und kennen die Anforderungen höchster Standards.'
+    icon: GraduationCap,
+    title: 'Peer-to-Peer Tutoring',
+    description: 'Die Tutoren sind ebenfalls noch in der Schule und können die Herausforderungen aus erster Hand nachvollziehen.'
   },
   {
     icon: Users,
     title: '1:1 Betreuung',
-    description: 'Intensive Einzelbetreuung für maximalen Lernerfolg – keine Gruppenunterricht.'
+    description: 'Intensive Einzelbetreuung für maximalen Lernerfolg – kein Gruppenunterricht.'
   },
   {
-    icon: Globe,
-    title: 'Bilingualer Unterricht',
-    description: 'Unterricht auf Deutsch, Englisch oder anderen Sprachen für internationale Perspektiven.'
+    icon: Brain,
+    title: 'Tiefgreifendes Verständnis',
+    description: 'Wir legen viel Wert darauf, dasss Konzepte wirklich verstanden werden, und nicht unverstanden auswendig gelernt.'
   },
   {
     icon: Calendar,

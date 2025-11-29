@@ -149,7 +149,7 @@ export const packages: Package[] = [
     id: 'single',
     name: 'Einzelstunde',
     sessions: 1,
-    price: 60,
+    price: 39,
     features: [
       '60 Minuten intensive Betreuung',
       'Flexibel buchbar',
@@ -161,7 +161,7 @@ export const packages: Package[] = [
     id: 'small',
     name: '5er-Paket',
     sessions: 5,
-    price: 280,
+    price: 175,
     savings: 20,
     features: [
       '5 × 60 Minuten',
@@ -175,7 +175,7 @@ export const packages: Package[] = [
     id: 'medium',
     name: '10er-Paket',
     sessions: 10,
-    price: 520,
+    price: 310,
     savings: 80,
     popular: true,
     features: [
@@ -187,22 +187,7 @@ export const packages: Package[] = [
       'Elterngespräche inklusive'
     ]
   },
-  {
-    id: 'olympiad',
-    name: 'Olympiaden-Vorbereitung',
-    sessions: 15,
-    price: 900,
-    savings: 150,
-    features: [
-      '15 × 60 Minuten',
-      '€150 Ersparnis',
-      'Spezialisierte Olympiaden-Trainer',
-      'Übungsaufgaben auf Wettbewerbsniveau',
-      'Strategie- und Zeitmanagement-Training',
-      'Simulation von Prüfungssituationen',
-      'Zugang zu exklusiven Lernressourcen'
-    ]
-  }
+
 ];
 
 export const subjects: Subject[] = [

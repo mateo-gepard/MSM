@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Button } from '../ui/Button';
-import { Award, Users, Star, TrendingUp } from 'lucide-react';
+import { Award, Users, FileText, Globe } from 'lucide-react';
 import Link from 'next/link';
 
 export function Hero() {
@@ -46,9 +46,9 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
           >
-            Nachhilfe von{' '}
+              Elite{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">
-              Olympiade-Siegern
+              1:1 Mentoring
             </span>
           </motion.h1>
 
@@ -60,7 +60,7 @@ export function Hero() {
             className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto"
           >
             Überqualifizierte Schüler und Studenten unterrichten 1:1 mit intensiver 
-            Vorbereitung, bilingualen Konzepten und personalisierten Lernplänen.
+            Vorbereitung, personalisierten Lernplänen und wenn nötig billingual.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -91,8 +91,8 @@ export function Hero() {
           >
             <div className="frosted-glass rounded-2xl p-6">
               <Award className="w-8 h-8 text-accent mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white mb-1">50+</div>
-              <div className="text-sm text-gray-400">Auszeichnungen</div>
+              <div className="text-3xl font-bold text-white mb-1">100+</div>
+              <div className="text-sm text-gray-400">Erste Preise</div>
             </div>
             <div className="frosted-glass rounded-2xl p-6">
               <Users className="w-8 h-8 text-accent mx-auto mb-2" />
@@ -100,14 +100,14 @@ export function Hero() {
               <div className="text-sm text-gray-400">Elite-Tutoren</div>
             </div>
             <div className="frosted-glass rounded-2xl p-6">
-              <Star className="w-8 h-8 text-accent mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white mb-1">5.0</div>
-              <div className="text-sm text-gray-400">Bewertung</div>
+              <FileText className="w-8 h-8 text-accent mx-auto mb-2" />
+              <div className="text-3xl font-bold text-white mb-1">1.2</div>
+              <div className="text-sm text-gray-400">Notenschnitt</div>
             </div>
             <div className="frosted-glass rounded-2xl p-6">
-              <TrendingUp className="w-8 h-8 text-accent mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white mb-1">98%</div>
-              <div className="text-sm text-gray-400">Erfolgsrate</div>
+              <Globe className="w-8 h-8 text-accent mx-auto mb-2" />
+              <div className="text-3xl font-bold text-white mb-1">5</div>
+              <div className="text-sm text-gray-400">Sprachen</div>
             </div>
           </motion.div>
         </div>

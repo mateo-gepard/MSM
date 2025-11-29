@@ -21,7 +21,7 @@ import {
 import * as Icons from 'lucide-react';
 
 const goals = [
-  { id: 'olympiad', name: 'Olympiaden-Vorbereitung', icon: 'Trophy' },
+  { id: 'olympiad', name: 'Wettbewerbsvorbereitung', icon: 'Trophy' },
   { id: 'grades', name: 'Notenverbesserung', icon: 'TrendingUp' },
   { id: 'passion', name: 'Begeisterung wecken', icon: 'Sparkles' },
   { id: 'exam', name: 'Prüfungsvorbereitung', icon: 'FileText' },

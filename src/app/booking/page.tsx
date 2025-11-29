@@ -9,7 +9,7 @@ import { getUserBookings } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
-import { tutors, packages } from '@/data/mockData';
+import { tutors, packages, subjects } from '@/data/mockData';
 import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Monitor, Home } from 'lucide-react';
 import { TutorCard } from '@/components/tutors/TutorCard';
 
@@ -636,8 +636,8 @@ function BookingContent() {
                     className="w-full p-2.5 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none text-sm"
                   >
                     <option value="">Fach auswählen...</option>
-                    {Array.from(new Set(tutors.flatMap(t => t.subjects))).map(subject => (
-                      <option key={subject} value={subject}>{subject}</option>
+                    {subjects.map(subject => (
+                      <option key={subject.name} value={subject.name}>{subject.name}</option>
                     ))}
                   </select>
                 </div>
