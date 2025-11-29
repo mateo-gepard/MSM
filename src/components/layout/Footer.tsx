@@ -11,8 +11,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="relative w-20 h-20">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative w-20 h-20 flex-shrink-0">
                 <Image
                   src="/MSM_Logo_Light.png"
                   alt="MSM Munich Scholar Mentors Logo"
@@ -24,11 +24,10 @@ export function Footer() {
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-white leading-tight">MSM</span>
                 <span className="text-xs text-gray-400 leading-tight">Munich Scholar Mentors</span>
+                <span className="text-gray-400 text-sm mt-2">Learn Better - Be Better</span>
               </div>
             </div>
-            <p className="text-gray-400 text-sm">
-              Überqualifizierte Schüler und Studenten unterrichten 1:1 mit intensiver Vorbereitung, personalisierten Lernplänen und wenn nötig billingual.
-            </p>
+        {/* End Brand column */}
           </div>
 
           {/* Quick Links */}
@@ -86,14 +85,14 @@ export function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-gray-400 text-sm">
                 <Mail className="w-4 h-4 text-accent" />
-                <a href="mailto:info@msm-munich.de" className="hover:text-accent transition-colors">
-                  info@msm-munich.de
+                <a href="mailto:munichscholarmentors@gmail.com" className="hover:text-accent transition-colors">
+                  munichscholarmentors@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-2 text-gray-400 text-sm">
                 <Phone className="w-4 h-4 text-accent" />
-                <a href="tel:+4989123456" className="hover:text-accent transition-colors">
-                  +49 89 123456
+                <a href="tel:+4917652547548" className="hover:text-accent transition-colors">
+                  +49 176 52547548
                 </a>
               </li>
               <li className="flex items-center gap-2 text-gray-400 text-sm">
@@ -101,14 +100,7 @@ export function Footer() {
                 <span>München, Deutschland</span>
               </li>
             </ul>
-            <div className="flex items-center gap-3 mt-4">
-              <a href="#" className="w-8 h-8 rounded-full bg-accent/20 hover:bg-accent flex items-center justify-center transition-colors">
-                <Instagram className="w-4 h-4 text-accent hover:text-white" />
-              </a>
-              <a href="#" className="w-8 h-8 rounded-full bg-accent/20 hover:bg-accent flex items-center justify-center transition-colors">
-                <Linkedin className="w-4 h-4 text-accent hover:text-white" />
-              </a>
-            </div>
+            {/* Social buttons removed as requested */}
           </div>
         </div>
 
