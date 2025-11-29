@@ -12,12 +12,12 @@ export function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="relative w-12 h-12">
+              <div className="relative w-20 h-20">
                 <Image
                   src="/MSM_Logo_Light.png"
                   alt="MSM Munich Scholar Mentors Logo"
-                  width={48}
-                  height={48}
+                  width={80}
+                  height={80}
                   className="object-contain"
                 />
               </div>
@@ -27,7 +27,7 @@ export function Footer() {
               </div>
             </div>
             <p className="text-gray-400 text-sm">
-              Premium Nachhilfe von Olympiade-Siegern und Top-Studenten in München.
+              Überqualifizierte Schüler und Studenten unterrichten 1:1 mit intensiver Vorbereitung, personalisierten Lernplänen und wenn nötig billingual.
             </p>
           </div>
 
