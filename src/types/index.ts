@@ -3,7 +3,7 @@ export interface Tutor {
   name: string;
   subjects: string[];
   achievements: string[];
-  hourlyRate: number;
+  hourlyRate?: number;
   image: string;
   bio: string;
   languages: string[];
