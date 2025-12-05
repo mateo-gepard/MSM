@@ -64,16 +64,12 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
               <span className="font-semibold">Qualitäten:</span>
             </div>
             <ul className="space-y-1">
-              {tutor.achievements.slice(0, 2).map((achievement, idx) => (
+              {tutor.achievements.slice(0, 3).map((achievement, idx) => (
                 <li key={idx} className="text-xs text-gray-400 flex items-start gap-2">
                   <span className="text-accent mt-1">•</span>
                   <span className="line-clamp-1">{achievement}</span>
                 </li>
               ))}
-              <li className="text-xs text-gray-400 flex items-start gap-2">
-                <span className="text-accent mt-1">•</span>
-                <span className="line-clamp-1">...</span>
-              </li>
             </ul>
           </div>
 
