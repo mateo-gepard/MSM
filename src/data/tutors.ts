@@ -10,7 +10,7 @@ export const tutors: Tutor[] = [
       'IB Student an Top-Schule in England',
       'Mehrsprachig und international erfahren'
     ],
-    image: '/tutors/Juan.JPG',
+    image: '/tutors/Juan.png',
     bio: 'Erfolgreich in Mathe und Physik, quadrilingual',
     languages: ['Deutsch', 'Englisch', 'Spanisch', 'Französisch'],
     availability: 'Di, Mi, Sa 17:30-19:00',
