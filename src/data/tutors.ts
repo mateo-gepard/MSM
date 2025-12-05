@@ -10,7 +10,7 @@ export const tutors: Tutor[] = [
       'IB Student an Top-Schule in England',
       'Mehrsprachig und international erfahren'
     ],
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    image: require('./Juan.JPG'),
     bio: 'Erfolgreich in Mathe und Physik, quadrilingual',
     languages: ['Deutsch', 'Englisch', 'Spanisch', 'Französisch'],
     availability: 'Di, Mi, Sa 17:30-19:00',
@@ -31,7 +31,7 @@ export const tutors: Tutor[] = [
       'Leitet Robotics-Kurs an seiner Schule',
       'Langjährige Erfahrung mit CAD, 3D-Druck und Programmieren'
     ],
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    image: require('./Mateo.JPG'),
     bio: 'Hobby-Ingenieur und Physik-Begeisterter',
     languages: ['Deutsch', 'Englisch', 'Georgisch'],
     availability: 'Mo-Fr ab 14 Uhr',
@@ -53,7 +53,7 @@ export const tutors: Tutor[] = [
       'Frühstudium in Mathematik',
       'Frühstudium in Luft- und Raumfahrttechnik'
     ],
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    image: require('./Roman.JPG'),
     bio: 'Leidenschaftlicher Mathematiker und Physiker',
     languages: ['Deutsch', 'Russisch'],
     availability: 'Mo, Mi, Fr 15-17 Uhr',
@@ -73,7 +73,7 @@ export const tutors: Tutor[] = [
       'Frühstudium in Luft- und Raumfahrttechnik',
       'Frühstudium in Physik'
     ],
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
+    image: require('./Len.JPG'),
     bio: 'Physiker, talentierter Programmierer und Robotik-Experte',
     languages: ['Deutsch', 'Englisch'],
     availability: 'Mo-Fr ab 14 Uhr',
@@ -91,10 +91,10 @@ export const tutors: Tutor[] = [
     subjects: ['Mathematik', 'Physik'],
     achievements: [
       'Bester Mathematiker unter allen Schülern in Deutschland',
-      'Frühstudent (Analysis)',
-      'Frühstudent (Technische Mechanik)'
+      'Frühstudent in Analysis und Technischer Mechanik',
+      'Sehr erfahren in Wettbewerbsvorbereitung von jungen Talenten'
     ],
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    image: require('./Johannes.jpg'),
     bio: 'Äußerst erfolgreicher Mathematiker',
     languages: ['Deutsch'],
     availability: 'Mo-Fr ab 14 Uhr',
