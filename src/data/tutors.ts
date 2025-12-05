@@ -23,6 +23,28 @@ export const tutors: Tutor[] = [
     onlineOnly: true
   },
   {
+    id: '4',
+    name: 'Mateo Mamaladze',
+    subjects: ['Physik', 'Informatik', 'Mathematik'],
+    achievements: [
+      'Erfolgreiche Teilnahme an internationaler Physik-Olympiade',
+      'Leitet Robotics-Kurs an seiner Schule',
+      'Langjährige Erfahrung mit CAD, 3D-Druck und Programmieren'
+    ],
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    bio: 'Hobby-Ingenieur und Physik-Begeisterter',
+    languages: ['Deutsch', 'Englisch', 'Georgisch'],
+    availability: 'Mo-Fr ab 14 Uhr',
+    grade: 'Klassenstufe 12',
+    availableSlots: [
+      { day: 'monday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'tuesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'wednesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'thursday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'friday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] }
+    ]
+  },
+  {
     id: '2',
     name: 'Roman Daugavet',
     subjects: ['Mathematik', 'Physik'],
@@ -58,28 +80,6 @@ export const tutors: Tutor[] = [
     grade: 'Klassenstufe 13',
     availableSlots: [
       { day: 'monday', times: ['16:30', '17:00', '17:30', '18:00'] },
-      { day: 'wednesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
-      { day: 'thursday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
-      { day: 'friday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] }
-    ]
-  },
-  {
-    id: '4',
-    name: 'Mateo Mamaladze',
-    subjects: ['Physik', 'Informatik', 'Mathematik'],
-    achievements: [
-      'Erfolgreiche Teilnahme an internationaler Physik-Olympiade',
-      'Leitet Robotics-Kurs an seiner Schule',
-      'Langjährige Erfahrung mit CAD, 3D-Druck und Programmieren'
-    ],
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-    bio: 'Hobby-Ingenieur und Physik-Begeisterter',
-    languages: ['Deutsch', 'Englisch', 'Georgisch'],
-    availability: 'Mo-Fr ab 14 Uhr',
-    grade: 'Klassenstufe 12',
-    availableSlots: [
-      { day: 'monday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
-      { day: 'tuesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
       { day: 'wednesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
       { day: 'thursday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
       { day: 'friday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] }
