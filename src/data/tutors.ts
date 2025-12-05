@@ -10,7 +10,7 @@ export const tutors: Tutor[] = [
       'IB Student an Top-Schule in England',
       'Mehrsprachig und international erfahren'
     ],
-    image: require('./Juan.JPG'),
+    image: '/tutors/Juan.JPG',
     bio: 'Erfolgreich in Mathe und Physik, quadrilingual',
     languages: ['Deutsch', 'Englisch', 'Spanisch', 'Französisch'],
     availability: 'Di, Mi, Sa 17:30-19:00',
@@ -31,7 +31,7 @@ export const tutors: Tutor[] = [
       'Leitet Robotics-Kurs an seiner Schule',
       'Langjährige Erfahrung mit CAD, 3D-Druck und Programmieren'
     ],
-    image: require('./Mateo.JPG'),
+    image: '/tutors/Mateo.JPG',
     bio: 'Hobby-Ingenieur und Physik-Begeisterter',
     languages: ['Deutsch', 'Englisch', 'Georgisch'],
     availability: 'Mo-Fr ab 14 Uhr',
@@ -53,7 +53,7 @@ export const tutors: Tutor[] = [
       'Frühstudium in Mathematik',
       'Frühstudium in Luft- und Raumfahrttechnik'
     ],
-    image: require('./Roman.JPG'),
+    image: '/tutors/Roman.JPG',
     bio: 'Leidenschaftlicher Mathematiker und Physiker',
     languages: ['Deutsch', 'Russisch'],
     availability: 'Mo, Mi, Fr 15-17 Uhr',
@@ -73,7 +73,7 @@ export const tutors: Tutor[] = [
       'Frühstudium in Luft- und Raumfahrttechnik',
       'Frühstudium in Physik'
     ],
-    image: require('./Len.JPG'),
+    image: '/tutors/Len.JPG',
     bio: 'Physiker, talentierter Programmierer und Robotik-Experte',
     languages: ['Deutsch', 'Englisch'],
     availability: 'Mo-Fr ab 14 Uhr',
@@ -94,7 +94,7 @@ export const tutors: Tutor[] = [
       'Frühstudent in Analysis und Technischer Mechanik',
       'Sehr erfahren in Wettbewerbsvorbereitung von jungen Talenten'
     ],
-    image: require('./Johannes.jpg'),
+    image: '/tutors/Johannes.jpg',
     bio: 'Äußerst erfolgreicher Mathematiker',
     languages: ['Deutsch'],
     availability: 'Mo-Fr ab 14 Uhr',
