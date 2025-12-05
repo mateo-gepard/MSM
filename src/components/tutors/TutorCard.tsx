@@ -37,9 +37,7 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
             <h3 className="text-xl font-bold text-white mb-1">{tutor.name}</h3>
-            <div className="flex items-center gap-2 text-accent text-sm font-semibold">
-              <span>€{tutor.hourlyRate}/Std</span>
-            </div>
+            {/* ...no price per hour... */}
           </div>
         </div>
 
