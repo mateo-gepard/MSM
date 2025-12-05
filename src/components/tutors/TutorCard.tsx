@@ -59,11 +59,11 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
           {/* Bio */}
           <p className="text-sm text-gray-300 line-clamp-2">{tutor.bio}</p>
 
-          {/* Achievements */}
+          {/* Qualitäten */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-accent text-xs">
               <Award className="w-4 h-4" />
-              <span className="font-semibold">Auszeichnungen:</span>
+              <span className="font-semibold">Qualitäten:</span>
             </div>
             <ul className="space-y-1">
               {tutor.achievements.slice(0, 2).map((achievement, idx) => (
@@ -72,6 +72,10 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
                   <span className="line-clamp-1">{achievement}</span>
                 </li>
               ))}
+              <li className="text-xs text-gray-400 flex items-start gap-2">
+                <span className="text-accent mt-1">•</span>
+                <span className="line-clamp-1">...</span>
+              </li>
             </ul>
           </div>
 
