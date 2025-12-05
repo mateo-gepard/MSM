@@ -13,13 +13,6 @@ import { tutors, packages, subjects } from '@/data/mockData';
 import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Monitor, Home } from 'lucide-react';
 import { TutorCard } from '@/components/tutors/TutorCard';
 
-const bookingSteps = [
-  'Fach & Tutor',
-  'Service',
-  'Termin',
-  'Ort'
-];
-
 function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,6 +24,16 @@ function BookingContent() {
   const [matchingData, setMatchingData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  
+  // Dynamically determine booking steps based on whether user came from matching
+  const getBookingSteps = () => {
+    const hasLocation = matchingData?.location;
+    return hasLocation 
+      ? ['Fach & Tutor', 'Service', 'Termin'] // Skip location if from matching
+      : ['Fach & Tutor', 'Service', 'Termin', 'Ort'];
+  };
+  
+  const bookingSteps = getBookingSteps();
   
   // Booking data
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -151,6 +154,12 @@ function BookingContent() {
       if (data.selectedTutor) {
         setSelectedTutor(data.selectedTutor);
         console.log('Auto-selected tutor from matching:', data.selectedTutor);
+      }
+
+      // If location was selected in matching wizard, pre-select it
+      if (data.location) {
+        setSelectedLocation(data.location as 'online' | 'in-person');
+        console.log('Auto-selected location from matching:', data.location);
       }
     }
 
@@ -297,6 +306,8 @@ function BookingContent() {
     : tutors.map(t => ({ ...t, matchScore: 0 }));
 
   const canProceed = () => {
+    const hasLocation = matchingData?.location; // Check if location is pre-selected from matching
+    
     switch (currentStep) {
       case 0: return selectedSubject && selectedTutor;
       case 1: {
@@ -307,15 +318,24 @@ function BookingContent() {
         return selectedPackage;
       }
       case 2: return selectedDate && selectedTime;
-      case 3: return selectedLocation;
+      case 3: return hasLocation || selectedLocation; // If from matching, location is already set
       default: return false;
     }
   };
 
   const handleNext = () => {
-    if (currentStep < bookingSteps.length - 1) {
+    const hasLocation = matchingData?.location; // Location pre-selected from matching
+    
+    // If on step 2 (date/time) and location is already set, skip to submission
+    if (currentStep === 2 && hasLocation) {
+      handleSubmit();
+    }
+    // Normal flow: proceed to next step
+    else if (currentStep < bookingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
-    } else {
+    }
+    // Last step: submit booking
+    else {
       handleSubmit();
     }
   };
@@ -956,18 +976,33 @@ function BookingContent() {
                   <div className="text-2xl font-bold mb-2">Online</div>
                   <p className="text-sm opacity-80">Via Zoom oder Google Meet</p>
                 </button>
-                <button
-                  onClick={() => setSelectedLocation('in-person')}
-                  className={`p-8 rounded-xl transition-all border-2 ${
-                    selectedLocation === 'in-person'
-                      ? 'bg-accent text-white border-accent'
-                      : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
-                  }`}
-                >
-                  <Home className="w-12 h-12 mx-auto mb-3" />
-                  <div className="text-2xl font-bold mb-2">Vor Ort</div>
-                  <p className="text-sm opacity-80">In München oder Umgebung</p>
-                </button>
+                {(() => {
+                  const selectedTutorData = tutors.find(t => t.id === selectedTutor);
+                  const isOnlineOnly = selectedTutorData?.onlineOnly;
+                  
+                  return (
+                    <button
+                      onClick={() => !isOnlineOnly && setSelectedLocation('in-person')}
+                      disabled={isOnlineOnly}
+                      className={`p-8 rounded-xl transition-all border-2 ${
+                        isOnlineOnly
+                          ? 'bg-gray-800/50 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'
+                          : selectedLocation === 'in-person'
+                          ? 'bg-accent text-white border-accent'
+                          : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                      }`}
+                    >
+                      <Home className="w-12 h-12 mx-auto mb-3" />
+                      <div className="text-2xl font-bold mb-2">Vor Ort</div>
+                      <p className="text-sm opacity-80">
+                        {isOnlineOnly 
+                          ? 'Nicht verfügbar für diesen Tutor'
+                          : 'In München oder Umgebung'
+                        }
+                      </p>
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           )}

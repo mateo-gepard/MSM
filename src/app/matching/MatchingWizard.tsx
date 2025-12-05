@@ -17,7 +17,9 @@ import {
   Languages,
   BookOpen,
   CheckCircle,
-  Sparkles
+  Sparkles,
+  MapPin,
+  Monitor
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 
@@ -49,13 +51,19 @@ const languages = [
   { id: 'fr', name: 'Französisch' }
 ];
 
+const locationOptions = [
+  { id: 'online', name: 'Online', description: 'Unterricht per Video-Call', icon: 'Monitor' },
+  { id: 'in-person', name: 'Präsenz', description: 'Persönlicher Unterricht vor Ort', icon: 'Users' }
+];
+
 const steps = [
   { id: 1, title: 'Fächerauswahl', icon: BookOpen },
   { id: 2, title: 'Ziel', icon: Target },
   { id: 3, title: 'Lernstil', icon: Brain },
   { id: 4, title: 'Zeitrahmen', icon: Clock },
   { id: 5, title: 'Sprache', icon: Languages },
-  { id: 6, title: 'Ergebnis', icon: CheckCircle }
+  { id: 6, title: 'Ort', icon: MapPin },
+  { id: 7, title: 'Ergebnis', icon: CheckCircle }
 ];
 
 export default function MatchingWizard() {
@@ -71,6 +79,7 @@ export default function MatchingWizard() {
   const [selectedLearningStyle, setSelectedLearningStyle] = useState<string>('');
   const [selectedUrgency, setSelectedUrgency] = useState<string>('');
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<string>(''); // online or in-person
   const [selectedTutor, setSelectedTutor] = useState<string>('');
 
   // Sync currentStep with URL
@@ -124,13 +133,14 @@ export default function MatchingWizard() {
       case 3: return selectedLearningStyle !== '';
       case 4: return selectedUrgency !== '';
       case 5: return selectedLanguages.length > 0;
-      case 6: return true;
+      case 6: return selectedLocation !== '';
+      case 7: return true;
       default: return false;
     }
   };
 
   const handleNext = () => {
-    if (currentStep < 6) {
+    if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
     } else {
       const matchingData = {
@@ -139,6 +149,7 @@ export default function MatchingWizard() {
         learningStyle: selectedLearningStyle,
         urgency: selectedUrgency,
         languages: selectedLanguages,
+        location: selectedLocation, // Save location preference
         selectedTutor: selectedTutor // Save selected tutor for booking wizard
       };
       localStorage.setItem('matchingData', JSON.stringify(matchingData));
@@ -156,9 +167,15 @@ export default function MatchingWizard() {
       subjects.find(s => s.id === id)?.name
     ).filter(Boolean);
     
-    return tutors.filter(tutor => 
-      tutor.subjects.some(subject => subjectNames.includes(subject))
-    ).slice(0, 3);
+    return tutors.filter(tutor => {
+      // Filter by subject
+      const hasMatchingSubject = tutor.subjects.some(subject => subjectNames.includes(subject));
+      
+      // Filter by location: if in-person is selected, exclude online-only tutors
+      const locationMatch = selectedLocation === 'in-person' ? !tutor.onlineOnly : true;
+      
+      return hasMatchingSubject && locationMatch;
+    }).slice(0, 3);
   };
 
   const getIcon = (iconName: string) => {
@@ -340,8 +357,37 @@ export default function MatchingWizard() {
                 </div>
               )}
 
-              {/* Step 6: Results */}
+              {/* Step 6: Location Preference */}
               {currentStep === 6 && (
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-2">Wo möchtest du lernen?</h2>
+                  <p className="text-gray-400 mb-8">Wähle deinen bevorzugten Unterrichtsort</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {locationOptions.map((location) => (
+                      <button
+                        key={location.id}
+                        onClick={() => setSelectedLocation(location.id)}
+                        className={`p-8 rounded-xl transition-colors duration-300 text-left border-2 ${
+                          selectedLocation === location.id
+                            ? 'bg-accent text-white border-accent'
+                            : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="text-3xl mt-1">{getIcon(location.icon)}</div>
+                          <div>
+                            <div className="font-semibold text-xl mb-2">{location.name}</div>
+                            <div className="text-sm opacity-80">{location.description}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 7: Results */}
+              {currentStep === 7 && (
                 <div>
                   <div className="text-center mb-8">
                     <motion.div
@@ -449,7 +495,7 @@ export default function MatchingWizard() {
                 onClick={handleNext}
                 disabled={!canProceed()}
               >
-                {currentStep === 6 ? 'Zur Buchung' : currentStep === 5 ? 'Ergebnis anzeigen' : 'Weiter'}
+                {currentStep === 7 ? 'Zur Buchung' : currentStep === 6 ? 'Ergebnis anzeigen' : 'Weiter'}
                 <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </div>

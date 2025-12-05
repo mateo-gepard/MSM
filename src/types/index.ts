@@ -8,6 +8,8 @@ export interface Tutor {
   bio: string;
   languages: string[];
   availability: string;
+  grade?: string; // e.g. 'Klassenstufe 11'
+  onlineOnly?: boolean; // If true, tutor only offers online sessions
   availableSlots?: {
     day: string; // 'monday', 'tuesday', etc.
     times: string[]; // ['09:00', '10:00', '11:00']

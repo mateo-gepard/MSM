@@ -4,129 +4,107 @@ export const tutors: Tutor[] = [
   {
     id: '1',
     name: 'Juan Rivera Chopinaud',
-    subjects: ['Mathematik', 'Physik', "Spanisch"],
+    subjects: ['Mathematik', 'Physik', 'Spanisch'],
     achievements: [
-      'Volle Punktzahl Mathematikolympiade deutschlandweit',
-      'International Baccalauréat',
-      'Internationale Physik Olympiade'
+      '1. Preis Mathematik-Olympiade',
+      'IB Student an Top-Schule in England',
+      'Mehrsprachig und international erfahren'
     ],
-    // hourlyRate removed
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-    bio: 'Olympiade-Sieger mit Leidenschaft für höhere Mathematik',
-    languages: ['Deutsch', 'Englisch', "Spanisch", "Französisch"],
-    availability: 'Mo-Fr nachmittags',
+    bio: 'Erfolgreich in Mathe und Physik, quadrilingual',
+    languages: ['Deutsch', 'Englisch', 'Spanisch', 'Französisch'],
+    availability: 'Di, Mi, Sa 17:30-19:00',
+    grade: 'Klasse 12 (L6)',
     availableSlots: [
-      { day: 'monday', times: ['14:00', '15:00', '16:00', '17:00'] },
-      { day: 'tuesday', times: ['14:00', '15:00', '16:00', '17:00'] },
-      { day: 'wednesday', times: ['14:00', '15:00', '16:00', '17:00'] },
-      { day: 'thursday', times: ['14:00', '15:00', '16:00', '17:00'] },
-      { day: 'friday', times: ['14:00', '15:00', '16:00', '17:00'] }
-    ]
+      { day: 'tuesday', times: ['17:30', '18:00', '18:30'] },
+      { day: 'wednesday', times: ['17:30', '18:00', '18:30'] },
+      { day: 'saturday', times: ['17:30', '18:00', '18:30'] }
+    ],
+    onlineOnly: true
   },
   {
     id: '2',
-    name: 'Sophie Weber',
-    subjects: ['Chemie', 'Biologie'],
+    name: 'Roman Daugavet',
+    subjects: ['Mathematik', 'Physik'],
     achievements: [
-      '1. Platz Jugend forscht (Chemie)',
-      'Stipendiatin Studienstiftung',
-      'Studentin LMU München (Biochemie)'
+      '1. Preis Bundeswettbewerb Mathematik',
+      'Frühstudium in Mathematik',
+      'Frühstudium in Luft- und Raumfahrttechnik'
     ],
-    // hourlyRate removed
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-    bio: 'Forscherin und begeisterte Naturwissenschaftlerin',
-    languages: ['Deutsch', 'Englisch', 'Französisch'],
-    availability: 'Mo, Mi, Fr',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    bio: 'Leidenschaftlicher Mathematiker und Physiker',
+    languages: ['Deutsch', 'Russisch'],
+    availability: 'Mo, Mi, Fr 15-17 Uhr',
+    grade: 'Klassenstufe 11',
     availableSlots: [
-      { day: 'monday', times: ['10:00', '11:00', '12:00', '15:00', '16:00'] },
-      { day: 'wednesday', times: ['10:00', '11:00', '12:00', '15:00', '16:00'] },
-      { day: 'friday', times: ['10:00', '11:00', '12:00', '15:00', '16:00'] }
+      { day: 'monday', times: ['15:00', '15:30', '16:00', '16:30'] },
+      { day: 'wednesday', times: ['15:00', '15:30', '16:00', '16:30'] },
+      { day: 'friday', times: ['15:00', '15:30', '16:00', '16:30'] }
     ]
   },
   {
     id: '3',
-    name: 'Maximilian Hoffmann',
-    subjects: ['Informatik', 'Mathematik'],
+    name: 'Len Sobol',
+    subjects: ['Physik', 'Informatik', 'Mathematik'],
     achievements: [
-      'Bundeswettbewerb Informatik Sieger',
-      'First Robotics Competition Team Lead',
-      'Student ETH Zürich (Computer Science)'
+      'Arbeitet seit 3 Jahren als Software Developer',
+      'Frühstudium in Luft- und Raumfahrttechnik',
+      'Frühstudium in Physik'
     ],
-    // hourlyRate removed
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
-    bio: 'Programmierer und Robotik-Experte',
+    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
+    bio: 'Physiker, talentierter Programmierer und Robotik-Experte',
     languages: ['Deutsch', 'Englisch'],
-    availability: 'Di-Do abends',
+    availability: 'Mo-Fr ab 14 Uhr',
+    grade: 'Klassenstufe 13',
     availableSlots: [
-      { day: 'tuesday', times: ['17:00', '18:00', '19:00', '20:00'] },
-      { day: 'wednesday', times: ['17:00', '18:00', '19:00', '20:00'] },
-      { day: 'thursday', times: ['17:00', '18:00', '19:00', '20:00'] }
+      { day: 'monday', times: ['16:30', '17:00', '17:30', '18:00'] },
+      { day: 'wednesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'thursday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'friday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] }
     ]
   },
   {
     id: '4',
-    name: 'Laura Zimmermann',
-    subjects: ['Englisch', 'Spanisch'],
+    name: 'Mateo Mamaladze',
+    subjects: ['Physik', 'Informatik', 'Mathematik'],
     achievements: [
-      'Cambridge Proficiency Grade A',
-      'DELE C2 (Spanisch)',
-      'Studentin Dolmetschen München'
+      'Erfolgreiche Teilnahme an internationaler Physik-Olympiade',
+      'Leitet Robotics-Kurs an seiner Schule',
+      'Langjährige Erfahrung mit CAD, 3D-Druck und Programmieren'
     ],
-    // hourlyRate removed
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
-    bio: 'Mehrsprachige Sprachtalent mit didaktischem Geschick',
-    languages: ['Deutsch', 'Englisch', 'Spanisch'],
-    availability: 'Flexibel',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    bio: 'Hobby-Ingenieur und Physik-Begeisterter',
+    languages: ['Deutsch', 'Englisch', 'Georgisch'],
+    availability: 'Mo-Fr ab 14 Uhr',
+    grade: 'Klassenstufe 12',
     availableSlots: [
-      { day: 'monday', times: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] },
-      { day: 'tuesday', times: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] },
-      { day: 'wednesday', times: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] },
-      { day: 'thursday', times: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] },
-      { day: 'friday', times: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] },
-      { day: 'saturday', times: ['10:00', '11:00', '12:00', '13:00'] }
+      { day: 'monday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'tuesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'wednesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'thursday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'friday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] }
     ]
   },
   {
     id: '5',
-    name: 'David Chen',
-    subjects: ['Mathematik', 'Informatik', 'Physik'],
+    name: 'Johannes Jacob',
+    subjects: ['Mathematik', 'Physik'],
     achievements: [
-      'Internationale Mathematik-Olympiade Medaille',
-      'Google Science Fair Finalist',
-      'Student MIT (Applied Mathematics)'
+      'Bester Mathematiker unter allen Schülern in Deutschland',
+      'Frühstudent (Analysis)',
+      'Frühstudent (Technische Mechanik)'
     ],
-    // hourlyRate removed
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
-    bio: 'Multitalent mit internationaler Olympiade-Erfahrung',
-    languages: ['Deutsch', 'Englisch', 'Chinesisch'],
-    availability: 'Online flexibel',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    bio: 'Äußerst erfolgreicher Mathematiker',
+    languages: ['Deutsch'],
+    availability: 'Mo-Fr ab 14 Uhr',
+    grade: 'Klassenstufe 11',
     availableSlots: [
-      { day: 'monday', times: ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'] },
-      { day: 'tuesday', times: ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'] },
-      { day: 'wednesday', times: ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'] },
-      { day: 'thursday', times: ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'] },
-      { day: 'friday', times: ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'] },
-      { day: 'saturday', times: ['11:00', '13:00', '15:00'] },
-      { day: 'sunday', times: ['11:00', '13:00', '15:00'] }
-    ]
-  },
-  {
-    id: '6',
-    name: 'Emma Müller',
-    subjects: ['Latein', 'Geschichte', 'Deutsch'],
-    achievements: [
-      'Bundeswettbewerb Fremdsprachen 1. Platz',
-      'Certamen Ciceronianum Gold',
-      'Studentin Altphilologie Heidelberg'
-    ],
-    // hourlyRate removed
-    image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop',
-    bio: 'Geisteswissenschaftlerin mit Passion für Sprachen',
-    languages: ['Deutsch', 'Englisch', 'Latein', 'Altgriechisch'],
-    availability: 'Wochenende',
-    availableSlots: [
-      { day: 'saturday', times: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'] },
-      { day: 'sunday', times: ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00'] }
+      { day: 'monday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'tuesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'wednesday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'thursday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+      { day: 'friday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] }
     ]
   }
 ];
