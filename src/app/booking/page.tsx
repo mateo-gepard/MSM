@@ -496,14 +496,37 @@ function BookingContent() {
         console.log('Storing booking with ID:', calcomBookingId);
         console.log('Is Cal.com ID:', !calcomBookingId.startsWith('booking_'));
         
-        existingBookings.push({
+        const newBooking = {
           ...bookingData,
           id: calcomBookingId,
           calcomBookingId: calcomBookingId.startsWith('booking_') ? null : calcomBookingId, // Store separately for clarity
           status: 'scheduled',
           createdAt: new Date().toISOString()
-        });
+        };
+        
+        existingBookings.push(newBooking);
         localStorage.setItem(storageKey, JSON.stringify(existingBookings));
+        
+        // Also save booking for tutor dashboard access
+        const tutorBookingsKey = 'allTutorBookings';
+        const allTutorBookings = JSON.parse(localStorage.getItem(tutorBookingsKey) || '{}');
+        if (!allTutorBookings[selectedTutor]) {
+          allTutorBookings[selectedTutor] = [];
+        }
+        allTutorBookings[selectedTutor].push({
+          id: calcomBookingId,
+          parentName: contactInfo.name || user?.user_metadata?.name || user?.email || 'Elternteil',
+          parentEmail: contactInfo.email || user?.email || '',
+          parentId: user?.id,
+          subject: selectedSubject,
+          date: selectedDate,
+          time: selectedTime,
+          location: selectedLocation,
+          status: 'scheduled',
+          message: contactInfo.message,
+          createdAt: new Date().toISOString()
+        });
+        localStorage.setItem(tutorBookingsKey, JSON.stringify(allTutorBookings));
       }
 
       // Clear matching data
@@ -527,13 +550,67 @@ function BookingContent() {
     }
   };
 
-  // Alle Zeiten sind immer verfügbar (09:00 - 20:00)
+  // Get available times based on tutor's availability settings
   const getAvailableTimes = (): string[] => {
-    if (!selectedDate) {
+    if (!selectedDate || !selectedTutor) {
       return [];
     }
 
-    // Feste Zeitslots von 9:00 bis 20:00 Uhr
+    // Get the day of week from the selected date
+    const date = new Date(selectedDate + 'T00:00:00');
+    const daysMap: { [key: number]: string } = {
+      0: 'sunday',
+      1: 'monday',
+      2: 'tuesday',
+      3: 'wednesday',
+      4: 'thursday',
+      5: 'friday',
+      6: 'saturday'
+    };
+    const dayOfWeek = daysMap[date.getDay()];
+
+    // Check for saved tutor availability from localStorage
+    let tutorAvailability: { day: string; times: string[] }[] | null = null;
+    
+    if (typeof window !== 'undefined') {
+      // First check tutor-specific saved availability
+      const savedAvailability = localStorage.getItem(`tutorAvailability_${selectedTutor}`);
+      if (savedAvailability) {
+        tutorAvailability = JSON.parse(savedAvailability);
+      } else {
+        // Check global availability store
+        const globalAvailability = localStorage.getItem('tutorAvailabilities');
+        if (globalAvailability) {
+          const allAvailabilities = JSON.parse(globalAvailability);
+          if (allAvailabilities[selectedTutor]) {
+            tutorAvailability = allAvailabilities[selectedTutor];
+          }
+        }
+      }
+    }
+
+    // If tutor has saved availability, use it
+    if (tutorAvailability && tutorAvailability.length > 0) {
+      const daySlot = tutorAvailability.find(slot => slot.day === dayOfWeek);
+      if (daySlot && daySlot.times.length > 0) {
+        return daySlot.times.sort();
+      }
+      // Tutor has availability set but not for this day
+      return [];
+    }
+
+    // Fall back to tutor's default availableSlots from tutor data
+    const tutor = tutors.find(t => t.id === selectedTutor);
+    if (tutor?.availableSlots) {
+      const daySlot = tutor.availableSlots.find(slot => slot.day === dayOfWeek);
+      if (daySlot && daySlot.times.length > 0) {
+        return daySlot.times.sort();
+      }
+      // Tutor has default slots but not for this day
+      return [];
+    }
+
+    // Ultimate fallback: all times available (for tutors without any availability set)
     return [
       '09:00', '10:00', '11:00', '12:00', 
       '13:00', '14:00', '15:00', '16:00', 
@@ -922,27 +999,40 @@ function BookingContent() {
                 <div className="mb-6">
                   <label className="block text-white font-semibold mb-3">Verfügbare Uhrzeiten</label>
                   
-                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {availableTimes.map(time => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => setSelectedTime(time)}
-                        className={`p-4 rounded-lg font-semibold transition-all border-2 ${
-                          selectedTime === time
-                            ? 'bg-accent text-white border-accent shadow-lg scale-105'
-                            : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark hover:border-accent/50 border-white/20'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {selectedTime && (
-                    <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                      <p className="text-green-200 text-sm">
-                        ✓ Ausgewählt: <strong>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> um <strong>{selectedTime} Uhr</strong>
+                  {availableTimes.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {availableTimes.map(time => (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() => setSelectedTime(time)}
+                            className={`p-4 rounded-lg font-semibold transition-all border-2 ${
+                              selectedTime === time
+                                ? 'bg-accent text-white border-accent shadow-lg scale-105'
+                                : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark hover:border-accent/50 border-white/20'
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {selectedTime && (
+                        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                          <p className="text-green-200 text-sm">
+                            ✓ Ausgewählt: <strong>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> um <strong>{selectedTime} Uhr</strong>
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-yellow-200 text-sm">
+                        ⚠️ Der gewählte Tutor ist an diesem Tag nicht verfügbar. Bitte wähle ein anderes Datum.
+                      </p>
+                      <p className="text-yellow-200/70 text-xs mt-2">
+                        {tutors.find(t => t.id === selectedTutor)?.availability || 'Verfügbarkeit nicht angegeben'}
                       </p>
                     </div>
                   )}
