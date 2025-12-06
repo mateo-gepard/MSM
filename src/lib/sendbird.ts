@@ -49,16 +49,21 @@ export async function createParentTutorChannel(
   try {
     const sb = sendbirdInstance || SendbirdChat.instance;
     
+    console.log('[Sendbird] Creating channel with:', { parentId, tutorId, tutorName });
+    
+    // Create proper GroupChannelCreateParams
     const params = {
-      invitedUserIds: [parentId, tutorId],
+      invitedUserIds: [tutorId], // Only invite the other user, current user is auto-included
       name: `Chat with ${tutorName}`,
-      isDistinct: true // Prevents duplicate channels
+      isDistinct: true, // Prevents duplicate channels
+      operatorUserIds: [parentId] // Make parent the operator
     };
 
     const channel = await sb.groupChannel.createChannel(params);
+    console.log('[Sendbird] ✅ Channel created:', channel.url);
     return channel.url;
   } catch (error) {
-    console.error('Sendbird channel creation error:', error);
+    console.error('[Sendbird] ❌ Channel creation error:', error);
     throw error;
   }
 }
