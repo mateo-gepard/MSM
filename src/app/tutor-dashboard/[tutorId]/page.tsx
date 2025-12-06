@@ -87,25 +87,13 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
     }
   }, [user, loading, router, tutorId]);
   
-  // Show loading state while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#081525] via-[#102A43] to-[#081525] flex items-center justify-center">
-        <div className="text-white text-xl">Laden...</div>
-      </div>
-    );
-  }
-  
-  // Don't render if not authenticated (will redirect)
-  if (!user) {
-    return null;
-  }
-  
   // Load tutor's bookings from Supabase (with localStorage fallback)
   useEffect(() => {
+    // Skip if not authenticated yet
+    if (!user || !tutor) return;
+    
     const loadBookings = async () => {
       try {
-        if (!tutor) return;
         
         // First try loading from Supabase
         const { getTutorBookings } = await import('@/lib/supabase');
@@ -186,9 +174,11 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   
   // Load tutor's availability
   useEffect(() => {
+    // Skip if not authenticated yet
+    if (!user || !tutor) return;
+    
     const loadAvailability = async () => {
       try {
-        if (!tutor) return;
         
         // First try loading from Supabase
         const { getTutorAvailability } = await import('@/lib/supabase');
@@ -222,7 +212,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
     };
     
     loadAvailability();
-  }, [tutorId, tutor]);
+  }, [tutorId, tutor, user]);
   
   // Save availability to Supabase and localStorage
   const saveAvailability = async () => {
@@ -490,6 +480,20 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
         </FrostedCard>
       </div>
     );
+  }
+  
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#081525] via-[#102A43] to-[#081525] flex items-center justify-center">
+        <div className="text-white text-xl">Laden...</div>
+      </div>
+    );
+  }
+  
+  // Don't render dashboard if not authenticated (will redirect)
+  if (!user) {
+    return null;
   }
 
   return (
