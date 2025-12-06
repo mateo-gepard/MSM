@@ -144,17 +144,6 @@ export async function getTutorBookings(tutorName: string) {
     }
     
     console.log(`✅ Loaded ${data?.length || 0} bookings from Supabase for tutor: ${tutorName}`);
-    if (data && data.length > 0) {
-      console.log('📋 First booking tutor_name:', data[0].tutor_name);
-    }
-    
-    // Also query all bookings to see what tutor_names exist
-    const { data: allData } = await supabase
-      .from('bookings')
-      .select('tutor_name')
-      .limit(10);
-    console.log('📊 All tutor_names in database:', allData?.map(b => b.tutor_name));
-    
     return data || [];
   } catch (error) {
     console.error('Error fetching tutor bookings:', error);
