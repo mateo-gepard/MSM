@@ -143,3 +143,42 @@ export async function getTutorBookings(tutorName: string) {
     return [];
   }
 }
+
+export async function saveTutorAvailability(tutorName: string, availableSlots: any[]) {
+  try {
+    console.log('💾 Saving tutor availability to Supabase...', { tutorName, availableSlots });
+    
+    const { data, error } = await supabase
+      .from('tutors')
+      .update({ 
+        available_slots: availableSlots,
+        updated_at: new Date().toISOString()
+      })
+      .eq('name', tutorName)
+      .select();
+
+    if (error) throw error;
+    
+    console.log('✅ Tutor availability saved to Supabase:', data);
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('❌ Error saving tutor availability:', error);
+    throw error;
+  }
+}
+
+export async function getTutorAvailability(tutorName: string) {
+  try {
+    const { data, error } = await supabase
+      .from('tutors')
+      .select('available_slots')
+      .eq('name', tutorName)
+      .single();
+
+    if (error) throw error;
+    return data?.available_slots || [];
+  } catch (error) {
+    console.error('Error fetching tutor availability:', error);
+    return [];
+  }
+}

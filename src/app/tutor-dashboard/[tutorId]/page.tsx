@@ -146,29 +146,65 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   
   // Load tutor's availability
   useEffect(() => {
-    const loadAvailability = () => {
-      // First check localStorage for saved availability
-      const savedAvailability = localStorage.getItem(`tutorAvailability_${tutorId}`);
-      if (savedAvailability) {
-        setAvailability(JSON.parse(savedAvailability));
-      } else if (tutor?.availableSlots) {
-        // Fall back to tutor's default availability
-        setAvailability(tutor.availableSlots);
+    const loadAvailability = async () => {
+      try {
+        if (!tutor) return;
+        
+        // First try loading from Supabase
+        const { getTutorAvailability } = await import('@/lib/supabase');
+        const supabaseAvailability = await getTutorAvailability(tutor.name);
+        
+        if (supabaseAvailability && supabaseAvailability.length > 0) {
+          setAvailability(supabaseAvailability);
+          console.log(`[TutorDashboard] Loaded availability from Supabase for ${tutor.name}`);
+        } else {
+          // Fallback to localStorage if Supabase is empty
+          const savedAvailability = localStorage.getItem(`tutorAvailability_${tutorId}`);
+          if (savedAvailability) {
+            setAvailability(JSON.parse(savedAvailability));
+            console.log(`[TutorDashboard] Loaded availability from localStorage`);
+          } else if (tutor?.availableSlots) {
+            // Fall back to tutor's default availability
+            setAvailability(tutor.availableSlots);
+            console.log(`[TutorDashboard] Using default availability from mockData`);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load availability from Supabase, using localStorage:', error);
+        // Fallback to localStorage on error
+        const savedAvailability = localStorage.getItem(`tutorAvailability_${tutorId}`);
+        if (savedAvailability) {
+          setAvailability(JSON.parse(savedAvailability));
+        } else if (tutor?.availableSlots) {
+          setAvailability(tutor.availableSlots);
+        }
       }
     };
     
     loadAvailability();
   }, [tutorId, tutor]);
   
-  // Save availability to localStorage and update tutor data
+  // Save availability to Supabase and localStorage
   const saveAvailability = async () => {
     setIsSaving(true);
     try {
-      // Save to localStorage
+      if (!tutor) {
+        throw new Error('Tutor not found');
+      }
+      
+      // Save to Supabase first
+      try {
+        const { saveTutorAvailability } = await import('@/lib/supabase');
+        await saveTutorAvailability(tutor.name, availability);
+        console.log('✅ Availability saved to Supabase');
+      } catch (supabaseError) {
+        console.warn('⚠️ Failed to save to Supabase, saving to localStorage only:', supabaseError);
+      }
+      
+      // Also save to localStorage as backup
       localStorage.setItem(`tutorAvailability_${tutorId}`, JSON.stringify(availability));
       
-      // In a real app, this would update Supabase
-      // For now, we'll also update a global availability store
+      // Update global availability store
       const globalAvailability = JSON.parse(localStorage.getItem('tutorAvailabilities') || '{}');
       globalAvailability[tutorId] = availability;
       localStorage.setItem('tutorAvailabilities', JSON.stringify(globalAvailability));
@@ -440,6 +476,26 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Supabase Warning Banner */}
+        {(process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_url' || 
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'your_supabase_anon_key') && (
+          <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="text-yellow-400 mt-0.5">⚠️</div>
+              <div>
+                <div className="text-yellow-200 font-semibold mb-1">
+                  Supabase nicht konfiguriert
+                </div>
+                <div className="text-yellow-300 text-sm">
+                  Daten werden nur lokal gespeichert und sind nicht auf anderen Geräten verfügbar. 
+                  Bitte konfiguriere Supabase in der <code className="bg-black/20 px-1 rounded">.env.local</code> Datei.
+                  Siehe <code className="bg-black/20 px-1 rounded">SUPABASE_REQUIRED.md</code> für Anleitung.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
           {[
