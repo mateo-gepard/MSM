@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
 import { cancelBooking } from '@/lib/calcom';
-import { getUserBookings, supabase } from '@/lib/supabase';
+import { getUserBookings, updateBookingStatus, supabase } from '@/lib/supabase';
 import { tutors } from '@/data/mockData';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
