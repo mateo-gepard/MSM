@@ -43,6 +43,7 @@ interface TutorBooking {
   id: string;
   parentName: string;
   parentEmail: string;
+  parentId?: string; // Supabase user ID
   subject: string;
   date: string;
   time: string;
@@ -156,11 +157,11 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   };
   
   // Get unique parents from bookings for the chat
-  const uniqueParents = Array.from(new Set(bookings.map(b => b.parentEmail)))
-    .map(email => {
-      const booking = bookings.find(b => b.parentEmail === email);
-      return booking ? {
-        id: email, // Use email as ID for now
+  const uniqueParents = Array.from(new Set(bookings.map(b => b.parentId || b.parentEmail)))
+    .map(id => {
+      const booking = bookings.find(b => (b.parentId || b.parentEmail) === id);
+      return booking && booking.parentId ? {
+        id: booking.parentId, // Use Supabase user ID
         name: booking.parentName,
         email: booking.parentEmail,
         subject: booking.subject
