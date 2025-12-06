@@ -13,7 +13,7 @@ export function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="py-24 bg-gradient-to-b from-secondary-dark to-primary-dark relative overflow-hidden">
+    <section id="pricing" className="py-16 sm:py-24 bg-gradient-to-b from-secondary-dark to-primary-dark relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden opacity-10">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent rounded-full blur-3xl" />
@@ -26,18 +26,18 @@ export function PricingSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">
             Faire & Transparente Preise
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-300 max-w-3xl mx-auto px-2">
             Quality over Quantity – Limitierte Stunden pro Woche für maximalen Lernerfolg
           </p>
         </motion.div>
 
-        <div className="w-full flex justify-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="w-full overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible">
+          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 min-w-max sm:min-w-0 sm:max-w-5xl sm:mx-auto">
             {packages.map((pkg, idx) => (
               <motion.div
                 key={pkg.id}

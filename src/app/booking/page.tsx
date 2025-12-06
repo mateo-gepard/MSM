@@ -623,19 +623,19 @@ function BookingContent() {
   const availableTimes = getAvailableTimes();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-32">
-      <div className="container mx-auto px-4 max-w-5xl">
+    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-24 sm:pt-32 pb-24 sm:pb-32">
+      <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
         {/* Reschedule Banner */}
         {isReschedule && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-blue-200 flex items-start gap-3"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-blue-200 flex items-start gap-2 sm:gap-3"
           >
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold">Buchung umbuchen 📅</p>
-              <p className="text-sm">
+              <p className="font-semibold text-sm sm:text-base">Buchung umbuchen 📅</p>
+              <p className="text-xs sm:text-sm">
                 Du bist dabei, deine bestehende Buchung umzubuchen. Ändere die gewünschten Details und bestätige am Ende.
               </p>
             </div>
@@ -647,14 +647,14 @@ function BookingContent() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-accent/20 border border-accent/50 rounded-xl text-white flex items-start gap-3"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-accent/20 border border-accent/50 rounded-xl text-white flex items-start gap-2 sm:gap-3"
           >
-            <Check className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <Check className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold">Matching abgeschlossen! ✨</p>
-              <p className="text-sm">
+              <p className="font-semibold text-sm sm:text-base">Matching abgeschlossen! ✨</p>
+              <p className="text-xs sm:text-sm">
                 Basierend auf deinen Präferenzen haben wir {filteredTutors.length} passende Tutoren für <strong>{selectedSubject}</strong> gefunden. 
-                Sie sind nach Übereinstimmung sortiert - die besten Matches zuerst!
+                Sie sind nach Übereinstimmung sortiert!
               </p>
             </div>
           </motion.div>
@@ -665,14 +665,13 @@ function BookingContent() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl text-green-200 flex items-start gap-3"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-500/20 border border-green-500/50 rounded-xl text-green-200 flex items-start gap-2 sm:gap-3"
           >
-            <Check className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <Check className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold">Tutor ausgewählt! ✨</p>
-              <p className="text-sm">
+              <p className="font-semibold text-sm sm:text-base">Tutor ausgewählt! ✨</p>
+              <p className="text-xs sm:text-sm">
                 Du hast <strong>{tutors.find(t => t.id === selectedTutor)?.name}</strong> für <strong>{selectedSubject}</strong> ausgewählt.
-                {currentStep > 0 && " Du kannst zurückgehen, um einen anderen Tutor zu wählen."}
               </p>
             </div>
           </motion.div>
@@ -683,52 +682,35 @@ function BookingContent() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 flex items-start gap-3"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 flex items-start gap-2 sm:gap-3"
           >
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold">Fehler</p>
-              <p className="text-sm">{bookingError}</p>
-              <button 
-                onClick={() => {
-                  console.log('Current state:', {
-                    step: currentStep,
-                    subject: selectedSubject,
-                    tutor: selectedTutor,
-                    package: selectedPackage,
-                    date: selectedDate,
-                    time: selectedTime,
-                    location: selectedLocation,
-                    contact: contactInfo
-                  });
-                }}
-                className="mt-2 text-xs underline"
-              >
-                Debug Info anzeigen (siehe Console)
-              </button>
+              <p className="font-semibold text-sm sm:text-base">Fehler</p>
+              <p className="text-xs sm:text-sm">{bookingError}</p>
             </div>
           </motion.div>
         )}
 
         {/* Progress */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
           <div className="flex items-center justify-between">
             {bookingSteps.map((step, idx) => (
               <div key={idx} className="flex items-center flex-1">
                 <div className={`flex flex-col items-center ${idx < bookingSteps.length - 1 ? 'flex-1' : ''}`}>
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all text-sm sm:text-base ${
                       currentStep >= idx
                         ? 'bg-accent text-white'
                         : 'bg-secondary-dark/50 text-gray-400'
                     }`}
                   >
-                    {currentStep > idx ? <Check className="w-5 h-5" /> : idx + 1}
+                    {currentStep > idx ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : idx + 1}
                   </div>
-                  <span className="text-xs text-gray-400 mt-2 hidden sm:block">{step}</span>
+                  <span className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2 hidden sm:block">{step}</span>
                 </div>
                 {idx < bookingSteps.length - 1 && (
-                  <div className="flex-1 h-1 mx-2">
+                  <div className="flex-1 h-0.5 sm:h-1 mx-1 sm:mx-2">
                     <div className={`h-full rounded ${
                       currentStep > idx ? 'bg-accent' : 'bg-secondary-dark/50'
                     }`} />
@@ -739,11 +721,11 @@ function BookingContent() {
           </div>
         </div>
 
-        <FrostedCard className="p-8" hover={false}>
+        <FrostedCard className="p-4 sm:p-8" hover={false}>
           {/* Step 0: Subject & Tutor */}
           {currentStep === 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-white mb-6">Wähle Fach und Tutor</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Wähle Fach und Tutor</h2>
               
               {/* Subject Selection - Hide if coming from matching */}
               {!matchingData && (
@@ -1065,8 +1047,8 @@ function BookingContent() {
                   }`}
                 >
                   <Monitor className="w-12 h-12 mx-auto mb-3" />
-                  <div className="text-2xl font-bold mb-2">Online</div>
-                  <p className="text-sm opacity-80">Via Zoom oder Google Meet</p>
+                  <div className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Online</div>
+                  <p className="text-xs sm:text-sm opacity-80">Via Zoom oder Google Meet</p>
                 </button>
                 {(() => {
                   const selectedTutorData = tutors.find(t => t.id === selectedTutor);
@@ -1076,7 +1058,7 @@ function BookingContent() {
                     <button
                       onClick={() => !isOnlineOnly && setSelectedLocation('in-person')}
                       disabled={isOnlineOnly}
-                      className={`p-8 rounded-xl transition-all border-2 ${
+                      className={`p-5 sm:p-8 rounded-xl transition-all border-2 active:scale-[0.98] ${
                         isOnlineOnly
                           ? 'bg-gray-800/50 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'
                           : selectedLocation === 'in-person'
@@ -1084,9 +1066,9 @@ function BookingContent() {
                           : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                       }`}
                     >
-                      <Home className="w-12 h-12 mx-auto mb-3" />
-                      <div className="text-2xl font-bold mb-2">Vor Ort</div>
-                      <p className="text-sm opacity-80">
+                      <Home className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3" />
+                      <div className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Vor Ort</div>
+                      <p className="text-xs sm:text-sm opacity-80">
                         {isOnlineOnly 
                           ? 'Nicht verfügbar für diesen Tutor'
                           : 'In München oder Umgebung'
@@ -1101,33 +1083,38 @@ function BookingContent() {
         </FrostedCard>
 
         {/* Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-primary-dark/95 backdrop-blur-md border-t border-white/10 p-4 z-50">
-          <div className="max-w-4xl mx-auto flex justify-between">
+        <div className="fixed bottom-0 left-0 right-0 bg-primary-dark/95 backdrop-blur-md border-t border-white/10 p-3 sm:p-4 z-50">
+          <div className="max-w-4xl mx-auto flex justify-between gap-3">
             <Button
               variant="outline"
               onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
               disabled={currentStep === 0 || isSubmitting}
+              className="flex-1 sm:flex-none py-3 sm:py-2"
             >
-              <ChevronLeft className="w-5 h-5 mr-2" />
-              Zurück
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Zurück</span>
+              <span className="sm:hidden">Back</span>
             </Button>
             <Button
               variant="primary"
               onClick={handleNext}
               disabled={!canProceed() || isSubmitting}
+              className="flex-1 sm:flex-none py-3 sm:py-2"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {isReschedule ? 'Wird umgebucht...' : 'Wird gebucht...'}
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 animate-spin" />
+                  <span className="text-sm">{isReschedule ? 'Umbuchen...' : 'Buchen...'}</span>
                 </>
               ) : (
                 <>
-                  {currentStep === bookingSteps.length - 1 
-                    ? (isReschedule ? 'Umbuchung abschließen' : 'Buchung abschließen')
-                    : 'Weiter'
-                  }
-                  <ChevronRight className="w-5 h-5 ml-2" />
+                  <span className="text-sm sm:text-base">
+                    {currentStep === bookingSteps.length - 1 
+                      ? (isReschedule ? 'Abschließen' : 'Buchen')
+                      : 'Weiter'
+                    }
+                  </span>
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2" />
                 </>
               )}
             </Button>

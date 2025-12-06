@@ -407,10 +407,10 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   if (!tutor) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center">
-        <FrostedCard className="p-8 text-center">
-          <X className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">Tutor nicht gefunden</h1>
-          <p className="text-gray-400">Die angegebene Tutor-ID existiert nicht.</p>
+        <FrostedCard className="p-6 sm:p-8 text-center">
+          <X className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">Tutor nicht gefunden</h1>
+          <p className="text-gray-400 text-sm sm:text-base">Die angegebene Tutor-ID existiert nicht.</p>
         </FrostedCard>
       </div>
     );
@@ -420,18 +420,18 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
     <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark">
       {/* Header */}
       <header className="border-b border-white/10 bg-primary-dark/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white font-bold">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-accent flex items-center justify-center text-white font-bold text-sm sm:text-base">
                 {tutor.name.charAt(0)}
               </div>
               <div>
-                <h1 className="text-white font-semibold">{tutor.name}</h1>
-                <p className="text-gray-400 text-sm">Tutor Dashboard</p>
+                <h1 className="text-white font-semibold text-sm sm:text-base">{tutor.name}</h1>
+                <p className="text-gray-400 text-xs sm:text-sm">Tutor Dashboard</p>
               </div>
             </div>
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-400 text-xs sm:text-sm hidden sm:block">
               {tutor.subjects.join(', ')}
             </div>
           </div>
@@ -439,9 +439,9 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
           {[
             { id: 'bookings', label: 'Buchungen', icon: Calendar },
             { id: 'messages', label: 'Nachrichten', icon: MessageCircle },
@@ -450,14 +450,15 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all whitespace-nowrap text-sm ${
                 activeTab === tab.id
                   ? 'bg-accent text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white active:bg-white/15'
               }`}
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.slice(0, 4)}.</span>
             </button>
           ))}
         </div>
@@ -467,33 +468,33 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
+            className="space-y-3 sm:space-y-4"
           >
-            <h2 className="text-xl font-bold text-white mb-4">Deine Buchungen</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Deine Buchungen</h2>
             
             {bookings.length === 0 ? (
-              <FrostedCard className="p-8 text-center">
-                <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-400">Noch keine Buchungen vorhanden.</p>
-                <p className="text-gray-500 text-sm mt-2">
+              <FrostedCard className="p-6 sm:p-8 text-center">
+                <Calendar className="w-10 h-10 sm:w-12 sm:h-12 text-gray-500 mx-auto mb-3 sm:mb-4" />
+                <p className="text-gray-400 text-sm sm:text-base">Noch keine Buchungen vorhanden.</p>
+                <p className="text-gray-500 text-xs sm:text-sm mt-2">
                   Wenn Eltern dich buchen, erscheinen die Termine hier.
                 </p>
               </FrostedCard>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-3 sm:gap-4">
                 {bookings.map((booking) => (
-                  <FrostedCard key={booking.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full bg-secondary-dark flex items-center justify-center">
-                          <User className="w-6 h-6 text-gray-400" />
+                  <FrostedCard key={booking.id} className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-secondary-dark flex items-center justify-center flex-shrink-0">
+                          <User className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
                         </div>
-                        <div>
-                          <h3 className="text-white font-semibold">{booking.parentName}</h3>
-                          <p className="text-accent text-sm">{booking.subject}</p>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-white font-semibold text-sm sm:text-base">{booking.parentName}</h3>
+                          <p className="text-accent text-xs sm:text-sm">{booking.subject}</p>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-400">
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
+                              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                               {new Date(booking.date).toLocaleDateString('de-DE', {
                                 weekday: 'short',
                                 day: 'numeric',
@@ -501,21 +502,21 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                               })}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
+                              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                               {booking.time.slice(0, 5)} Uhr
                             </span>
                             <span className="flex items-center gap-1">
                               {booking.location === 'online' ? (
-                                <Monitor className="w-4 h-4" />
+                                <Monitor className="w-3 h-3 sm:w-4 sm:h-4" />
                               ) : (
-                                <Home className="w-4 h-4" />
+                                <Home className="w-3 h-3 sm:w-4 sm:h-4" />
                               )}
                               {booking.location === 'online' ? 'Online' : 'Vor Ort'}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      <span className={`self-start px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap ${
                         booking.status === 'scheduled' 
                           ? 'bg-green-500/20 text-green-400'
                           : booking.status === 'completed'
@@ -527,8 +528,8 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                       </span>
                     </div>
                     {booking.message && (
-                      <div className="mt-4 p-3 bg-primary-dark/50 rounded-lg">
-                        <p className="text-gray-300 text-sm">{booking.message}</p>
+                      <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-primary-dark/50 rounded-lg">
+                        <p className="text-gray-300 text-xs sm:text-sm">{booking.message}</p>
                       </div>
                     )}
                   </FrostedCard>

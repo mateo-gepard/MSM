@@ -24,9 +24,9 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
       onClick={onSelect ? handleClick : undefined}
     >
       <FrostedCard 
-        className={`group transition-all ${onSelect ? 'hover:shadow-xl hover:shadow-accent/20 hover:scale-[1.02]' : ''}`}
+        className={`group transition-all ${onSelect ? 'hover:shadow-xl hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]' : ''}`}
       >
-        <div className="relative h-48 w-full mb-4 rounded-xl overflow-hidden">
+        <div className="relative h-40 sm:h-48 w-full mb-3 sm:mb-4 rounded-xl overflow-hidden">
           <Image
             src={tutor.image}
             alt={tutor.name}
@@ -35,19 +35,19 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
             className="object-cover transition-opacity duration-500 group-hover:opacity-90"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
-            <h3 className="text-xl font-bold text-white mb-1">{tutor.name}</h3>
+          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-1">{tutor.name}</h3>
             {/* ...no price per hour... */}
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {/* Subjects */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {tutor.subjects.map((subject) => (
               <span
                 key={subject}
-                className="px-3 py-1 bg-accent/20 text-accent rounded-full text-xs font-medium"
+                className="px-2 sm:px-3 py-0.5 sm:py-1 bg-accent/20 text-accent rounded-full text-[10px] sm:text-xs font-medium"
               >
                 {subject}
               </span>
@@ -86,7 +86,7 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
         </div>
 
         {onSelect && (
-          <div className="mt-4 w-full py-2 bg-accent/10 text-accent rounded-lg text-sm font-semibold text-center">
+          <div className="mt-3 sm:mt-4 w-full py-2.5 sm:py-2 bg-accent/10 text-accent rounded-lg text-sm font-semibold text-center active:bg-accent/20 transition-colors">
             Klicken zum Auswählen ➜
           </div>
         )}

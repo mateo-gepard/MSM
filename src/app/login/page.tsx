@@ -107,21 +107,21 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-24 sm:pt-32 pb-12 sm:pb-20">
       <div className="container mx-auto px-4 max-w-md">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
               {mode === 'login' && 'Willkommen zurück'}
               {mode === 'signup' && 'Account erstellen'}
               {mode === 'magic' && 'Magic Link Login'}
               {mode === 'reset' && 'Passwort zurücksetzen'}
             </h1>
-            <p className="text-gray-400">
+            <p className="text-gray-400 text-sm sm:text-base">
               {mode === 'login' && 'Melde dich an um fortzufahren'}
               {mode === 'signup' && 'Erstelle deinen Account für Elite Tutoring'}
               {mode === 'magic' && 'Login ohne Passwort via E-Mail'}
@@ -129,12 +129,12 @@ function LoginContent() {
             </p>
           </div>
 
-          <FrostedCard className="p-8">
+                    <FrostedCard className="p-6 sm:p-8">
             {/* Login Required Message */}
             {showLoginRequired && (
-              <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="mb-4 p-3 sm:p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="text-blue-200 font-semibold mb-1">
                       Login erforderlich
@@ -164,16 +164,16 @@ function LoginContent() {
 
             {/* Login Form */}
             {mode === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-white font-semibold mb-2">E-Mail</label>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
                       placeholder="deine@email.de"
                       required
                     />
@@ -181,14 +181,14 @@ function LoginContent() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2">Passwort</label>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Passwort</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
                       placeholder="••••••••"
                       required
                     />
@@ -213,16 +213,16 @@ function LoginContent() {
 
             {/* Signup Form */}
             {mode === 'signup' && (
-              <form onSubmit={handleSignup} className="space-y-4">
+              <form onSubmit={handleSignup} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-white font-semibold mb-2">Name</label>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Name</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
                       placeholder="Max Mustermann"
                       required
                     />
@@ -230,14 +230,14 @@ function LoginContent() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2">E-Mail</label>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
                       placeholder="deine@email.de"
                       required
                     />
@@ -245,14 +245,14 @@ function LoginContent() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2">Passwort</label>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Passwort</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
                       placeholder="••••••••"
                       required
                       minLength={6}
@@ -270,15 +270,15 @@ function LoginContent() {
 
             {/* Magic Link Form */}
             {mode === 'magic' && (
-              <form onSubmit={handleMagicLink} className="space-y-4">
-                <div className="mb-4 p-4 bg-accent/10 border border-accent/30 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <KeyRound className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+              <form onSubmit={handleMagicLink} className="space-y-3 sm:space-y-4">
+                <div className="mb-4 p-3 sm:p-4 bg-accent/10 border border-accent/30 rounded-lg">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <KeyRound className="w-4 h-4 sm:w-5 sm:h-5 text-accent flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="text-white font-semibold mb-1">
+                      <div className="text-white font-semibold mb-1 text-sm sm:text-base">
                         Login ohne Passwort
                       </div>
-                      <div className="text-gray-300 text-sm">
+                      <div className="text-gray-300 text-xs sm:text-sm">
                         Gib deine E-Mail ein und erhalte einen Login-Link. 
                         <strong className="text-accent"> Funktioniert auch wenn du noch keinen Account hast</strong> - 
                         wir erstellen automatisch einen für dich.
@@ -288,23 +288,23 @@ function LoginContent() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2">E-Mail</label>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
                       placeholder="deine@email.de"
                       required
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full py-3 sm:py-3.5" disabled={loading}>
                   {loading ? 'Senden...' : 'Magic Link senden'}
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                 </Button>
 
                 <p className="text-xs text-gray-400 text-center">
@@ -315,25 +315,25 @@ function LoginContent() {
 
             {/* Password Reset Form */}
             {mode === 'reset' && (
-              <form onSubmit={handleResetPassword} className="space-y-4">
+              <form onSubmit={handleResetPassword} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-white font-semibold mb-2">E-Mail</label>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
                   <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
+                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
                       placeholder="deine@email.de"
                       required
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full py-3 sm:py-3.5" disabled={loading}>
                   {loading ? 'Senden...' : 'Reset-Link senden'}
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                 </Button>
 
                 <p className="text-xs text-gray-400 text-center">

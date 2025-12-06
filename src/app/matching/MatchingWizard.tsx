@@ -186,27 +186,27 @@ export default function MatchingWizard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-20">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-24 sm:pt-32 pb-12 sm:pb-20">
+      <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
           <div className="flex items-center justify-between mb-4">
             {steps.map((step, idx) => (
               <div key={step.id} className="flex items-center flex-1">
                 <div className={`flex flex-col items-center ${idx < steps.length - 1 ? 'flex-1' : ''}`}>
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                       currentStep >= step.id
-                        ? 'bg-accent text-white scale-110'
+                        ? 'bg-accent text-white scale-100 sm:scale-110'
                         : 'bg-secondary-dark/50 text-gray-400'
                     }`}
                   >
-                    <step.icon className="w-6 h-6" />
+                    <step.icon className="w-4 h-4 sm:w-6 sm:h-6" />
                   </div>
-                  <span className="text-xs text-gray-400 mt-2 hidden sm:block">{step.title}</span>
+                  <span className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2 hidden sm:block">{step.title}</span>
                 </div>
                 {idx < steps.length - 1 && (
-                  <div className="flex-1 h-1 mx-2">
+                  <div className="flex-1 h-0.5 sm:h-1 mx-1 sm:mx-2">
                     <div className={`h-full rounded transition-all duration-300 ${
                       currentStep > step.id ? 'bg-accent' : 'bg-secondary-dark/50'
                     }`} />
@@ -226,25 +226,25 @@ export default function MatchingWizard() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <FrostedCard className="p-8" hover={false}>
+            <FrostedCard className="p-4 sm:p-8" hover={false}>
               {/* Step 1: Subjects */}
               {currentStep === 1 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2 text-center">Welche Fächer interessieren dich?</h2>
-                  <p className="text-gray-400 mb-8 text-center">Wähle ein oder mehrere Fächer aus</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 text-center">Welche Fächer interessieren dich?</h2>
+                  <p className="text-gray-400 mb-6 sm:mb-8 text-center text-sm sm:text-base">Wähle ein oder mehrere Fächer aus</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 max-w-3xl mx-auto">
                     {subjects.map((subject) => (
                       <button
                         key={subject.id}
                         onClick={() => toggleSubject(subject.id)}
-                        className={`p-6 rounded-xl transition-colors duration-300 border-2 flex flex-col items-center justify-center min-h-[120px] ${
+                        className={`p-4 sm:p-6 rounded-xl transition-colors duration-300 border-2 flex flex-col items-center justify-center min-h-[90px] sm:min-h-[120px] active:scale-95 ${
                           selectedSubjects.includes(subject.id)
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
-                        <div className="text-3xl mb-2">{getIcon(subject.icon)}</div>
-                        <div className="font-semibold text-center">{subject.name}</div>
+                        <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{getIcon(subject.icon)}</div>
+                        <div className="font-semibold text-center text-xs sm:text-base">{subject.name}</div>
                       </button>
                     ))}
                   </div>
@@ -254,22 +254,22 @@ export default function MatchingWizard() {
               {/* Step 2: Goals */}
               {currentStep === 2 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Was ist dein Ziel?</h2>
-                  <p className="text-gray-400 mb-8">Mehrfachauswahl möglich</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">Was ist dein Ziel?</h2>
+                  <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">Mehrfachauswahl möglich</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {goals.map((goal) => (
                       <button
                         key={goal.id}
                         onClick={() => toggleGoal(goal.id)}
-                        className={`p-6 rounded-xl transition-colors duration-300 text-left border-2 ${
+                        className={`p-4 sm:p-6 rounded-xl transition-colors duration-300 text-left border-2 active:scale-[0.98] ${
                           selectedGoals.includes(goal.id)
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="text-2xl">{getIcon(goal.icon)}</div>
-                          <div className="font-semibold">{goal.name}</div>
+                          <div className="text-xl sm:text-2xl">{getIcon(goal.icon)}</div>
+                          <div className="font-semibold text-sm sm:text-base">{goal.name}</div>
                         </div>
                       </button>
                     ))}
@@ -280,24 +280,24 @@ export default function MatchingWizard() {
               {/* Step 3: Learning Style */}
               {currentStep === 3 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Wie lernst du am besten?</h2>
-                  <p className="text-gray-400 mb-8">Wähle deinen bevorzugten Lernstil</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">Wie lernst du am besten?</h2>
+                  <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">Wähle deinen bevorzugten Lernstil</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {learningStyles.map((style) => (
                       <button
                         key={style.id}
                         onClick={() => setSelectedLearningStyle(style.id)}
-                        className={`p-6 rounded-xl transition-colors duration-300 text-left border-2 ${
+                        className={`p-4 sm:p-6 rounded-xl transition-colors duration-300 text-left border-2 active:scale-[0.98] ${
                           selectedLearningStyle === style.id
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="text-2xl mt-1">{getIcon(style.icon)}</div>
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className="text-xl sm:text-2xl mt-0.5 sm:mt-1">{getIcon(style.icon)}</div>
                           <div>
-                            <div className="font-semibold mb-1">{style.name}</div>
-                            <div className="text-sm opacity-80">{style.description}</div>
+                            <div className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">{style.name}</div>
+                            <div className="text-xs sm:text-sm opacity-80">{style.description}</div>
                           </div>
                         </div>
                       </button>
@@ -309,24 +309,24 @@ export default function MatchingWizard() {
               {/* Step 4: Urgency */}
               {currentStep === 4 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Wie dringend brauchst du Unterstützung?</h2>
-                  <p className="text-gray-400 mb-8">Wähle deinen Zeitrahmen</p>
-                  <div className="grid grid-cols-1 gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">Wie dringend brauchst du Unterstützung?</h2>
+                  <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">Wähle deinen Zeitrahmen</p>
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
                     {urgencies.map((urgency) => (
                       <button
                         key={urgency.id}
                         onClick={() => setSelectedUrgency(urgency.id)}
-                        className={`p-6 rounded-xl transition-colors duration-300 text-left border-2 ${
+                        className={`p-4 sm:p-6 rounded-xl transition-colors duration-300 text-left border-2 active:scale-[0.98] ${
                           selectedUrgency === urgency.id
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="text-3xl">{getIcon(urgency.icon)}</div>
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="text-2xl sm:text-3xl">{getIcon(urgency.icon)}</div>
                           <div>
-                            <div className="font-semibold text-lg mb-1">{urgency.name}</div>
-                            <div className="text-sm opacity-80">{urgency.description}</div>
+                            <div className="font-semibold text-base sm:text-lg mb-0.5 sm:mb-1">{urgency.name}</div>
+                            <div className="text-xs sm:text-sm opacity-80">{urgency.description}</div>
                           </div>
                         </div>
                       </button>
@@ -338,21 +338,21 @@ export default function MatchingWizard() {
               {/* Step 5: Languages */}
               {currentStep === 5 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">In welcher Sprache möchtest du lernen?</h2>
-                  <p className="text-gray-400 mb-8">Mehrfachauswahl möglich</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">In welcher Sprache möchtest du lernen?</h2>
+                  <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">Mehrfachauswahl möglich</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                     {languages.map((lang) => (
                       <button
                         key={lang.id}
                         onClick={() => toggleLanguage(lang.id)}
-                        className={`p-6 rounded-xl transition-colors duration-300 border-2 ${
+                        className={`p-4 sm:p-6 rounded-xl transition-colors duration-300 border-2 active:scale-95 ${
                           selectedLanguages.includes(lang.id)
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
                         {/* Removed language icon for premium minimal look */}
-                        <div className="font-semibold">{lang.name}</div>
+                        <div className="font-semibold text-sm sm:text-base">{lang.name}</div>
                       </button>
                     ))}
                   </div>
@@ -362,24 +362,24 @@ export default function MatchingWizard() {
               {/* Step 6: Location Preference */}
               {currentStep === 6 && (
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Wo möchtest du lernen?</h2>
-                  <p className="text-gray-400 mb-8">Wähle deinen bevorzugten Unterrichtsort</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">Wo möchtest du lernen?</h2>
+                  <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">Wähle deinen bevorzugten Unterrichtsort</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {locationOptions.map((location) => (
                       <button
                         key={location.id}
                         onClick={() => setSelectedLocation(location.id)}
-                        className={`p-8 rounded-xl transition-colors duration-300 text-left border-2 ${
+                        className={`p-5 sm:p-8 rounded-xl transition-colors duration-300 text-left border-2 active:scale-[0.98] ${
                           selectedLocation === location.id
                             ? 'bg-accent text-white border-accent'
                             : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
                         }`}
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="text-3xl mt-1">{getIcon(location.icon)}</div>
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className="text-2xl sm:text-3xl mt-0.5 sm:mt-1">{getIcon(location.icon)}</div>
                           <div>
-                            <div className="font-semibold text-xl mb-2">{location.name}</div>
-                            <div className="text-sm opacity-80">{location.description}</div>
+                            <div className="font-semibold text-lg sm:text-xl mb-1 sm:mb-2">{location.name}</div>
+                            <div className="text-xs sm:text-sm opacity-80">{location.description}</div>
                           </div>
                         </div>
                       </button>
@@ -391,21 +391,21 @@ export default function MatchingWizard() {
               {/* Step 7: Results */}
               {currentStep === 7 && (
                 <div>
-                  <div className="text-center mb-8">
+                  <div className="text-center mb-6 sm:mb-8">
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", duration: 0.5 }}
-                      className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent/20 mb-4"
+                      className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-accent/20 mb-3 sm:mb-4"
                     >
-                      <Sparkles className="w-10 h-10 text-accent" />
+                      <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-accent" />
                     </motion.div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Perfekte Matches gefunden!</h2>
-                    <p className="text-gray-400">Basierend auf deinen Angaben empfehlen wir diese Tutoren:</p>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1.5 sm:mb-2">Perfekte Matches gefunden!</h2>
+                    <p className="text-gray-400 text-sm sm:text-base">Basierend auf deinen Angaben empfehlen wir diese Tutoren:</p>
                   </div>
 
                   {/* Recommended Tutors */}
-                  <div className="space-y-4 mb-8">
+                  <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                     {getRecommendedTutors().map((tutor, index) => (
                       <motion.div
                         key={tutor.id}
@@ -413,45 +413,45 @@ export default function MatchingWizard() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         onClick={() => setSelectedTutor(tutor.id)}
-                        className={`rounded-xl p-6 border-2 cursor-pointer transition-all duration-300 ${
+                        className={`rounded-xl p-4 sm:p-6 border-2 cursor-pointer transition-all duration-300 active:scale-[0.98] ${
                           selectedTutor === tutor.id
                             ? 'bg-accent/20 border-accent shadow-lg shadow-accent/20'
                             : 'bg-secondary-dark/50 border-accent/20 hover:border-accent/40 hover:bg-secondary-dark/70'
                         }`}
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden flex-shrink-0">
                             <img src={tutor.image} alt={tutor.name} className="w-full h-full object-cover" />
                             {selectedTutor === tutor.id && (
                               <div className="absolute inset-0 bg-accent/40 flex items-center justify-center">
-                                <CheckCircle className="w-8 h-8 text-white" />
+                                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                               </div>
                             )}
                           </div>
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold text-white mb-1">{tutor.name}</h3>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg sm:text-xl font-bold text-white mb-0.5 sm:mb-1">{tutor.name}</h3>
                             {/* <p className="text-accent text-sm font-semibold mb-2">€{tutor.hourlyRate}/Std</p> */}
-                            <div className="flex flex-wrap gap-2 mb-2">
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                               {tutor.subjects.map((subject, idx) => (
-                                <span key={idx} className="px-2 py-1 bg-accent/20 text-accent text-xs rounded-lg">
+                                <span key={idx} className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-accent/20 text-accent text-[10px] sm:text-xs rounded-lg">
                                   {subject}
                                 </span>
                               ))}
                             </div>
-                            <p className="text-gray-400 text-sm">{tutor.bio}</p>
+                            <p className="text-gray-400 text-xs sm:text-sm line-clamp-2">{tutor.bio}</p>
                           </div>
                         </div>
                       </motion.div>
                     ))}
                   </div>
-                  <p className="text-center text-sm text-gray-400 mb-6">
+                  <p className="text-center text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6">
                     {selectedTutor ? '✓ Tutor ausgewählt - Du kannst später noch ändern' : 'Wähle einen Tutor aus (optional)'}
                   </p>
 
                   {/* Summary */}
-                  <div className="bg-primary-dark/50 rounded-xl p-6 space-y-3">
-                    <h3 className="text-lg font-semibold text-white mb-3">Deine Auswahl:</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="bg-primary-dark/50 rounded-xl p-4 sm:p-6 space-y-2 sm:space-y-3">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">Deine Auswahl:</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                       <div>
                         <span className="text-gray-400">Fächer:</span>
                         <span className="text-white ml-2">
@@ -483,22 +483,25 @@ export default function MatchingWizard() {
             </FrostedCard>
 
             {/* Navigation */}
-            <div className="flex justify-between items-center mt-8">
+            <div className="flex justify-between items-center mt-6 sm:mt-8 gap-3">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
                 disabled={currentStep === 1}
+                className="flex-1 sm:flex-none py-3 sm:py-2"
               >
-                <ChevronLeft className="w-5 h-5 mr-2" />
-                Zurück
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Zurück</span>
+                <span className="sm:hidden">Back</span>
               </Button>
               <Button
                 variant="primary"
                 onClick={handleNext}
                 disabled={!canProceed()}
+                className="flex-1 sm:flex-none py-3 sm:py-2"
               >
-                {currentStep === 7 ? 'Zur Buchung' : currentStep === 6 ? 'Ergebnis anzeigen' : 'Weiter'}
-                <ChevronRight className="w-5 h-5 ml-2" />
+                <span className="text-sm sm:text-base">{currentStep === 7 ? 'Zur Buchung' : currentStep === 6 ? 'Ergebnis' : 'Weiter'}</span>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2" />
               </Button>
             </div>
           </motion.div>

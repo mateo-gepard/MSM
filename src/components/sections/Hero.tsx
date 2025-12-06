@@ -44,7 +44,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
+            className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight px-2"
           >
               Elite{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">
@@ -57,7 +57,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto"
+            className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto px-4"
           >
             Überqualifizierte Schüler und Studenten unterrichten 1:1 mit intensiver 
             Vorbereitung, personalisierten Lernplänen und wenn nötig billingual.
@@ -68,15 +68,15 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4"
           >
-            <Link href="/matching">
-              <Button size="lg" variant="primary">
+            <Link href="/matching" className="w-full sm:w-auto">
+              <Button size="lg" variant="primary" className="w-full sm:w-auto py-4 text-base">
                 Erstgespräch buchen
               </Button>
             </Link>
-            <Link href="#tutors">
-              <Button size="lg" variant="outline">
+            <Link href="#tutors" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto py-4 text-base">
                 Tutoren kennenlernen
               </Button>
             </Link>
@@ -87,27 +87,27 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto"
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 md:gap-8 max-w-4xl mx-auto px-2"
           >
-            <div className="frosted-glass rounded-2xl p-6">
-              <Award className="w-8 h-8 text-accent mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white mb-1">100+</div>
-              <div className="text-sm text-gray-400">Erste Preise</div>
+            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <Award className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">100+</div>
+              <div className="text-xs sm:text-sm text-gray-400">Erste Preise</div>
             </div>
-            <div className="frosted-glass rounded-2xl p-6">
-              <Users className="w-8 h-8 text-accent mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white mb-1">6</div>
-              <div className="text-sm text-gray-400">Elite-Tutoren</div>
+            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">6</div>
+              <div className="text-xs sm:text-sm text-gray-400">Elite-Tutoren</div>
             </div>
-            <div className="frosted-glass rounded-2xl p-6">
-              <FileText className="w-8 h-8 text-accent mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white mb-1">1.2</div>
-              <div className="text-sm text-gray-400">Notenschnitt</div>
+            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">1.2</div>
+              <div className="text-xs sm:text-sm text-gray-400">Notenschnitt</div>
             </div>
-            <div className="frosted-glass rounded-2xl p-6">
-              <Globe className="w-8 h-8 text-accent mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white mb-1">5</div>
-              <div className="text-sm text-gray-400">Sprachen</div>
+            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">5</div>
+              <div className="text-xs sm:text-sm text-gray-400">Sprachen</div>
             </div>
           </motion.div>
         </div>

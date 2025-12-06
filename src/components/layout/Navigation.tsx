@@ -83,8 +83,9 @@ export function Navigation() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white"
+            className="md:hidden text-white p-2 -mr-2 rounded-lg hover:bg-white/10 active:bg-white/20 transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -97,38 +98,40 @@ export function Navigation() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden py-4 border-t border-white/10"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden absolute left-0 right-0 top-full bg-primary-dark/95 backdrop-blur-xl border-t border-b border-white/10 shadow-2xl"
           >
-            <div className="flex flex-col gap-4">
+            <div className="container mx-auto px-4 py-6 flex flex-col gap-2">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-gray-300 hover:text-white transition-colors font-medium py-2"
+                  className="text-gray-300 hover:text-white active:text-accent transition-colors font-medium py-3 px-4 rounded-xl hover:bg-white/5 active:bg-white/10"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
               ))}
+              <div className="border-t border-white/10 my-2" />
               {user ? (
                 <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button size="sm" className="w-full">
-                    <User className="w-4 h-4 mr-2" />
+                  <Button size="lg" className="w-full py-4">
+                    <User className="w-5 h-5 mr-2" />
                     Dashboard
                   </Button>
                 </Link>
               ) : (
-                <>
+                <div className="flex flex-col gap-3">
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button size="sm" variant="outline" className="w-full">Login</Button>
+                    <Button size="lg" variant="outline" className="w-full py-4">Login</Button>
                   </Link>
                   <Link href="/matching" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button size="sm" className="w-full">Erstgespräch</Button>
+                    <Button size="lg" className="w-full py-4">Erstgespräch</Button>
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </motion.div>

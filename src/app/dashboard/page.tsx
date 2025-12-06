@@ -86,6 +86,7 @@ const mockMessages = [
 // Messages Interface Component with Tutor List and Chat
 function MessagesInterface({ userBookings, userId }: { userBookings: any[], userId: string }) {
   const [selectedTutorName, setSelectedTutorName] = useState<string | null>(null);
+  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   
   // Get unique tutors from bookings using tutor name (since tutorId may be null in Supabase)
   const uniqueTutors = Array.from(new Set(userBookings
@@ -116,15 +117,21 @@ function MessagesInterface({ userBookings, userId }: { userBookings: any[], user
 
   const selectedTutor = uniqueTutors.find(t => t?.tutorName === selectedTutorName);
 
+  // Handle tutor selection on mobile
+  const handleSelectTutor = (tutorName: string) => {
+    setSelectedTutorName(tutorName);
+    setShowChatOnMobile(true);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[600px]">
-      {/* Tutor List Sidebar */}
-      <div className="md:col-span-1 bg-secondary-dark/50 rounded-xl overflow-hidden border border-white/10">
-        <div className="p-4 border-b border-white/10">
-          <h3 className="font-semibold text-white">Deine Tutoren</h3>
-          <p className="text-xs text-gray-400 mt-1">{uniqueTutors.length} {uniqueTutors.length === 1 ? 'Tutor' : 'Tutoren'}</p>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[500px] sm:h-[600px]">
+      {/* Tutor List Sidebar - Hidden on mobile when chat is open */}
+      <div className={`md:col-span-1 bg-secondary-dark/50 rounded-xl overflow-hidden border border-white/10 ${showChatOnMobile ? 'hidden md:block' : ''}`}>
+        <div className="p-3 sm:p-4 border-b border-white/10">
+          <h3 className="font-semibold text-white text-sm sm:text-base">Deine Tutoren</h3>
+          <p className="text-[10px] sm:text-xs text-gray-400 mt-1">{uniqueTutors.length} {uniqueTutors.length === 1 ? 'Tutor' : 'Tutoren'}</p>
         </div>
-        <div className="overflow-y-auto h-[calc(600px-80px)]">
+        <div className="overflow-y-auto h-[calc(500px-70px)] sm:h-[calc(600px-80px)]">
           {uniqueTutors.map((tutor) => {
             if (!tutor) return null;
             const isSelected = selectedTutorName === tutor.tutorName;
@@ -132,22 +139,22 @@ function MessagesInterface({ userBookings, userId }: { userBookings: any[], user
             return (
               <button
                 key={tutor.tutorName}
-                onClick={() => setSelectedTutorName(tutor.tutorName)}
-                className={`w-full p-4 text-left transition-all border-b border-white/5 hover:bg-primary-dark/50 ${
+                onClick={() => handleSelectTutor(tutor.tutorName)}
+                className={`w-full p-3 sm:p-4 text-left transition-all border-b border-white/5 hover:bg-primary-dark/50 active:bg-primary-dark/70 ${
                   isSelected ? 'bg-primary-dark/70 border-l-4 border-l-accent' : ''
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-lg font-bold ${
                     isSelected ? 'bg-accent text-white' : 'bg-secondary-dark text-gray-400'
                   }`}>
                     {tutor.tutorName.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className={`font-semibold truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                    <div className={`font-semibold truncate text-sm sm:text-base ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                       {tutor.tutorName}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">{tutor.subject}</div>
+                    <div className="text-[10px] sm:text-xs text-gray-500 truncate">{tutor.subject}</div>
                   </div>
                 </div>
               </button>
@@ -157,7 +164,19 @@ function MessagesInterface({ userBookings, userId }: { userBookings: any[], user
       </div>
 
       {/* Chat Window */}
-      <div className="md:col-span-3 bg-secondary-dark/50 rounded-xl overflow-hidden border border-white/10">
+      <div className={`md:col-span-3 bg-secondary-dark/50 rounded-xl overflow-hidden border border-white/10 ${!showChatOnMobile ? 'hidden md:block' : ''}`}>
+        {/* Mobile back button */}
+        {showChatOnMobile && (
+          <button
+            onClick={() => setShowChatOnMobile(false)}
+            className="md:hidden w-full p-3 bg-primary-dark/50 border-b border-white/10 flex items-center gap-2 text-gray-300"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm">Zurück zur Liste</span>
+          </button>
+        )}
         {selectedTutor ? (
           <div className="h-full">
             <ChatWidget
@@ -169,8 +188,8 @@ function MessagesInterface({ userBookings, userId }: { userBookings: any[], user
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-gray-400">
-              <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Wähle einen Tutor aus, um zu chatten</p>
+              <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm sm:text-base">Wähle einen Tutor aus, um zu chatten</p>
             </div>
           </div>
         )}
@@ -462,8 +481,8 @@ function DashboardContent() {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-20 flex items-center justify-center">
-        <div className="text-white text-xl">Lädt...</div>
+      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-24 sm:pt-32 pb-20 flex items-center justify-center">
+        <div className="text-white text-lg sm:text-xl">Lädt...</div>
       </div>
     );
   }
@@ -471,11 +490,11 @@ function DashboardContent() {
   // Don't render if not authenticated (will redirect)
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center">
-        <div className="bg-secondary-dark/80 p-8 rounded-xl shadow-xl text-center">
-          <User className="w-10 h-10 mx-auto mb-4 text-accent" />
-          <h2 className="text-2xl font-bold text-white mb-2">Login erforderlich</h2>
-          <p className="text-gray-300 mb-4">Bitte melde dich an, um dein Dashboard zu sehen.</p>
+      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center px-4">
+        <div className="bg-secondary-dark/80 p-6 sm:p-8 rounded-xl shadow-xl text-center">
+          <User className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-3 sm:mb-4 text-accent" />
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Login erforderlich</h2>
+          <p className="text-gray-300 mb-4 text-sm sm:text-base">Bitte melde dich an, um dein Dashboard zu sehen.</p>
           <a href="/login" className="inline-block px-6 py-2 bg-accent text-white rounded-lg font-semibold hover:bg-accent/80 transition">Zum Login</a>
         </div>
       </div>
@@ -518,17 +537,17 @@ function DashboardContent() {
 
   return (
     <SendbirdProvider>
-      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 pb-20">
-        <div className="container mx-auto px-4 max-w-7xl">
+      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-24 sm:pt-32 pb-20">
+        <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
           {/* Success Message */}
           {bookingSuccess && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 flex items-center gap-3"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 flex items-center gap-2 sm:gap-3"
           >
-            <Check className="w-5 h-5" />
-            <span>Buchung erfolgreich! Du erhältst in Kürze eine Bestätigung per E-Mail.</span>
+            <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-sm sm:text-base">Buchung erfolgreich! Du erhältst in Kürze eine Bestätigung per E-Mail.</span>
           </motion.div>
         )}
         
@@ -537,10 +556,10 @@ function DashboardContent() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-blue-400 flex items-center gap-3"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-blue-400 flex items-center gap-2 sm:gap-3"
           >
-            <Check className="w-5 h-5" />
-            <span>Buchung erfolgreich umgebucht! Die Änderungen wurden gespeichert.</span>
+            <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-sm sm:text-base">Buchung erfolgreich umgebucht! Die Änderungen wurden gespeichert.</span>
           </motion.div>
         )}
 
@@ -549,39 +568,39 @@ function DashboardContent() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-6 bg-gradient-to-r from-accent/20 to-purple-500/20 border border-accent/50 rounded-xl"
+            className="mb-4 sm:mb-6 p-4 sm:p-6 bg-gradient-to-r from-accent/20 to-purple-500/20 border border-accent/50 rounded-xl"
           >
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
-                <KeyRound className="w-6 h-6 text-accent" />
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-accent/20 flex items-center justify-center">
+                <KeyRound className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-white mb-2">
-                  Sichere deinen Account mit einem Passwort
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">
+                  Sichere deinen Account
                 </h3>
-                <p className="text-gray-300 mb-4">
-                  Du hast dich per Magic Link eingeloggt. Das ist praktisch, aber für mehr Sicherheit und schnelleren Zugriff 
-                  empfehlen wir dir, ein Passwort zu setzen. So kannst du dich auch ohne E-Mail-Link einloggen.
+                <p className="text-gray-300 mb-3 sm:mb-4 text-xs sm:text-sm">
+                  Du hast dich per Magic Link eingeloggt. Für mehr Sicherheit empfehlen wir dir, ein Passwort zu setzen.
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Link href="/reset-password">
-                    <Button size="sm" variant="primary">
+                    <Button size="sm" variant="primary" className="w-full sm:w-auto">
                       <KeyRound className="w-4 h-4 mr-2" />
-                      Passwort jetzt setzen
+                      Passwort setzen
                     </Button>
                   </Link>
                   <Button 
                     size="sm" 
                     variant="outline"
                     onClick={dismissPasswordPrompt}
+                    className="w-full sm:w-auto"
                   >
-                    Später erinnern
+                    Später
                   </Button>
                 </div>
               </div>
               <button
                 onClick={dismissPasswordPrompt}
-                className="flex-shrink-0 text-gray-400 hover:text-white transition-colors"
+                className="flex-shrink-0 text-gray-400 hover:text-white transition-colors hidden sm:block"
                 aria-label="Schließen"
               >
                 <X className="w-5 h-5" />
@@ -591,14 +610,39 @@ function DashboardContent() {
         )}
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-gray-400">Verwalte deine Buchungen, Nachrichten und Profile</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">Dashboard</h1>
+          <p className="text-gray-400 text-sm sm:text-base">Verwalte deine Buchungen und Nachrichten</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
+        {/* Mobile Tab Navigation (visible only on mobile) */}
+        <div className="lg:hidden mb-4 overflow-x-auto pb-2 -mx-3 px-3">
+          <div className="flex gap-2 min-w-max">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-accent text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{tab.label}</span>
+                {tab.badge && tab.badge > 0 && (
+                  <span className="px-1.5 py-0.5 bg-white/20 rounded-full text-[10px] font-bold">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Sidebar - Hidden on mobile */}Hidden on mobile */}
+          <div className="hidden lg:block lg:col-span-1">
             <FrostedCard className="p-4" hover={false}>
               <nav className="space-y-2">
                 {tabs.map((tab) => (
