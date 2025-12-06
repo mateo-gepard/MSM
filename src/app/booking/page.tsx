@@ -54,19 +54,21 @@ function BookingContent() {
   const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
   const [cameFromMatching, setCameFromMatching] = useState(false); // Track if user came from matching wizard
 
-  // Sync currentStep with URL
+  // Sync currentStep with URL using pushState for proper browser history
   useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set('bookingStep', currentStep.toString());
-    window.history.replaceState({}, '', url.toString());
+    window.history.pushState({ bookingStep: currentStep }, '', url.toString());
   }, [currentStep]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
       const stepParam = new URLSearchParams(window.location.search).get('bookingStep');
       if (stepParam) {
         setCurrentStep(parseInt(stepParam));
+      } else if (event.state?.bookingStep !== undefined) {
+        setCurrentStep(event.state.bookingStep);
       }
     };
 

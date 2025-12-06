@@ -82,19 +82,21 @@ export default function MatchingWizard() {
   const [selectedLocation, setSelectedLocation] = useState<string>(''); // online or in-person
   const [selectedTutor, setSelectedTutor] = useState<string>('');
 
-  // Sync currentStep with URL
+  // Sync currentStep with URL using pushState for proper browser history
   useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set('step', currentStep.toString());
-    window.history.replaceState({}, '', url.toString());
+    window.history.pushState({ step: currentStep }, '', url.toString());
   }, [currentStep]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
       const stepParam = new URLSearchParams(window.location.search).get('step');
       if (stepParam) {
         setCurrentStep(parseInt(stepParam));
+      } else if (event.state?.step) {
+        setCurrentStep(event.state.step);
       }
     };
 
