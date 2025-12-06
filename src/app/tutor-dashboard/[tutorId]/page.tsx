@@ -71,22 +71,53 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   // Find the tutor from our data
   const tutor = tutors.find(t => t.id === tutorId);
   
-  // Load tutor's bookings from localStorage/Supabase
+  // Load tutor's bookings from Supabase (with localStorage fallback)
   useEffect(() => {
     const loadBookings = async () => {
       try {
-        // Load all bookings and filter for this tutor
+        if (!tutor) return;
+        
+        // First try loading from Supabase
+        const { getTutorBookings } = await import('@/lib/supabase');
+        const supabaseBookings = await getTutorBookings(tutor.name);
+        
+        if (supabaseBookings && supabaseBookings.length > 0) {
+          // Transform Supabase bookings to match TutorBooking interface
+          const formattedBookings = supabaseBookings.map((booking: any) => ({
+            id: booking.calcom_booking_id || booking.id,
+            parentName: booking.contact_name,
+            parentEmail: booking.contact_email,
+            parentId: booking.user_id,
+            subject: booking.subject,
+            date: booking.date,
+            time: booking.time,
+            location: booking.location,
+            status: booking.status,
+            message: booking.message,
+            createdAt: booking.created_at
+          }));
+          setBookings(formattedBookings);
+          console.log(`[TutorDashboard] Loaded ${formattedBookings.length} bookings from Supabase`);
+        } else {
+          // Fallback to localStorage if Supabase is empty or not configured
+          const allBookingsJson = localStorage.getItem('allTutorBookings') || '{}';
+          const allBookings = JSON.parse(allBookingsJson);
+          const tutorBookings = allBookings[tutorId] || [];
+          setBookings(tutorBookings);
+          console.log(`[TutorDashboard] Loaded ${tutorBookings.length} bookings from localStorage`);
+        }
+      } catch (error) {
+        console.error('Failed to load bookings from Supabase, trying localStorage:', error);
+        // Fallback to localStorage on error
         const allBookingsJson = localStorage.getItem('allTutorBookings') || '{}';
         const allBookings = JSON.parse(allBookingsJson);
         const tutorBookings = allBookings[tutorId] || [];
         setBookings(tutorBookings);
-      } catch (error) {
-        console.error('Failed to load bookings:', error);
       }
     };
     
     loadBookings();
-  }, [tutorId]);
+  }, [tutorId, tutor]);
   
   // Load tutor's availability
   useEffect(() => {

@@ -127,3 +127,19 @@ export async function deleteBooking(calcomBookingId: string) {
     throw error;
   }
 }
+
+export async function getTutorBookings(tutorName: string) {
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('tutor_name', tutorName)
+      .order('date', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching tutor bookings:', error);
+    return [];
+  }
+}
