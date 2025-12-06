@@ -86,52 +86,60 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
         const { getTutorBookings } = await import('@/lib/supabase');
         const supabaseBookings = await getTutorBookings(tutor.name);
         
-        if (supabaseBookings && supabaseBookings.length > 0) {
-          // Import updateBookingStatus function
-          const { updateBookingStatus } = await import('@/lib/supabase');
-          
-          // Transform Supabase bookings to match TutorBooking interface
-          const formattedBookings = supabaseBookings.map((booking: any) => ({
-            id: booking.calcom_booking_id || booking.id,
-            parentName: booking.contact_name,
-            parentEmail: booking.contact_email,
-            parentId: booking.user_id,
-            subject: booking.subject,
-            date: booking.date,
-            time: booking.time,
-            location: booking.location,
-            status: booking.status,
-            message: booking.message,
-            createdAt: booking.created_at
-          }));
-          
-          // Auto-update past bookings to 'completed' status
-          const now = new Date();
-          const updatedBookings = formattedBookings.map((booking: TutorBooking) => {
-            // Only update if booking is scheduled and date/time has passed
-            if (booking.status === 'scheduled') {
-              const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
-              if (bookingDateTime < now) {
-                // Update status in Supabase (async, fire and forget)
-                updateBookingStatus(booking.id, 'completed').catch(err => 
-                  console.error('Failed to update booking status:', err)
-                );
-                return { ...booking, status: 'completed' as const };
-              }
-            }
-            return booking;
-          });
-          
-          setBookings(updatedBookings);
+        // If we got a response (even if empty), Supabase is connected
+        if (supabaseBookings !== null && supabaseBookings !== undefined) {
           setSupabaseConnected(true);
-          console.log(`[TutorDashboard] Loaded ${updatedBookings.length} bookings from Supabase`);
+          
+          if (supabaseBookings.length > 0) {
+            // Import updateBookingStatus function
+            const { updateBookingStatus } = await import('@/lib/supabase');
+            
+            // Transform Supabase bookings to match TutorBooking interface
+            const formattedBookings = supabaseBookings.map((booking: any) => ({
+              id: booking.calcom_booking_id || booking.id,
+              parentName: booking.contact_name,
+              parentEmail: booking.contact_email,
+              parentId: booking.user_id,
+              subject: booking.subject,
+              date: booking.date,
+              time: booking.time,
+              location: booking.location,
+              status: booking.status,
+              message: booking.message,
+              createdAt: booking.created_at
+            }));
+            
+            // Auto-update past bookings to 'completed' status
+            const now = new Date();
+            const updatedBookings = formattedBookings.map((booking: TutorBooking) => {
+              // Only update if booking is scheduled and date/time has passed
+              if (booking.status === 'scheduled') {
+                const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
+                if (bookingDateTime < now) {
+                  // Update status in Supabase (async, fire and forget)
+                  updateBookingStatus(booking.id, 'completed').catch(err => 
+                    console.error('Failed to update booking status:', err)
+                  );
+                  return { ...booking, status: 'completed' as const };
+                }
+              }
+              return booking;
+            });
+            
+            setBookings(updatedBookings);
+            console.log(`[TutorDashboard] Loaded ${updatedBookings.length} bookings from Supabase`);
+          } else {
+            // Supabase is working but has no bookings yet
+            setBookings([]);
+            console.log(`[TutorDashboard] No bookings in Supabase yet (empty but connected)`);
+          }
         } else {
-          // Fallback to localStorage if Supabase is empty or not configured
+          // Supabase query failed, fallback to localStorage
+          setSupabaseConnected(false);
           const allBookingsJson = localStorage.getItem('allTutorBookings') || '{}';
           const allBookings = JSON.parse(allBookingsJson);
           const tutorBookings = allBookings[tutorId] || [];
           setBookings(tutorBookings);
-          setSupabaseConnected(false);
           console.log(`[TutorDashboard] Loaded ${tutorBookings.length} bookings from localStorage`);
         }
       } catch (error) {

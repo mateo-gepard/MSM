@@ -130,13 +130,20 @@ export async function deleteBooking(calcomBookingId: string) {
 
 export async function getTutorBookings(tutorName: string) {
   try {
+    console.log('🔍 Fetching tutor bookings from Supabase...', { tutorName });
+    
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
       .eq('tutor_name', tutorName)
       .order('date', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase bookings query error:', error);
+      throw error;
+    }
+    
+    console.log(`✅ Loaded ${data?.length || 0} bookings from Supabase`);
     return data || [];
   } catch (error) {
     console.error('Error fetching tutor bookings:', error);
@@ -169,13 +176,25 @@ export async function saveTutorAvailability(tutorName: string, availableSlots: a
 
 export async function getTutorAvailability(tutorName: string) {
   try {
+    console.log('🔍 Fetching tutor availability from Supabase...', { tutorName });
+    
     const { data, error } = await supabase
       .from('tutors')
       .select('available_slots')
       .eq('name', tutorName)
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase query error:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.log('ℹ️ Tutor not found in Supabase, will use default/localStorage');
+      return [];
+    }
+    
+    console.log('✅ Tutor availability loaded from Supabase:', data.available_slots);
     return data?.available_slots || [];
   } catch (error) {
     console.error('Error fetching tutor availability:', error);
