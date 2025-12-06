@@ -85,40 +85,36 @@ const mockMessages = [
 
 // Messages Interface Component with Tutor List and Chat
 function MessagesInterface({ userBookings, userId }: { userBookings: any[], userId: string }) {
-  const [selectedTutorId, setSelectedTutorId] = useState<string | null>(null);
+  const [selectedTutorName, setSelectedTutorName] = useState<string | null>(null);
   
-  // Debug logging
-  console.log('[MessagesInterface] userBookings:', userBookings);
-  console.log('[MessagesInterface] Bookings with tutorId:', userBookings.map(b => ({ 
-    id: b.id, 
-    tutorId: b.tutorId, 
-    tutorName: b.tutorName 
-  })));
-  
-  // Get unique tutors from bookings - ONLY include bookings with valid tutorId
+  // Get unique tutors from bookings using tutor name (since tutorId may be null in Supabase)
   const uniqueTutors = Array.from(new Set(userBookings
-    .filter(b => b.tutorId && b.tutorId !== 'null' && b.tutorId !== 'undefined') // Filter out invalid tutorIds
-    .map(b => b.tutorId)))
-    .map(tutorId => {
-      const booking = userBookings.find(b => b.tutorId === tutorId);
-      return booking ? {
+    .filter(b => b.tutorName && b.tutorName.trim() !== '') // Filter bookings with valid tutor names
+    .map(b => b.tutorName)))
+    .map(tutorName => {
+      const booking = userBookings.find(b => b.tutorName === tutorName);
+      if (!booking) return null;
+      
+      // Try to get tutorId from tutors data, or generate a stable ID from the name
+      const tutorData = tutors.find(t => t.name === tutorName);
+      const tutorId = tutorData?.id || tutorName.toLowerCase().replace(/\s+/g, '-');
+      
+      return {
         tutorId,
-        tutorName: booking.tutorName,
+        tutorName,
         subject: booking.subject
-      } : null;
+      };
     })
     .filter(Boolean);
-  
-  console.log('[MessagesInterface] uniqueTutors:', uniqueTutors);
 
   // Auto-select first tutor if none selected
   useEffect(() => {
-    if (uniqueTutors.length > 0 && !selectedTutorId) {
-      setSelectedTutorId(uniqueTutors[0]!.tutorId);
+    if (uniqueTutors.length > 0 && !selectedTutorName) {
+      setSelectedTutorName(uniqueTutors[0]!.tutorName);
     }
-  }, [uniqueTutors, selectedTutorId]);
+  }, [uniqueTutors, selectedTutorName]);
 
-  const selectedTutor = uniqueTutors.find(t => t?.tutorId === selectedTutorId);
+  const selectedTutor = uniqueTutors.find(t => t?.tutorName === selectedTutorName);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[600px]">
@@ -131,12 +127,12 @@ function MessagesInterface({ userBookings, userId }: { userBookings: any[], user
         <div className="overflow-y-auto h-[calc(600px-80px)]">
           {uniqueTutors.map((tutor) => {
             if (!tutor) return null;
-            const isSelected = selectedTutorId === tutor.tutorId;
+            const isSelected = selectedTutorName === tutor.tutorName;
             
             return (
               <button
-                key={tutor.tutorId}
-                onClick={() => setSelectedTutorId(tutor.tutorId)}
+                key={tutor.tutorName}
+                onClick={() => setSelectedTutorName(tutor.tutorName)}
                 className={`w-full p-4 text-left transition-all border-b border-white/5 hover:bg-primary-dark/50 ${
                   isSelected ? 'bg-primary-dark/70 border-l-4 border-l-accent' : ''
                 }`}
