@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, Fragment } from 'react';
 import { tutors } from '@/data/mockData';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
@@ -69,6 +69,8 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
+  const [viewMode, setViewMode] = useState<'grid' | 'schedule' | 'slider'>('grid'); // View selection
+  const [timeRanges, setTimeRanges] = useState<Record<string, Array<{ start: string; end: string }>>>({});
   
   // Find the tutor from our data
   const tutor = tutors.find(t => t.id === tutorId);
@@ -279,8 +281,101 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   const clearAll = () => {
     if (confirm('Möchtest du wirklich alle Verfügbarkeiten löschen?')) {
       setAvailability([]);
+      setTimeRanges({});
     }
   };
+  
+  // Add time range for slider view
+  const addTimeRange = (day: string) => {
+    setTimeRanges(prev => ({
+      ...prev,
+      [day]: [...(prev[day] || []), { start: '09:00', end: '17:00' }]
+    }));
+  };
+  
+  // Update time range
+  const updateTimeRange = (day: string, index: number, field: 'start' | 'end', value: string) => {
+    setTimeRanges(prev => {
+      const dayRanges = [...(prev[day] || [])];
+      dayRanges[index] = { ...dayRanges[index], [field]: value };
+      return { ...prev, [day]: dayRanges };
+    });
+    
+    // Convert ranges to availability slots
+    syncRangesToAvailability();
+  };
+  
+  // Remove time range
+  const removeTimeRange = (day: string, index: number) => {
+    setTimeRanges(prev => {
+      const dayRanges = [...(prev[day] || [])];
+      dayRanges.splice(index, 1);
+      return { ...prev, [day]: dayRanges };
+    });
+    
+    syncRangesToAvailability();
+  };
+  
+  // Sync time ranges to availability format
+  const syncRangesToAvailability = () => {
+    const newAvailability: AvailabilitySlot[] = [];
+    
+    Object.entries(timeRanges).forEach(([day, ranges]) => {
+      const times: string[] = [];
+      ranges.forEach(range => {
+        const startIndex = TIME_SLOTS.indexOf(range.start);
+        const endIndex = TIME_SLOTS.indexOf(range.end);
+        if (startIndex !== -1 && endIndex !== -1) {
+          for (let i = startIndex; i <= endIndex; i++) {
+            if (!times.includes(TIME_SLOTS[i])) {
+              times.push(TIME_SLOTS[i]);
+            }
+          }
+        }
+      });
+      
+      if (times.length > 0) {
+        newAvailability.push({ day, times: times.sort() });
+      }
+    });
+    
+    setAvailability(newAvailability);
+  };
+  
+  // Initialize time ranges from availability when switching to slider view
+  useEffect(() => {
+    if (viewMode === 'slider' && Object.keys(timeRanges).length === 0 && availability.length > 0) {
+      const ranges: Record<string, Array<{ start: string; end: string }>> = {};
+      
+      availability.forEach(slot => {
+        if (slot.times.length > 0) {
+          // Group consecutive times into ranges
+          const sortedTimes = [...slot.times].sort();
+          const grouped: Array<{ start: string; end: string }> = [];
+          let rangeStart = sortedTimes[0];
+          let prevTime = sortedTimes[0];
+          
+          for (let i = 1; i < sortedTimes.length; i++) {
+            const prevIndex = TIME_SLOTS.indexOf(prevTime);
+            const currIndex = TIME_SLOTS.indexOf(sortedTimes[i]);
+            
+            if (currIndex - prevIndex > 1) {
+              // Gap detected, end current range
+              grouped.push({ start: rangeStart, end: prevTime });
+              rangeStart = sortedTimes[i];
+            }
+            prevTime = sortedTimes[i];
+          }
+          
+          // Add final range
+          grouped.push({ start: rangeStart, end: prevTime });
+          ranges[slot.day] = grouped;
+        }
+      });
+      
+      setTimeRanges(ranges);
+    }
+  }, [viewMode, availability, timeRanges]);
   
   // Check if a time slot is selected
   const isTimeSelected = (day: string, time: string) => {
@@ -528,11 +623,11 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">Verfügbarkeit einstellen</h2>
                 <p className="text-gray-400 text-sm mt-1">
-                  Klicke oder ziehe, um Zeiten auszuwählen. Klicke auf Tage/Zeiten-Köpfe für Schnellauswahl.
+                  Wähle deine bevorzugte Ansicht und setze deine verfügbaren Zeiten.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -542,7 +637,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                   className="flex items-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Alles löschen
+                  Löschen
                 </Button>
                 <Button
                   onClick={saveAvailability}
@@ -555,6 +650,40 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
               </div>
             </div>
 
+            {/* View Mode Selection */}
+            <div className="flex gap-2 p-1 bg-secondary-dark/50 rounded-lg w-fit">
+              <button
+                onClick={() => setViewMode('schedule')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'schedule'
+                    ? 'bg-accent text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                📅 Stundenplan
+              </button>
+              <button
+                onClick={() => setViewMode('slider')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'slider'
+                    ? 'bg-accent text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                ⏱️ Zeitbereiche
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-accent text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                🔲 Raster
+              </button>
+            </div>
+
             {saveMessage && (
               <div className={`p-3 rounded-lg ${
                 saveMessage.includes('Fehler') 
@@ -565,7 +694,133 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
               </div>
             )}
 
-            <FrostedCard className="p-6">
+            {/* Schedule View (Stundenplan) */}
+            {viewMode === 'schedule' && (
+              <FrostedCard className="p-6">
+                <div className="grid grid-cols-8 gap-2">
+                  {/* Header */}
+                  <div className="text-xs text-gray-500 font-medium">Zeit</div>
+                  {DAYS_OF_WEEK.map(day => (
+                    <div key={day.id} className="text-xs text-gray-400 font-medium text-center">
+                      {day.name.substring(0, 2)}
+                    </div>
+                  ))}
+                  
+                  {/* Time blocks */}
+                  {['08:00-12:00', '12:00-14:00', '14:00-18:00', '18:00-21:00'].map(timeBlock => {
+                    const [start, end] = timeBlock.split('-');
+                    const startIdx = TIME_SLOTS.indexOf(start);
+                    const endIdx = TIME_SLOTS.indexOf(end);
+                    const blockTimes = TIME_SLOTS.slice(startIdx, endIdx);
+                    
+                    return (
+                      <Fragment key={timeBlock}>
+                        <div className="text-xs text-gray-400 py-4">{timeBlock}</div>
+                        {DAYS_OF_WEEK.map(day => {
+                          const hasAnyTime = blockTimes.some(t => isTimeSelected(day.id, t));
+                          const hasAllTimes = blockTimes.every(t => isTimeSelected(day.id, t));
+                          
+                          return (
+                            <button
+                              key={day.id}
+                              onClick={() => {
+                                // Toggle all times in this block for this day
+                                blockTimes.forEach(time => {
+                                  if (hasAllTimes) {
+                                    // Deselect all
+                                    if (isTimeSelected(day.id, time)) toggleTimeSlot(day.id, time);
+                                  } else {
+                                    // Select all
+                                    if (!isTimeSelected(day.id, time)) toggleTimeSlot(day.id, time);
+                                  }
+                                });
+                              }}
+                              className={`p-4 rounded-lg transition-all text-center text-xs font-medium ${
+                                hasAllTimes
+                                  ? 'bg-green-500 text-white'
+                                  : hasAnyTime
+                                  ? 'bg-accent/40 text-white'
+                                  : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                              }`}
+                            >
+                              {hasAllTimes ? 'Verfügbar' : hasAnyTime ? 'Teilweise' : 'Nicht verfügbar'}
+                            </button>
+                          );
+                        })}
+                      </Fragment>
+                    );
+                  })}
+                </div>
+              </FrostedCard>
+            )}
+
+            {/* Slider View (Zeitbereiche) */}
+            {viewMode === 'slider' && (
+              <FrostedCard className="p-6">
+                <div className="space-y-4">
+                  {DAYS_OF_WEEK.map(day => {
+                    const ranges = timeRanges[day.id] || [];
+                    
+                    return (
+                      <div key={day.id} className="border-b border-white/5 pb-4 last:border-0">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-white font-medium">{day.name}</h3>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => addTimeRange(day.id)}
+                            className="flex items-center gap-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Zeitblock
+                          </Button>
+                        </div>
+                        
+                        {ranges.length === 0 ? (
+                          <p className="text-gray-500 text-sm">Keine Zeiten festgelegt</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {ranges.map((range, idx) => (
+                              <div key={idx} className="flex items-center gap-3">
+                                <select
+                                  value={range.start}
+                                  onChange={(e) => updateTimeRange(day.id, idx, 'start', e.target.value)}
+                                  className="bg-secondary-dark border border-white/10 text-white rounded-lg px-3 py-2 text-sm"
+                                >
+                                  {TIME_SLOTS.map(time => (
+                                    <option key={time} value={time}>{time}</option>
+                                  ))}
+                                </select>
+                                <span className="text-gray-400">bis</span>
+                                <select
+                                  value={range.end}
+                                  onChange={(e) => updateTimeRange(day.id, idx, 'end', e.target.value)}
+                                  className="bg-secondary-dark border border-white/10 text-white rounded-lg px-3 py-2 text-sm"
+                                >
+                                  {TIME_SLOTS.map(time => (
+                                    <option key={time} value={time}>{time}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => removeTimeRange(day.id, idx)}
+                                  className="text-red-400 hover:text-red-300 p-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </FrostedCard>
+            )}
+
+            {/* Grid View (Original) */}
+            {viewMode === 'grid' && (
+              <FrostedCard className="p-6">
               <div className="overflow-x-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
                 <table className="w-full select-none">
                   <thead>
@@ -623,10 +878,10 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                               <button
                                 onMouseDown={() => handleMouseDown(day.id, time)}
                                 onMouseEnter={() => handleMouseEnter(day.id, time)}
-                                className={`w-10 h-10 rounded-lg transition-all cursor-pointer ${
+                                className={`w-10 h-10 rounded-lg transition-colors cursor-pointer ${
                                   isTimeSelected(day.id, time)
-                                    ? 'bg-accent text-white shadow-lg scale-105'
-                                    : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:scale-105'
+                                    ? 'bg-accent text-white shadow-lg'
+                                    : 'bg-white/5 text-gray-500 hover:bg-white/10'
                                 }`}
                                 title={`${day.name}, ${time}`}
                               >
@@ -654,7 +909,8 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                 <div className="flex-1"></div>
                 <span>💡 Tipp: Ziehe über mehrere Felder für schnelle Auswahl</span>
               </div>
-            </FrostedCard>
+              </FrostedCard>
+            )}
 
             {/* Current Availability Summary */}
             <FrostedCard className="p-6">
