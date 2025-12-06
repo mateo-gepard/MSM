@@ -2,6 +2,7 @@ import SendbirdChat from '@sendbird/chat';
 import { GroupChannelModule } from '@sendbird/chat/groupChannel';
 
 let sendbirdInstance: any = null;
+let currentUserId: string | null = null;
 
 export async function initSendbird(userId: string, nickname?: string) {
   const appId = process.env.NEXT_PUBLIC_SENDBIRD_APP_ID;
@@ -28,10 +29,23 @@ export async function initSendbird(userId: string, nickname?: string) {
       console.log('[Sendbird] Instance created successfully');
     } else {
       console.log('[Sendbird] Using existing instance');
+      
+      // If already connected to the same user, don't reconnect
+      if (currentUserId === userId && sendbirdInstance.currentUser) {
+        console.log('[Sendbird] Already connected to this user, skipping reconnection');
+        return sendbirdInstance;
+      }
+      
+      // If connected to different user, disconnect first
+      if (currentUserId && currentUserId !== userId) {
+        console.log('[Sendbird] Different user, disconnecting previous connection');
+        await sendbirdInstance.disconnect();
+      }
     }
 
     console.log('[Sendbird] Connecting user...');
     await sendbirdInstance.connect(userId, undefined, nickname);
+    currentUserId = userId;
     console.log('[Sendbird] ✅ User connected successfully!');
     
     return sendbirdInstance;
@@ -102,7 +116,9 @@ export async function getMessages(channelUrl: string, limit: number = 50) {
 
 export function disconnectSendbird() {
   if (sendbirdInstance) {
+    console.log('[Sendbird] Disconnecting user:', currentUserId);
     sendbirdInstance.disconnect();
     sendbirdInstance = null;
+    currentUserId = null;
   }
 }

@@ -17,12 +17,26 @@ export function SendbirdProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectedUserId, setConnectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     // Only connect if user is logged in and Sendbird is configured
     if (!user) {
       console.log('[SendbirdContext] No user, skipping connection');
       setIsConnected(false);
+      setConnectedUserId(null);
+      return;
+    }
+
+    // Don't reconnect if already connected to the same user
+    if (isConnected && connectedUserId === user.id) {
+      console.log('[SendbirdContext] Already connected to this user, skipping...');
+      return;
+    }
+
+    // Don't connect if already connecting
+    if (isConnecting) {
+      console.log('[SendbirdContext] Connection in progress, skipping...');
       return;
     }
 
@@ -49,10 +63,12 @@ export function SendbirdProvider({ children }: { children: ReactNode }) {
         
         console.log('[SendbirdContext] ✅ Connected successfully!');
         setIsConnected(true);
+        setConnectedUserId(user.id);
       } catch (err) {
         console.error('[SendbirdContext] ❌ Connection failed:', err);
         setError(err instanceof Error ? err.message : 'Failed to connect to chat service');
         setIsConnected(false);
+        setConnectedUserId(null);
       } finally {
         setIsConnecting(false);
       }
@@ -60,13 +76,20 @@ export function SendbirdProvider({ children }: { children: ReactNode }) {
 
     connectToSendbird();
 
-    // Cleanup on unmount or user change
+    // Only cleanup on unmount, not on every re-render
     return () => {
-      console.log('[SendbirdContext] Disconnecting...');
-      disconnectSendbird();
-      setIsConnected(false);
+      // Only disconnect if component is actually unmounting
+      // This prevents disconnect on every re-render
     };
-  }, [user]);
+  }, [user?.id]); // Use user.id instead of user object to prevent unnecessary re-renders
+
+  // Separate cleanup effect that only runs on unmount
+  useEffect(() => {
+    return () => {
+      console.log('[SendbirdContext] Component unmounting, disconnecting...');
+      disconnectSendbird();
+    };
+  }, []);
 
   return (
     <SendbirdContext.Provider value={{ isConnected, isConnecting, error }}>
