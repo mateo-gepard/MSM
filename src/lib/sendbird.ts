@@ -100,15 +100,32 @@ export async function createParentTutorChannel(
 export async function sendMessage(channelUrl: string, message: string) {
   try {
     const sb = sendbirdInstance || SendbirdChat.instance;
+    
+    console.log('[Sendbird] Sending message:', { channelUrl, message: message.substring(0, 50) });
+    
     const channel = await sb.groupChannel.getChannel(channelUrl);
+    console.log('[Sendbird] Channel retrieved:', { 
+      url: channel.url, 
+      name: channel.name,
+      memberCount: channel.memberCount,
+      members: channel.members.map((m: any) => ({ id: m.userId, nickname: m.nickname }))
+    });
     
     const params = {
       message
     };
 
-    await channel.sendUserMessage(params);
+    const sentMessage = await channel.sendUserMessage(params);
+    console.log('[Sendbird] ✅ Message sent successfully:', {
+      messageId: sentMessage.messageId,
+      message: sentMessage.message,
+      createdAt: sentMessage.createdAt,
+      sender: sentMessage.sender?.userId
+    });
+    
+    return sentMessage;
   } catch (error) {
-    console.error('Sendbird send message error:', error);
+    console.error('[Sendbird] ❌ Send message error:', error);
     throw error;
   }
 }
@@ -116,15 +133,30 @@ export async function sendMessage(channelUrl: string, message: string) {
 export async function getMessages(channelUrl: string, limit: number = 50) {
   try {
     const sb = sendbirdInstance || SendbirdChat.instance;
+    
+    console.log('[Sendbird] Fetching messages from:', channelUrl);
+    
     const channel = await sb.groupChannel.getChannel(channelUrl);
     
     const messages = await channel.getMessagesByTimestamp(Date.now(), {
-      prevResultSize: limit
+      prevResultSize: limit,
+      nextResultSize: 0
+    });
+
+    console.log('[Sendbird] ✅ Retrieved messages:', {
+      count: messages.length,
+      channelUrl,
+      messages: messages.slice(0, 3).map((m: any) => ({
+        id: m.messageId,
+        message: m.message?.substring(0, 50),
+        sender: m.sender?.userId,
+        createdAt: m.createdAt
+      }))
     });
 
     return messages;
   } catch (error) {
-    console.error('Sendbird get messages error:', error);
+    console.error('[Sendbird] ❌ Get messages error:', error);
     return [];
   }
 }
