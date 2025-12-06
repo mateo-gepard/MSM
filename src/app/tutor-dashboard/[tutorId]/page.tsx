@@ -160,12 +160,20 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   const uniqueParents = Array.from(new Set(bookings.map(b => b.parentId || b.parentEmail)))
     .map(id => {
       const booking = bookings.find(b => (b.parentId || b.parentEmail) === id);
-      return booking && booking.parentId ? {
+      if (!booking) return null;
+      
+      // Only show parents that have a parentId (Supabase user ID)
+      if (!booking.parentId) {
+        console.warn('[TutorDashboard] Booking missing parentId:', booking);
+        return null;
+      }
+      
+      return {
         id: booking.parentId, // Use Supabase user ID
         name: booking.parentName,
         email: booking.parentEmail,
         subject: booking.subject
-      } : null;
+      };
     })
     .filter(Boolean);
   
