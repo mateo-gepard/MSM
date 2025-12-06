@@ -82,6 +82,9 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
         const supabaseBookings = await getTutorBookings(tutor.name);
         
         if (supabaseBookings && supabaseBookings.length > 0) {
+          // Import updateBookingStatus function
+          const { updateBookingStatus } = await import('@/lib/supabase');
+          
           // Transform Supabase bookings to match TutorBooking interface
           const formattedBookings = supabaseBookings.map((booking: any) => ({
             id: booking.calcom_booking_id || booking.id,
@@ -96,8 +99,26 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
             message: booking.message,
             createdAt: booking.created_at
           }));
-          setBookings(formattedBookings);
-          console.log(`[TutorDashboard] Loaded ${formattedBookings.length} bookings from Supabase`);
+          
+          // Auto-update past bookings to 'completed' status
+          const now = new Date();
+          const updatedBookings = formattedBookings.map((booking: TutorBooking) => {
+            // Only update if booking is scheduled and date/time has passed
+            if (booking.status === 'scheduled') {
+              const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
+              if (bookingDateTime < now) {
+                // Update status in Supabase (async, fire and forget)
+                updateBookingStatus(booking.id, 'completed').catch(err => 
+                  console.error('Failed to update booking status:', err)
+                );
+                return { ...booking, status: 'completed' as const };
+              }
+            }
+            return booking;
+          });
+          
+          setBookings(updatedBookings);
+          console.log(`[TutorDashboard] Loaded ${updatedBookings.length} bookings from Supabase`);
         } else {
           // Fallback to localStorage if Supabase is empty or not configured
           const allBookingsJson = localStorage.getItem('allTutorBookings') || '{}';

@@ -246,11 +246,29 @@ function DashboardContent() {
             });
             
             console.log('Converted bookings:', convertedBookings);
-            setUserBookings(convertedBookings);
+            
+            // Auto-update past bookings to 'completed' status
+            const now = new Date();
+            const updatedBookings = convertedBookings.map((booking: any) => {
+              // Only update if booking is scheduled and date/time has passed
+              if (booking.status === 'scheduled') {
+                const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
+                if (bookingDateTime < now) {
+                  // Update status in Supabase
+                  updateBookingStatus(booking.calcomBookingId, 'completed').catch(err => 
+                    console.error('Failed to update booking status:', err)
+                  );
+                  return { ...booking, status: 'completed' };
+                }
+              }
+              return booking;
+            });
+            
+            setUserBookings(updatedBookings);
             
             // Also sync to localStorage for offline access
             const storageKey = `userBookings_${user.id}`;
-            localStorage.setItem(storageKey, JSON.stringify(convertedBookings));
+            localStorage.setItem(storageKey, JSON.stringify(updatedBookings));
             
             return;
           }
