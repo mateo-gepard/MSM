@@ -697,7 +697,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
 
             {/* Schedule View (Stundenplan) */}
             {viewMode === 'schedule' && (
-              <FrostedCard className="p-6">
+              <FrostedCard className="p-6" hover={false}>
                 <div className="grid grid-cols-8 gap-2">
                   {/* Header */}
                   <div className="text-xs text-gray-500 font-medium">Zeit</div>
@@ -757,7 +757,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
 
             {/* Slider View (Zeitbereiche) */}
             {viewMode === 'slider' && (
-              <FrostedCard className="p-6">
+              <FrostedCard className="p-6" hover={false}>
                 <div className="space-y-4">
                   {DAYS_OF_WEEK.map(day => {
                     const ranges = timeRanges[day.id] || [];
@@ -821,7 +821,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
 
             {/* Grid View (Original) */}
             {viewMode === 'grid' && (
-              <FrostedCard className="p-6">
+              <FrostedCard className="p-6" hover={false}>
               <div className="overflow-x-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
                 <table className="w-full select-none">
                   <thead>
@@ -914,7 +914,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
             )}
 
             {/* Current Availability Summary */}
-            <FrostedCard className="p-6">
+            <FrostedCard className="p-6" hover={false}>
               <h3 className="text-white font-semibold mb-4">Aktuelle Verfügbarkeit</h3>
               {availability.length === 0 ? (
                 <p className="text-gray-400">Keine Zeiten ausgewählt</p>
