@@ -509,32 +509,8 @@ function BookingContent() {
         existingBookings.push(newBooking);
         localStorage.setItem(storageKey, JSON.stringify(existingBookings));
         
-        // Save booking to Supabase for cross-device sync
-        if (user?.id) {
-          try {
-            const tutorName = tutors.find(t => t.id === selectedTutor)?.name || 'Unknown Tutor';
-            await saveBookingToSupabase({
-              calcom_booking_id: calcomBookingId,
-              user_id: user.id,
-              tutor_id: selectedTutor,
-              tutor_name: tutorName,
-              subject: selectedSubject || 'Unknown',
-              package: selectedPackage,
-              date: selectedDate || '',
-              time: selectedTime || '',
-              location: selectedLocation || 'online',
-              contact_name: contactInfo.name || user?.user_metadata?.name || user?.email || 'Elternteil',
-              contact_email: contactInfo.email || user?.email || '',
-              contact_phone: contactInfo.phone,
-              message: contactInfo.message,
-              status: 'scheduled'
-            });
-            console.log('✅ Booking saved to Supabase for cross-device sync');
-          } catch (supabaseError) {
-            console.error('⚠️ Failed to save booking to Supabase, but booking is saved locally:', supabaseError);
-            // Don't fail the whole booking if Supabase fails
-          }
-        }
+        // Note: Booking is already saved to Supabase in calcom.ts createBooking()
+        // No need to save again here to avoid duplicate key errors
         
         // Also save booking for tutor dashboard access
         const tutorBookingsKey = 'allTutorBookings';
