@@ -32,6 +32,21 @@ export default function ChatWidget({ tutorId, tutorName, parentId }: ChatWidgetP
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Check if tutorId is valid
+  if (!tutorId || tutorId === 'null' || tutorId === 'undefined') {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center text-gray-400">
+          <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p className="font-semibold mb-2">Chat nicht verfügbar</p>
+          <p className="text-sm">
+            Für diese Buchung ist kein Tutor zugewiesen. Bitte kontaktiere den Support.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
