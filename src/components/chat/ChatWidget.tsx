@@ -30,6 +30,7 @@ export default function ChatWidget({ tutorId, tutorName, parentId }: ChatWidgetP
   const [channelUrl, setChannelUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Check if tutorId is valid
@@ -47,10 +48,13 @@ export default function ChatWidget({ tutorId, tutorName, parentId }: ChatWidgetP
     );
   }
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom only when shouldAutoScroll is true (after sending a message)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setShouldAutoScroll(false);
+    }
+  }, [shouldAutoScroll, messages]);
 
   // Initialize channel when Sendbird is connected
   useEffect(() => {
@@ -103,6 +107,9 @@ export default function ChatWidget({ tutorId, tutorName, parentId }: ChatWidgetP
       // Immediately fetch updated messages
       const updatedMessages = await getMessages(channelUrl);
       setMessages(updatedMessages as Message[]);
+      
+      // Trigger auto-scroll after sending a message
+      setShouldAutoScroll(true);
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {
