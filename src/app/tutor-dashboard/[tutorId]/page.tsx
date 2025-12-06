@@ -71,6 +71,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
   const [viewMode, setViewMode] = useState<'grid' | 'schedule' | 'slider'>('grid'); // View selection
   const [timeRanges, setTimeRanges] = useState<Record<string, Array<{ start: string; end: string }>>>({});
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true); // Track Supabase connection
   
   // Find the tutor from our data
   const tutor = tutors.find(t => t.id === tutorId);
@@ -122,6 +123,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
           });
           
           setBookings(updatedBookings);
+          setSupabaseConnected(true);
           console.log(`[TutorDashboard] Loaded ${updatedBookings.length} bookings from Supabase`);
         } else {
           // Fallback to localStorage if Supabase is empty or not configured
@@ -129,10 +131,12 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
           const allBookings = JSON.parse(allBookingsJson);
           const tutorBookings = allBookings[tutorId] || [];
           setBookings(tutorBookings);
+          setSupabaseConnected(false);
           console.log(`[TutorDashboard] Loaded ${tutorBookings.length} bookings from localStorage`);
         }
       } catch (error) {
         console.error('Failed to load bookings from Supabase, trying localStorage:', error);
+        setSupabaseConnected(false);
         // Fallback to localStorage on error
         const allBookingsJson = localStorage.getItem('allTutorBookings') || '{}';
         const allBookings = JSON.parse(allBookingsJson);
@@ -476,20 +480,20 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Supabase Warning Banner */}
-        {(process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_url' || 
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'your_supabase_anon_key') && (
+        {/* Supabase Warning Banner - Only show if actually disconnected */}
+        {!supabaseConnected && (
           <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
             <div className="flex items-start gap-3">
               <div className="text-yellow-400 mt-0.5">⚠️</div>
               <div>
                 <div className="text-yellow-200 font-semibold mb-1">
-                  Supabase nicht konfiguriert
+                  Offline-Modus aktiv
                 </div>
                 <div className="text-yellow-300 text-sm">
                   Daten werden nur lokal gespeichert und sind nicht auf anderen Geräten verfügbar. 
-                  Bitte konfiguriere Supabase in der <code className="bg-black/20 px-1 rounded">.env.local</code> Datei.
-                  Siehe <code className="bg-black/20 px-1 rounded">SUPABASE_REQUIRED.md</code> für Anleitung.
+                  {process.env.NODE_ENV === 'development' && (
+                    <span> Konfiguriere Supabase in der <code className="bg-black/20 px-1 rounded">.env.local</code> Datei für Cloud-Sync.</span>
+                  )}
                 </div>
               </div>
             </div>
