@@ -140,6 +140,10 @@ export async function createBooking(data: {
         if (data.userId) {
           try {
             const startDate = new Date(data.start);
+            
+            console.log('🔍 DEBUG LOCAL - data.metadata:', data.metadata);
+            console.log('🔍 DEBUG LOCAL - tutorName from metadata:', data.metadata.tutorName);
+            
             const supabaseData = {
               calcom_booking_id: localBookingId,
               user_id: data.userId,
@@ -156,6 +160,8 @@ export async function createBooking(data: {
               message: data.responses.notes || undefined,
               status: 'scheduled' as const
             };
+            
+            console.log('💾 LOCAL - Supabase data to save:', supabaseData);
             
             await saveBookingToSupabase(supabaseData);
             console.log('✅ Local booking saved to Supabase');
@@ -217,6 +223,9 @@ export async function createBooking(data: {
           ? data.responses.notes 
           : `[Tutor ID: ${data.metadata.tutorId}] ${data.responses.notes || ''}`;
         
+        console.log('🔍 DEBUG - data.metadata:', data.metadata);
+        console.log('🔍 DEBUG - tutorName from metadata:', data.metadata.tutorName);
+        
         const supabaseData = {
           calcom_booking_id: bookingId.toString(),
           user_id: data.userId,
@@ -234,7 +243,7 @@ export async function createBooking(data: {
           status: 'scheduled' as const
         };
         
-        console.log('Supabase data to save:', supabaseData);
+        console.log('💾 Supabase data to save:', supabaseData);
         
         await saveBookingToSupabase(supabaseData);
         console.log('✅ Booking successfully saved to Supabase');
