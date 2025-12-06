@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Navigation } from "@/components/layout/Navigation";
-import { Footer } from "@/components/layout/Footer";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { SendbirdProvider } from "@/contexts/SendbirdContext";
 
 const geistSans = Geist({
@@ -41,9 +40,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SendbirdProvider>
-          <Navigation />
-          <main>{children}</main>
-          <Footer />
+          <ConditionalLayout>{children}</ConditionalLayout>
         </SendbirdProvider>
       </body>
     </html>

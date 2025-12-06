@@ -25,16 +25,16 @@ export default function TutorChatWidget({ tutorId, parentId, parentName }: Tutor
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [channel, setChannel] = useState<any>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom of messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Only scroll when user sends a message
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setShouldAutoScroll(false);
+    }
+  }, [messages, shouldAutoScroll]);
 
   // Load or create channel with parent
   useEffect(() => {
@@ -172,6 +172,7 @@ export default function TutorChatWidget({ tutorId, parentId, parentName }: Tutor
       }]);
       
       setNewMessage('');
+      setShouldAutoScroll(true); // Only scroll after sending
     } catch (err) {
       console.error('[TutorChat] Send error:', err);
       setError('Nachricht konnte nicht gesendet werden');
