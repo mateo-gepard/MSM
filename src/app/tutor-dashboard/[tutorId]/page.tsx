@@ -5,6 +5,8 @@ import { tutors } from '@/data/mockData';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
 import TutorChatWidget from '@/components/chat/TutorChatWidget';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { 
   Calendar,
   MessageCircle,
@@ -60,6 +62,8 @@ interface AvailabilitySlot {
 export default function TutorDashboard({ params }: { params: Promise<{ tutorId: string }> }) {
   const resolvedParams = use(params);
   const tutorId = resolvedParams.tutorId;
+  const router = useRouter();
+  const { user, loading } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'bookings' | 'messages' | 'availability'>('bookings');
   const [bookings, setBookings] = useState<TutorBooking[]>([]);
@@ -75,6 +79,27 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   
   // Find the tutor from our data
   const tutor = tutors.find(t => t.id === tutorId);
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push(`/login?redirect=/tutor-dashboard/${tutorId}`);
+    }
+  }, [user, loading, router, tutorId]);
+  
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#081525] via-[#102A43] to-[#081525] flex items-center justify-center">
+        <div className="text-white text-xl">Laden...</div>
+      </div>
+    );
+  }
+  
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
   
   // Load tutor's bookings from Supabase (with localStorage fallback)
   useEffect(() => {
@@ -153,8 +178,11 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
       }
     };
     
-    loadBookings();
-  }, [tutorId, tutor]);
+    // Only load bookings if user is authenticated
+    if (user) {
+      loadBookings();
+    }
+  }, [tutorId, tutor, user]);
   
   // Load tutor's availability
   useEffect(() => {
