@@ -87,8 +87,10 @@ const mockMessages = [
 function MessagesInterface({ userBookings, userId }: { userBookings: any[], userId: string }) {
   const [selectedTutorId, setSelectedTutorId] = useState<string | null>(null);
   
-  // Get unique tutors from bookings
-  const uniqueTutors = Array.from(new Set(userBookings.map(b => b.tutorId)))
+  // Get unique tutors from bookings - ONLY include bookings with valid tutorId
+  const uniqueTutors = Array.from(new Set(userBookings
+    .filter(b => b.tutorId && b.tutorId !== 'null' && b.tutorId !== 'undefined') // Filter out invalid tutorIds
+    .map(b => b.tutorId)))
     .map(tutorId => {
       const booking = userBookings.find(b => b.tutorId === tutorId);
       return booking ? {
