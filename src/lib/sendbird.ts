@@ -63,14 +63,29 @@ export async function createParentTutorChannel(
   try {
     const sb = sendbirdInstance || SendbirdChat.instance;
     
-    console.log('[Sendbird] Creating channel with:', { parentId, tutorId, tutorName });
+    // Create a unique, deterministic channel URL based on both user IDs
+    const sortedIds = [parentId, tutorId].sort();
+    const channelUrl = `msm_chat_${sortedIds[0]}_${sortedIds[1]}`.substring(0, 100);
     
-    // Create proper GroupChannelCreateParams
+    console.log('[Sendbird] Creating/getting channel:', { parentId, tutorId, tutorName, channelUrl });
+    
+    // First, try to get existing channel
+    try {
+      const existingChannel = await sb.groupChannel.getChannel(channelUrl);
+      console.log('[Sendbird] ✅ Found existing channel:', existingChannel.url);
+      return existingChannel.url;
+    } catch (getError) {
+      // Channel doesn't exist, create it
+      console.log('[Sendbird] Channel not found, creating new one...');
+    }
+    
+    // Create channel with specific URL
     const params = {
-      invitedUserIds: [tutorId], // Only invite the other user, current user is auto-included
-      name: `Chat with ${tutorName}`,
-      isDistinct: true, // Prevents duplicate channels
-      operatorUserIds: [parentId] // Make parent the operator
+      invitedUserIds: [tutorId],
+      name: `Chat: ${tutorName}`,
+      channelUrl: channelUrl,
+      isDistinct: false, // We're managing uniqueness via channelUrl
+      operatorUserIds: [parentId]
     };
 
     const channel = await sb.groupChannel.createChannel(params);

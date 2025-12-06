@@ -62,9 +62,11 @@ export default function TutorChatWidget({ tutorId, parentId, parentName }: Tutor
         await sb.connect(tutorId);
         console.log('[TutorChat] Connected as tutor:', tutorId);
         
-        // Try to find existing channel or create new one
-        // Channel URL format: parent_tutor unique identifier
-        const channelUrl = `msm_chat_${[parentId, tutorId].sort().join('_')}`;
+        // Create a unique, deterministic channel URL (same format as parent chat)
+        const sortedIds = [parentId, tutorId].sort();
+        const channelUrl = `msm_chat_${sortedIds[0]}_${sortedIds[1]}`.substring(0, 100);
+        
+        console.log('[TutorChat] Looking for channel:', channelUrl);
         
         try {
           // Try to get existing channel
@@ -95,7 +97,7 @@ export default function TutorChatWidget({ tutorId, parentId, parentName }: Tutor
             invitedUserIds: [parentId],
             name: `Chat: ${parentName}`,
             channelUrl: channelUrl,
-            isDistinct: true,
+            isDistinct: false,
             operatorUserIds: [tutorId]
           };
           
@@ -117,6 +119,35 @@ export default function TutorChatWidget({ tutorId, parentId, parentName }: Tutor
       initializeChat();
     }
   }, [parentId, tutorId, parentName]);
+
+  // Poll for new messages every 3 seconds
+  useEffect(() => {
+    if (!channel) return;
+
+    const pollMessages = async () => {
+      try {
+        const messageList = await channel.getMessagesByTimestamp(Date.now(), {
+          prevResultSize: 50,
+          nextResultSize: 0
+        });
+        
+        const formattedMessages = messageList.map((msg: any) => ({
+          id: msg.messageId?.toString() || String(Date.now()),
+          message: msg.message || '',
+          sender: msg.sender?.nickname || msg.sender?.userId || 'Unknown',
+          timestamp: msg.createdAt || Date.now(),
+          isOwn: msg.sender?.userId === tutorId
+        }));
+        
+        setMessages(formattedMessages);
+      } catch (error) {
+        console.error('[TutorChat] Failed to poll messages:', error);
+      }
+    };
+
+    const interval = setInterval(pollMessages, 3000);
+    return () => clearInterval(interval);
+  }, [channel, tutorId]);
 
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
