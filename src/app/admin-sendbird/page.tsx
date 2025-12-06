@@ -10,6 +10,8 @@ export default function AdminPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [statusResult, setStatusResult] = useState<any>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [resetResult, setResetResult] = useState<any>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const registerTutors = async () => {
     setIsRegistering(true);
@@ -38,6 +40,28 @@ export default function AdminPage() {
       setStatusResult({ error: String(error) });
     } finally {
       setIsLoadingStatus(false);
+    }
+  };
+
+  const resetChannels = async () => {
+    if (!confirm('This will delete ALL channels and messages. Are you sure?')) {
+      return;
+    }
+    
+    setIsResetting(true);
+    setResetResult(null);
+    try {
+      const response = await fetch('/api/reset-channels', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      setResetResult(data);
+      // Refresh status after reset
+      setTimeout(() => checkStatus(), 1000);
+    } catch (error) {
+      setResetResult({ error: String(error) });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -96,26 +120,59 @@ export default function AdminPage() {
         </FrostedCard>
 
         {/* Check Sendbird Status */}
-        <FrostedCard className="p-6">
+        <FrostedCard className="p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">Sendbird Status</h2>
           <p className="text-gray-400 mb-4">
             View all channels and messages currently stored in Sendbird.
           </p>
-          <Button
-            onClick={checkStatus}
-            disabled={isLoadingStatus}
-            className="flex items-center gap-2"
-            variant="secondary"
-          >
-            {isLoadingStatus ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              'Check Sendbird Status'
-            )}
-          </Button>
+          <div className="flex gap-4">
+            <Button
+              onClick={checkStatus}
+              disabled={isLoadingStatus}
+              className="flex items-center gap-2"
+              variant="secondary"
+            >
+              {isLoadingStatus ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Check Sendbird Status'
+              )}
+            </Button>
+            
+            <Button
+              onClick={resetChannels}
+              disabled={isResetting}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                'Reset All Channels'
+              )}
+            </Button>
+          </div>
+
+          {resetResult && (
+            <div className="mt-4 p-4 bg-secondary-dark rounded-lg">
+              <h3 className="text-white font-semibold mb-2">Reset Results:</h3>
+              {resetResult.error ? (
+                <p className="text-red-400">{resetResult.error}</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-green-400">✅ Deleted {resetResult.total_deleted} channels</p>
+                  <p className="text-gray-400 text-sm">
+                    Channels will be recreated automatically when you send a new message from the parent dashboard.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {statusResult && (
             <div className="mt-4 p-4 bg-secondary-dark rounded-lg max-h-96 overflow-y-auto">
