@@ -641,7 +641,7 @@ function DashboardContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
-          {/* Sidebar - Hidden on mobile */}Hidden on mobile */}
+          {/* Sidebar - Hidden on mobile */}
           <div className="hidden lg:block lg:col-span-1">
             <FrostedCard className="p-4" hover={false}>
               <nav className="space-y-2">
