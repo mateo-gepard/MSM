@@ -807,7 +807,7 @@ function DashboardContent() {
 
               {/* Messages Tab */}
               {activeTab === 'messages' && (
-                <div>
+                <div className="scroll-mt-20">
                   <h2 className="text-2xl font-bold text-white mb-6">Nachrichten</h2>
                   
                   {userBookings.length === 0 ? (

@@ -347,6 +347,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            className="scroll-mt-20"
           >
             <h2 className="text-xl font-bold text-white mb-4">Nachrichten</h2>
             
