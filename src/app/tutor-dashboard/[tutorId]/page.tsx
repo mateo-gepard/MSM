@@ -67,6 +67,8 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
   
   // Find the tutor from our data
   const tutor = tutors.find(t => t.id === tutorId);
@@ -200,6 +202,84 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
         return [...prev, { day, times: [time] }];
       }
     });
+  };
+  
+  // Handle mouse down to start drag selection
+  const handleMouseDown = (day: string, time: string) => {
+    setIsDragging(true);
+    const isCurrentlySelected = isTimeSelected(day, time);
+    setDragMode(isCurrentlySelected ? 'deselect' : 'select');
+    toggleTimeSlot(day, time);
+  };
+  
+  // Handle mouse enter during drag
+  const handleMouseEnter = (day: string, time: string) => {
+    if (!isDragging) return;
+    
+    const isCurrentlySelected = isTimeSelected(day, time);
+    if (dragMode === 'select' && !isCurrentlySelected) {
+      toggleTimeSlot(day, time);
+    } else if (dragMode === 'deselect' && isCurrentlySelected) {
+      toggleTimeSlot(day, time);
+    }
+  };
+  
+  // Handle mouse up to end drag selection
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  // Quick select entire day
+  const selectEntireDay = (day: string) => {
+    const daySlot = availability.find(s => s.day === day);
+    const allTimesSelected = daySlot && daySlot.times.length === TIME_SLOTS.length;
+    
+    setAvailability(prev => {
+      if (allTimesSelected) {
+        // Deselect all times for this day
+        return prev.filter(s => s.day !== day);
+      } else {
+        // Select all times for this day
+        const filtered = prev.filter(s => s.day !== day);
+        return [...filtered, { day, times: [...TIME_SLOTS] }];
+      }
+    });
+  };
+  
+  // Quick select entire time slot across all days
+  const selectEntireTimeSlot = (time: string) => {
+    const allDaysHaveTime = DAYS_OF_WEEK.every(day => isTimeSelected(day.id, time));
+    
+    setAvailability(prev => {
+      if (allDaysHaveTime) {
+        // Remove this time from all days
+        return prev.map(slot => ({
+          ...slot,
+          times: slot.times.filter(t => t !== time)
+        })).filter(slot => slot.times.length > 0);
+      } else {
+        // Add this time to all days
+        const updated = [...prev];
+        DAYS_OF_WEEK.forEach(day => {
+          const daySlot = updated.find(s => s.day === day.id);
+          if (daySlot) {
+            if (!daySlot.times.includes(time)) {
+              daySlot.times = [...daySlot.times, time].sort();
+            }
+          } else {
+            updated.push({ day: day.id, times: [time] });
+          }
+        });
+        return updated;
+      }
+    });
+  };
+  
+  // Clear all availability
+  const clearAll = () => {
+    if (confirm('Möchtest du wirklich alle Verfügbarkeiten löschen?')) {
+      setAvailability([]);
+    }
   };
   
   // Check if a time slot is selected
@@ -452,17 +532,27 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
               <div>
                 <h2 className="text-xl font-bold text-white">Verfügbarkeit einstellen</h2>
                 <p className="text-gray-400 text-sm mt-1">
-                  Wähle die Zeiten aus, zu denen du für Nachhilfe verfügbar bist.
+                  Klicke oder ziehe, um Zeiten auszuwählen. Klicke auf Tage/Zeiten-Köpfe für Schnellauswahl.
                 </p>
               </div>
-              <Button
-                onClick={saveAvailability}
-                disabled={isSaving}
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Speichern...' : 'Speichern'}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={clearAll}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Alles löschen
+                </Button>
+                <Button
+                  onClick={saveAvailability}
+                  disabled={isSaving}
+                  className="flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'Speichern...' : 'Speichern'}
+                </Button>
+              </div>
             </div>
 
             {saveMessage && (
@@ -476,40 +566,93 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
             )}
 
             <FrostedCard className="p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                <table className="w-full select-none">
                   <thead>
                     <tr className="border-b border-white/10">
-                      <th className="text-left text-gray-400 font-medium py-3 px-2 min-w-[100px]">Zeit</th>
-                      {DAYS_OF_WEEK.map(day => (
-                        <th key={day.id} className="text-center text-gray-400 font-medium py-3 px-2 min-w-[80px]">
-                          {day.name.slice(0, 2)}
-                        </th>
-                      ))}
+                      <th className="text-left text-gray-400 font-medium py-3 px-2 min-w-[100px]">
+                        <span className="text-xs">Zeit</span>
+                      </th>
+                      {DAYS_OF_WEEK.map(day => {
+                        const daySlot = availability.find(s => s.day === day.id);
+                        const allSelected = daySlot && daySlot.times.length === TIME_SLOTS.length;
+                        return (
+                          <th key={day.id} className="text-center py-3 px-2 min-w-[80px]">
+                            <button
+                              onClick={() => selectEntireDay(day.id)}
+                              className={`w-full px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                                allSelected
+                                  ? 'bg-accent text-white'
+                                  : daySlot && daySlot.times.length > 0
+                                  ? 'bg-accent/30 text-accent hover:bg-accent/50'
+                                  : 'text-gray-400 hover:bg-white/10'
+                              }`}
+                              title={`Ganzen ${day.name} ${allSelected ? 'abwählen' : 'auswählen'}`}
+                            >
+                              {day.name.slice(0, 2)}
+                            </button>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
-                    {TIME_SLOTS.map(time => (
-                      <tr key={time} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="text-gray-300 py-2 px-2 text-sm">{time}</td>
-                        {DAYS_OF_WEEK.map(day => (
-                          <td key={`${day.id}-${time}`} className="text-center py-2 px-2">
+                    {TIME_SLOTS.map(time => {
+                      const allDaysSelected = DAYS_OF_WEEK.every(day => isTimeSelected(day.id, time));
+                      const someDaysSelected = DAYS_OF_WEEK.some(day => isTimeSelected(day.id, time));
+                      
+                      return (
+                        <tr key={time} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-2 px-2">
                             <button
-                              onClick={() => toggleTimeSlot(day.id, time)}
-                              className={`w-8 h-8 rounded-lg transition-all ${
-                                isTimeSelected(day.id, time)
-                                  ? 'bg-accent text-white'
-                                  : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                              onClick={() => selectEntireTimeSlot(time)}
+                              className={`w-full text-left px-2 py-1 rounded-lg text-xs transition-all ${
+                                allDaysSelected
+                                  ? 'bg-accent/20 text-accent font-semibold'
+                                  : someDaysSelected
+                                  ? 'text-gray-300 hover:bg-white/10'
+                                  : 'text-gray-500 hover:bg-white/10'
                               }`}
+                              title={`${time} für ${allDaysSelected ? 'alle Tage abwählen' : 'alle Tage auswählen'}`}
                             >
-                              {isTimeSelected(day.id, time) && <Check className="w-4 h-4 mx-auto" />}
+                              {time}
                             </button>
                           </td>
-                        ))}
-                      </tr>
-                    ))}
+                          {DAYS_OF_WEEK.map(day => (
+                            <td key={`${day.id}-${time}`} className="text-center py-2 px-2">
+                              <button
+                                onMouseDown={() => handleMouseDown(day.id, time)}
+                                onMouseEnter={() => handleMouseEnter(day.id, time)}
+                                className={`w-10 h-10 rounded-lg transition-all cursor-pointer ${
+                                  isTimeSelected(day.id, time)
+                                    ? 'bg-accent text-white shadow-lg scale-105'
+                                    : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:scale-105'
+                                }`}
+                                title={`${day.name}, ${time}`}
+                              >
+                                {isTimeSelected(day.id, time) && <Check className="w-5 h-5 mx-auto" />}
+                              </button>
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Legend */}
+              <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-400 border-t border-white/10 pt-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-accent rounded"></div>
+                  <span>Verfügbar</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-white/5 rounded"></div>
+                  <span>Nicht verfügbar</span>
+                </div>
+                <div className="flex-1"></div>
+                <span>💡 Tipp: Ziehe über mehrere Felder für schnelle Auswahl</span>
               </div>
             </FrostedCard>
 
