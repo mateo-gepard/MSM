@@ -47,11 +47,14 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
   // Get available times for selected date
   const getAvailableTimes = (dateString: string): string[] => {
     if (!dateString) return [];
-    const date = new Date(dateString + 'T00:00:00');
+    // Parse the date parts manually to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed in JS
     const dayOfWeek = date.getDay();
     // Convert JavaScript day (0=Sunday) to our DAY_IDS (0=Monday)
     const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const dayId = DAY_IDS[dayIndex];
+    console.log(`🔍 Getting times for ${dateString}: dayOfWeek=${dayOfWeek}, dayIndex=${dayIndex}, dayId=${dayId}`);
     const dayAvailability = tutorAvailability.find(a => a.day === dayId);
     return dayAvailability?.times || [];
   };
@@ -157,6 +160,10 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
           const isSelected = dateString === selectedDate;
           const isTodayDate = isToday(date);
           const isPastDate = isPast(date);
+          
+          // Use the actual weekday from the date object, not the index
+          const dayOfWeek = date.getDay();
+          const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
           return (
             <motion.button
@@ -178,7 +185,7 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
               `}
             >
               <div className="text-xs sm:text-sm font-medium mb-1 truncate">
-                {DAY_NAMES[index]}
+                {DAY_NAMES[dayIndex]}
               </div>
               <div className="text-lg sm:text-2xl font-bold">
                 {date.getDate()}
