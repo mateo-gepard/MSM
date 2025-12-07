@@ -625,6 +625,36 @@ function BookingContent() {
   };
 
   const availableTimes = getAvailableTimes();
+  
+  // Get tutor's full availability for the week calendar
+  const getTutorAvailability = (): Array<{ day: string; times: string[] }> => {
+    if (!selectedTutor) return [];
+    
+    // Check for saved tutor availability from localStorage
+    if (typeof window !== 'undefined') {
+      const savedAvailability = localStorage.getItem(`tutorAvailability_${selectedTutor}`);
+      if (savedAvailability) {
+        return JSON.parse(savedAvailability);
+      }
+      
+      const globalAvailability = localStorage.getItem('tutorAvailabilities');
+      if (globalAvailability) {
+        const allAvailabilities = JSON.parse(globalAvailability);
+        if (allAvailabilities[selectedTutor]) {
+          return allAvailabilities[selectedTutor];
+        }
+      }
+    }
+    
+    // Fall back to tutor's default availableSlots
+    const tutor = tutors.find(t => t.id === selectedTutor);
+    if (tutor?.availableSlots) {
+      return tutor.availableSlots;
+    }
+    
+    // Default: no specific availability (all days/times available)
+    return [];
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-24 sm:pt-32 pb-24 sm:pb-32">
@@ -967,7 +997,7 @@ function BookingContent() {
               <h2 className="text-3xl font-bold text-white mb-6">Wähle Datum und Uhrzeit</h2>
               
               <WeekCalendar
-                tutorAvailability={availableSlots}
+                tutorAvailability={getTutorAvailability()}
                 selectedDate={selectedDate}
                 onSelectDate={(date) => {
                   setSelectedDate(date);
