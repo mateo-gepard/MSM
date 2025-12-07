@@ -725,322 +725,34 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-white">Verfügbarkeit einstellen</h2>
-                <p className="text-gray-400 text-sm mt-1">
-                  Wähle deine bevorzugte Ansicht und setze deine verfügbaren Zeiten.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={clearAll}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Löschen
-                </Button>
-                <Button
-                  onClick={saveAvailability}
-                  disabled={isSaving}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  {isSaving ? 'Speichern...' : 'Speichern'}
-                </Button>
-              </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Verfügbarkeit einstellen</h2>
+              <p className="text-gray-400 text-sm mt-1">
+                Wähle deine verfügbaren Zeitfenster pro Woche. Nicht gesetzte Wochen verwenden automatisch deine Standard-Verfügbarkeit.
+              </p>
             </div>
 
-            {/* View Mode Selection */}
-            <div className="flex gap-2 p-1 bg-secondary-dark/50 rounded-lg w-fit">
-              <button
-                onClick={() => setViewMode('schedule')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'schedule'
-                    ? 'bg-accent text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                📅 Stundenplan
-              </button>
-              <button
-                onClick={() => setViewMode('slider')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'slider'
-                    ? 'bg-accent text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                ⏱️ Zeitbereiche
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'grid'
-                    ? 'bg-accent text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                🔲 Raster
-              </button>
-            </div>
-
-            {saveMessage && (
-              <div className={`p-3 rounded-lg ${
-                saveMessage.includes('Fehler') 
-                  ? 'bg-red-500/20 text-red-400' 
-                  : 'bg-green-500/20 text-green-400'
-              }`}>
-                {saveMessage}
-              </div>
-            )}
-
-            {/* Schedule View (Stundenplan) */}
-            {viewMode === 'schedule' && (
-              <FrostedCard className="p-6" hover={false}>
-                <div className="grid grid-cols-8 gap-2">
-                  {/* Header */}
-                  <div className="text-xs text-gray-500 font-medium">Zeit</div>
-                  {DAYS_OF_WEEK.map(day => (
-                    <div key={day.id} className="text-xs text-gray-400 font-medium text-center">
-                      {day.name.substring(0, 2)}
-                    </div>
-                  ))}
+            <WeekAvailabilityEditor
+              tutorName={tutor.name}
+              defaultAvailability={availability}
+              onSave={async (weekKey, weekAvailability) => {
+                // Save week-specific availability to Supabase
+                try {
+                  const { saveTutorAvailability } = await import('@/lib/supabase');
+                  await saveTutorAvailability(tutor.name, weekAvailability);
                   
-                  {/* Time blocks */}
-                  {['08:00-12:00', '12:00-14:00', '14:00-18:00', '18:00-21:00'].map(timeBlock => {
-                    const [start, end] = timeBlock.split('-');
-                    const startIdx = TIME_SLOTS.indexOf(start);
-                    const endIdx = TIME_SLOTS.indexOf(end);
-                    const blockTimes = TIME_SLOTS.slice(startIdx, endIdx);
-                    
-                    return (
-                      <Fragment key={timeBlock}>
-                        <div className="text-xs text-gray-400 py-4">{timeBlock}</div>
-                        {DAYS_OF_WEEK.map(day => {
-                          const hasAnyTime = blockTimes.some(t => isTimeSelected(day.id, t));
-                          const hasAllTimes = blockTimes.every(t => isTimeSelected(day.id, t));
-                          
-                          return (
-                            <button
-                              key={day.id}
-                              onClick={() => {
-                                // Toggle all times in this block for this day
-                                blockTimes.forEach(time => {
-                                  if (hasAllTimes) {
-                                    // Deselect all
-                                    if (isTimeSelected(day.id, time)) toggleTimeSlot(day.id, time);
-                                  } else {
-                                    // Select all
-                                    if (!isTimeSelected(day.id, time)) toggleTimeSlot(day.id, time);
-                                  }
-                                });
-                              }}
-                              className={`p-4 rounded-lg transition-all text-center text-xs font-medium ${
-                                hasAllTimes
-                                  ? 'bg-green-500 text-white'
-                                  : hasAnyTime
-                                  ? 'bg-accent/40 text-white'
-                                  : 'bg-white/5 text-gray-500 hover:bg-white/10'
-                              }`}
-                            >
-                              {hasAllTimes ? 'Verfügbar' : hasAnyTime ? 'Teilweise' : 'Nicht verfügbar'}
-                            </button>
-                          );
-                        })}
-                      </Fragment>
-                    );
-                  })}
-                </div>
-              </FrostedCard>
-            )}
-
-            {/* Slider View (Zeitbereiche) */}
-            {viewMode === 'slider' && (
-              <FrostedCard className="p-6" hover={false}>
-                <div className="space-y-4">
-                  {DAYS_OF_WEEK.map(day => {
-                    const ranges = timeRanges[day.id] || [];
-                    
-                    return (
-                      <div key={day.id} className="border-b border-white/5 pb-4 last:border-0">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-white font-medium">{day.name}</h3>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => addTimeRange(day.id)}
-                            className="flex items-center gap-1 text-xs"
-                          >
-                            <Plus className="w-3 h-3" />
-                            Zeitblock
-                          </Button>
-                        </div>
-                        
-                        {ranges.length === 0 ? (
-                          <p className="text-gray-500 text-sm">Keine Zeiten festgelegt</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {ranges.map((range, idx) => (
-                              <div key={idx} className="flex items-center gap-3">
-                                <select
-                                  value={range.start}
-                                  onChange={(e) => updateTimeRange(day.id, idx, 'start', e.target.value)}
-                                  className="bg-secondary-dark border border-white/10 text-white rounded-lg px-3 py-2 text-sm"
-                                >
-                                  {TIME_SLOTS.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                                <span className="text-gray-400">bis</span>
-                                <select
-                                  value={range.end}
-                                  onChange={(e) => updateTimeRange(day.id, idx, 'end', e.target.value)}
-                                  className="bg-secondary-dark border border-white/10 text-white rounded-lg px-3 py-2 text-sm"
-                                >
-                                  {TIME_SLOTS.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                                <button
-                                  onClick={() => removeTimeRange(day.id, idx)}
-                                  className="text-red-400 hover:text-red-300 p-2"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </FrostedCard>
-            )}
-
-            {/* Grid View (Original) */}
-            {viewMode === 'grid' && (
-              <FrostedCard className="p-6" hover={false}>
-              <div className="overflow-x-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-                <table className="w-full select-none">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left text-gray-400 font-medium py-3 px-2 min-w-[100px]">
-                        <span className="text-xs">Zeit</span>
-                      </th>
-                      {DAYS_OF_WEEK.map(day => {
-                        const daySlot = availability.find(s => s.day === day.id);
-                        const allSelected = daySlot && daySlot.times.length === TIME_SLOTS.length;
-                        return (
-                          <th key={day.id} className="text-center py-3 px-2 min-w-[80px]">
-                            <button
-                              onClick={() => selectEntireDay(day.id)}
-                              className={`w-full px-2 py-1 rounded-lg text-xs font-medium transition-all ${
-                                allSelected
-                                  ? 'bg-accent text-white'
-                                  : daySlot && daySlot.times.length > 0
-                                  ? 'bg-accent/30 text-accent hover:bg-accent/50'
-                                  : 'text-gray-400 hover:bg-white/10'
-                              }`}
-                              title={`Ganzen ${day.name} ${allSelected ? 'abwählen' : 'auswählen'}`}
-                            >
-                              {day.name.slice(0, 2)}
-                            </button>
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {TIME_SLOTS.map(time => {
-                      const allDaysSelected = DAYS_OF_WEEK.every(day => isTimeSelected(day.id, time));
-                      const someDaysSelected = DAYS_OF_WEEK.some(day => isTimeSelected(day.id, time));
-                      
-                      return (
-                        <tr key={time} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="py-2 px-2">
-                            <button
-                              onClick={() => selectEntireTimeSlot(time)}
-                              className={`w-full text-left px-2 py-1 rounded-lg text-xs transition-all ${
-                                allDaysSelected
-                                  ? 'bg-accent/20 text-accent font-semibold'
-                                  : someDaysSelected
-                                  ? 'text-gray-300 hover:bg-white/10'
-                                  : 'text-gray-500 hover:bg-white/10'
-                              }`}
-                              title={`${time} für ${allDaysSelected ? 'alle Tage abwählen' : 'alle Tage auswählen'}`}
-                            >
-                              {time}
-                            </button>
-                          </td>
-                          {DAYS_OF_WEEK.map(day => (
-                            <td key={`${day.id}-${time}`} className="text-center py-2 px-2">
-                              <button
-                                onMouseDown={() => handleMouseDown(day.id, time)}
-                                onMouseEnter={() => handleMouseEnter(day.id, time)}
-                                className={`w-10 h-10 rounded-lg transition-colors cursor-pointer ${
-                                  isTimeSelected(day.id, time)
-                                    ? 'bg-accent text-white shadow-lg'
-                                    : 'bg-white/5 text-gray-500 hover:bg-white/10'
-                                }`}
-                                title={`${day.name}, ${time}`}
-                              >
-                                {isTimeSelected(day.id, time) && <Check className="w-5 h-5 mx-auto" />}
-                              </button>
-                            </td>
-                          ))}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Legend */}
-              <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-400 border-t border-white/10 pt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-accent rounded"></div>
-                  <span>Verfügbar</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-white/5 rounded"></div>
-                  <span>Nicht verfügbar</span>
-                </div>
-                <div className="flex-1"></div>
-                <span>💡 Tipp: Ziehe über mehrere Felder für schnelle Auswahl</span>
-              </div>
-              </FrostedCard>
-            )}
-
-            {/* Current Availability Summary */}
-            <FrostedCard className="p-6" hover={false}>
-              <h3 className="text-white font-semibold mb-4">Aktuelle Verfügbarkeit</h3>
-              {availability.length === 0 ? (
-                <p className="text-gray-400">Keine Zeiten ausgewählt</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {DAYS_OF_WEEK.map(day => {
-                    const daySlot = availability.find(s => s.day === day.id);
-                    if (!daySlot || daySlot.times.length === 0) return null;
-                    
-                    return (
-                      <div key={day.id} className="bg-primary-dark/50 rounded-lg p-4">
-                        <h4 className="text-accent font-medium mb-2">{day.name}</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {daySlot.times.sort().map(time => (
-                            <span key={time} className="bg-accent/20 text-accent text-xs px-2 py-1 rounded">
-                              {time}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </FrostedCard>
+                  // Also save to localStorage as backup
+                  const weekAvailabilityData = JSON.parse(localStorage.getItem('weekAvailability') || '{}');
+                  weekAvailabilityData[weekKey] = weekAvailability;
+                  localStorage.setItem('weekAvailability', JSON.stringify(weekAvailabilityData));
+                  
+                  console.log(`✅ Saved availability for week ${weekKey}`);
+                } catch (error) {
+                  console.error('Failed to save week availability:', error);
+                  throw error;
+                }
+              }}
+            />
           </motion.div>
         )}
       </main>
