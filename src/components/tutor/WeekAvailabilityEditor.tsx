@@ -97,7 +97,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
     return () => document.removeEventListener('click', handleClick);
   }, []);
 
-  // Check if a day/time window is selected
+  // Check if a day/time window has ANY selected times (partial or full)
   const isWindowSelected = (dayId: string, windowId: string): boolean => {
     const dayAvailability = currentAvailability.find(a => a.day === dayId);
     if (!dayAvailability) return false;
@@ -105,11 +105,11 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
     const window = TIME_WINDOWS.find(w => w.id === windowId);
     if (!window) return false;
     
-    // Check if ALL times in the window are selected
-    return window.times.every(time => dayAvailability.times.includes(time));
+    // Check if ANY time in the window is selected
+    return window.times.some(time => dayAvailability.times.includes(time));
   };
 
-  // Toggle a time window (left click)
+  // Toggle a time window (left click) - toggles ALL times
   const toggleWindow = (dayId: string, windowId: string) => {
     console.log(`🎯 Toggle window - dayId: ${dayId}, windowId: ${windowId}`);
     const window = TIME_WINDOWS.find(w => w.id === windowId);
@@ -118,16 +118,16 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
     const newAvailability = [...currentAvailability];
     const dayIndex = newAvailability.findIndex(a => a.day === dayId);
     
-    const isCurrentlySelected = isWindowSelected(dayId, windowId);
+    // Check if ALL times are selected (not just some)
+    const dayAvailability = newAvailability[dayIndex];
+    const allSelected = dayAvailability && window.times.every(time => dayAvailability.times.includes(time));
 
     if (dayIndex === -1) {
-      // Day doesn't exist, add it
-      if (!isCurrentlySelected) {
-        newAvailability.push({ day: dayId, times: [...window.times] });
-      }
+      // Day doesn't exist, add it with all times
+      newAvailability.push({ day: dayId, times: [...window.times] });
     } else {
-      // Day exists, toggle times
-      if (isCurrentlySelected) {
+      // Day exists, toggle all times
+      if (allSelected) {
         // Remove all times from this window
         newAvailability[dayIndex].times = newAvailability[dayIndex].times.filter(
           time => !window.times.includes(time)
@@ -157,7 +157,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
     setContextMenu({ dayId, windowId, x: e.clientX, y: e.clientY });
   };
 
-  // Toggle individual time slot
+  // Toggle individual time slot (used in context menu)
   const toggleTimeSlot = (dayId: string, time: string) => {
     const newAvailability = [...currentAvailability];
     const dayIndex = newAvailability.findIndex(a => a.day === dayId);
@@ -184,7 +184,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
         [currentWeekKey]: newAvailability
       }));
     }
-    setContextMenu(null);
+    // Don't close context menu - let user select multiple times
   };
 
   // Check if individual time is selected
@@ -398,23 +398,37 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-white text-sm font-semibold px-2 py-1 border-b border-white/10 mb-1">
-              Zeitslots wählen
+            <div className="text-white text-sm font-semibold px-2 py-1 border-b border-white/10 mb-2">
+              {TIME_WINDOWS.find(w => w.id === contextMenu.windowId)?.name} - Zeitslots wählen
             </div>
-            <div className="max-h-64 overflow-y-auto space-y-1">
-              {TIME_WINDOWS.find(w => w.id === contextMenu.windowId)?.times.map(time => (
-                <button
-                  key={time}
-                  onClick={() => toggleTimeSlot(contextMenu.dayId, time)}
-                  className={`w-full text-left px-3 py-2 rounded text-sm transition-all ${
-                    isTimeSelected(contextMenu.dayId, time)
-                      ? 'bg-green-500/30 text-green-200 font-medium'
-                      : 'text-gray-300 hover:bg-white/10'
-                  }`}
-                >
-                  {isTimeSelected(contextMenu.dayId, time) ? '✓ ' : ''}{time} Uhr
-                </button>
-              ))}
+            <div className="max-h-64 overflow-y-auto space-y-1 px-2 mb-2">
+              {TIME_WINDOWS.find(w => w.id === contextMenu.windowId)?.times.map(time => {
+                const selected = isTimeSelected(contextMenu.dayId, time);
+                return (
+                  <label
+                    key={time}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5 transition-all"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleTimeSlot(contextMenu.dayId, time)}
+                      className="w-4 h-4 rounded border-2 border-white/30 bg-white/10 checked:bg-green-500 checked:border-green-500 cursor-pointer"
+                    />
+                    <span className={`text-sm ${selected ? 'text-green-200 font-medium' : 'text-gray-300'}`}>
+                      {time} Uhr
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="border-t border-white/10 pt-2 px-2">
+              <button
+                onClick={() => setContextMenu(null)}
+                className="w-full px-4 py-2 bg-accent-purple hover:bg-accent-purple/80 text-white rounded-lg font-medium transition-all"
+              >
+                OK
+              </button>
             </div>
           </motion.div>
         )}
