@@ -202,45 +202,52 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
       </div>
 
       {/* Time Slots - Show when date is selected */}
-      {selectedDate && availableTimes.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          <h3 className="text-white font-semibold text-lg">
-            Verfügbare Zeiten für {new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </h3>
-          
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {availableTimes.map(time => (
-              <motion.button
-                key={time}
-                onClick={() => onSelectTime(time)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`
-                  p-4 rounded-lg font-semibold transition-all border-2
-                  ${selectedTime === time
-                    ? 'bg-accent text-white border-accent shadow-lg'
-                    : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark hover:border-accent/50 border-white/20'
-                  }
-                `}
-              >
-                {time}
-              </motion.button>
-            ))}
-          </div>
-
-          {selectedTime && (
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <p className="text-green-200 text-sm">
-                ✓ Ausgewählt: <strong>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> um <strong>{selectedTime} Uhr</strong>
-              </p>
+      {selectedDate && availableTimes.length > 0 && (() => {
+        // Parse date manually to avoid timezone issues
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+        
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            <h3 className="text-white font-semibold text-lg">
+              Verfügbare Zeiten für {formattedDate}
+            </h3>
+            
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+              {availableTimes.map(time => (
+                <motion.button
+                  key={time}
+                  onClick={() => onSelectTime(time)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`
+                    p-4 rounded-lg font-semibold transition-all border-2
+                    ${selectedTime === time
+                      ? 'bg-accent text-white border-accent shadow-lg'
+                      : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark hover:border-accent/50 border-white/20'
+                    }
+                  `}
+                >
+                  {time}
+                </motion.button>
+              ))}
             </div>
-          )}
-        </motion.div>
-      )}
+
+            {selectedTime && (
+              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <p className="text-green-200 text-sm">
+                  ✓ Ausgewählt: <strong>{formattedDate}</strong> um <strong>{selectedTime} Uhr</strong>
+                </p>
+              </div>
+            )}
+          </motion.div>
+        );
+      })()}
 
       {selectedDate && availableTimes.length === 0 && (
         <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
