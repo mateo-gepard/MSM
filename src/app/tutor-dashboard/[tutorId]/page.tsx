@@ -741,12 +741,25 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                   const { saveTutorAvailability } = await import('@/lib/supabase');
                   await saveTutorAvailability(tutor.name, weekAvailability);
                   
-                  // Also save to localStorage as backup
+                  // Save to localStorage in BOTH formats for compatibility
+                  
+                  // 1. Week-specific format (for week-based editor)
                   const weekAvailabilityData = JSON.parse(localStorage.getItem('weekAvailability') || '{}');
                   weekAvailabilityData[weekKey] = weekAvailability;
                   localStorage.setItem('weekAvailability', JSON.stringify(weekAvailabilityData));
                   
-                  console.log(`✅ Saved availability for week ${weekKey}`);
+                  // 2. Standard tutor availability format (for booking page)
+                  localStorage.setItem(`tutorAvailability_${tutorId}`, JSON.stringify(weekAvailability));
+                  
+                  // 3. Global availability store (for booking page fallback)
+                  const globalAvailability = JSON.parse(localStorage.getItem('tutorAvailabilities') || '{}');
+                  globalAvailability[tutorId] = weekAvailability;
+                  localStorage.setItem('tutorAvailabilities', JSON.stringify(globalAvailability));
+                  
+                  // Update the local state so it shows immediately
+                  setAvailability(weekAvailability);
+                  
+                  console.log(`✅ Saved availability for week ${weekKey} to all storage locations`);
                 } catch (error) {
                   console.error('Failed to save week availability:', error);
                   throw error;

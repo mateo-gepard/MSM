@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +36,22 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
   const [weekAvailability, setWeekAvailability] = useState<Record<string, Array<{ day: string; times: string[] }>>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // Load saved week availabilities from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedWeekData = localStorage.getItem('weekAvailability');
+      if (savedWeekData) {
+        try {
+          const parsed = JSON.parse(savedWeekData);
+          setWeekAvailability(parsed);
+          console.log('📅 Loaded week availabilities from localStorage:', Object.keys(parsed).length, 'weeks');
+        } catch (error) {
+          console.error('Failed to parse saved week availabilities:', error);
+        }
+      }
+    }
+  }, []);
 
   // Get week key (YYYY-WW format)
   const getWeekKey = (date: Date): string => {
