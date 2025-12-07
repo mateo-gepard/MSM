@@ -1,14 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Save, Calendar, Settings } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 
 interface WeekAvailabilityEditorProps {
   tutorName: string;
   defaultAvailability: Array<{ day: string; times: string[] }>;
   onSave: (weekKey: string, availability: Array<{ day: string; times: string[] }>) => Promise<void>;
+  onSaveDefault?: (availability: Array<{ day: string; times: string[] }>) => Promise<void>;
+}
+
+interface ContextMenu {
+  dayId: string;
+  windowId: string;
+  x: number;
+  y: number;
 }
 
 const DAY_NAMES = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
@@ -22,7 +30,7 @@ const TIME_WINDOWS = [
   { id: 'evening', name: 'Abends', start: '19:00', end: '22:00', times: ['19:00', '19:30', '20:00', '20:30', '21:00', '21:30'] }
 ];
 
-export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave }: WeekAvailabilityEditorProps) {
+export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave, onSaveDefault }: WeekAvailabilityEditorProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -34,8 +42,11 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
   });
 
   const [weekAvailability, setWeekAvailability] = useState<Record<string, Array<{ day: string; times: string[] }>>>({});
+  const [defaultAvail, setDefaultAvail] = useState<Array<{ day: string; times: string[] }>>(defaultAvailability);
+  const [editingMode, setEditingMode] = useState<'week' | 'default'>('week');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
 
   // Load saved week availabilities from localStorage on mount
   useEffect(() => {
@@ -67,14 +78,24 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
 
   // Get availability for current week (or default)
   const getCurrentWeekAvailability = (): Array<{ day: string; times: string[] }> => {
+    if (editingMode === 'default') {
+      return defaultAvail;
+    }
     if (weekAvailability[currentWeekKey]) {
       return weekAvailability[currentWeekKey];
     }
     // Return default availability
-    return defaultAvailability;
+    return defaultAvail;
   };
 
   const currentAvailability = getCurrentWeekAvailability();
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
   // Check if a day/time window is selected
   const isWindowSelected = (dayId: string, windowId: string): boolean => {
@@ -88,7 +109,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
     return window.times.every(time => dayAvailability.times.includes(time));
   };
 
-  // Toggle a time window
+  // Toggle a time window (left click)
   const toggleWindow = (dayId: string, windowId: string) => {
     const window = TIME_WINDOWS.find(w => w.id === windowId);
     if (!window) return;
@@ -118,11 +139,57 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
       }
     }
 
-    // Update week availability
-    setWeekAvailability(prev => ({
-      ...prev,
-      [currentWeekKey]: newAvailability
-    }));
+    // Update appropriate state based on mode
+    if (editingMode === 'default') {
+      setDefaultAvail(newAvailability);
+    } else {
+      setWeekAvailability(prev => ({
+        ...prev,
+        [currentWeekKey]: newAvailability
+      }));
+    }
+  };
+
+  // Handle right-click to open context menu
+  const handleContextMenu = (e: React.MouseEvent, dayId: string, windowId: string) => {
+    e.preventDefault();
+    setContextMenu({ dayId, windowId, x: e.clientX, y: e.clientY });
+  };
+
+  // Toggle individual time slot
+  const toggleTimeSlot = (dayId: string, time: string) => {
+    const newAvailability = [...currentAvailability];
+    const dayIndex = newAvailability.findIndex(a => a.day === dayId);
+
+    if (dayIndex === -1) {
+      // Day doesn't exist, create it with this time
+      newAvailability.push({ day: dayId, times: [time] });
+    } else {
+      // Day exists, toggle this specific time
+      const times = newAvailability[dayIndex].times;
+      if (times.includes(time)) {
+        newAvailability[dayIndex].times = times.filter(t => t !== time);
+      } else {
+        newAvailability[dayIndex].times = [...times, time].sort();
+      }
+    }
+
+    // Update appropriate state based on mode
+    if (editingMode === 'default') {
+      setDefaultAvail(newAvailability);
+    } else {
+      setWeekAvailability(prev => ({
+        ...prev,
+        [currentWeekKey]: newAvailability
+      }));
+    }
+    setContextMenu(null);
+  };
+
+  // Check if individual time is selected
+  const isTimeSelected = (dayId: string, time: string): boolean => {
+    const dayAvailability = currentAvailability.find(a => a.day === dayId);
+    return dayAvailability?.times.includes(time) || false;
   };
 
   // Navigate weeks
@@ -168,11 +235,18 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      // Get the actual current week's availability from state
-      // This ensures we save what the user has actually configured for this week
-      const availabilityToSave = weekAvailability[currentWeekKey] || currentAvailability;
-      await onSave(currentWeekKey, availabilityToSave);
-      setSaveMessage('✓ Verfügbarkeit gespeichert!');
+      if (editingMode === 'default') {
+        // Save default availability
+        if (onSaveDefault) {
+          await onSaveDefault(defaultAvail);
+          setSaveMessage('✓ Standard-Verfügbarkeit gespeichert!');
+        }
+      } else {
+        // Save week-specific availability
+        const availabilityToSave = weekAvailability[currentWeekKey] || currentAvailability;
+        await onSave(currentWeekKey, availabilityToSave);
+        setSaveMessage('✓ Verfügbarkeit gespeichert!');
+      }
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save availability:', error);
@@ -189,45 +263,82 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
     return date;
   });
 
-  const isUsingDefault = !weekAvailability[currentWeekKey];
+  const isUsingDefault = !weekAvailability[currentWeekKey] && editingMode === 'week';
 
   return (
     <div className="space-y-6">
-      {/* Week Navigation */}
-      <div className="flex items-center justify-between">
+      {/* Mode Switcher */}
+      <div className="flex gap-2 p-1 bg-white/5 rounded-lg w-fit">
         <button
-          onClick={previousWeek}
-          disabled={!canGoPrevious()}
+          onClick={() => setEditingMode('week')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            canGoPrevious()
-              ? 'bg-white/5 text-white hover:bg-white/10'
-              : 'bg-white/5 text-gray-600 cursor-not-allowed'
+            editingMode === 'week'
+              ? 'bg-accent-purple text-white'
+              : 'text-gray-400 hover:text-white'
           }`}
         >
-          <ChevronLeft className="w-5 h-5" />
-          <span className="hidden sm:inline">Vorherige Woche</span>
+          <Calendar className="w-4 h-4" />
+          Wochen-Verfügbarkeit
         </button>
-
-        <div className="text-white font-semibold text-center">
-          <div className="text-sm text-gray-400">Woche vom</div>
-          <div className="text-lg">
-            {weekDays[0].toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })} - {weekDays[6].toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </div>
-          {isUsingDefault && (
-            <div className="text-xs text-blue-400 mt-1">
-              (Standard-Verfügbarkeit)
-            </div>
-          )}
-        </div>
-
         <button
-          onClick={nextWeek}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-white hover:bg-white/10 transition-all"
+          onClick={() => setEditingMode('default')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            editingMode === 'default'
+              ? 'bg-accent-purple text-white'
+              : 'text-gray-400 hover:text-white'
+          }`}
         >
-          <span className="hidden sm:inline">Nächste Woche</span>
-          <ChevronRight className="w-5 h-5" />
+          <Settings className="w-4 h-4" />
+          Standard-Verfügbarkeit
         </button>
       </div>
+
+      {/* Week Navigation (only in week mode) */}
+      {editingMode === 'week' && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={previousWeek}
+            disabled={!canGoPrevious()}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+              canGoPrevious()
+                ? 'bg-white/5 text-white hover:bg-white/10'
+                : 'bg-white/5 text-gray-600 cursor-not-allowed'
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Vorherige Woche</span>
+          </button>
+
+          <div className="text-white font-semibold text-center">
+            <div className="text-sm text-gray-400">Woche vom</div>
+            <div className="text-lg">
+              {weekDays[0].toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })} - {weekDays[6].toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+            {isUsingDefault && (
+              <div className="text-xs text-blue-400 mt-1">
+                (Standard-Verfügbarkeit)
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={nextWeek}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-white hover:bg-white/10 transition-all"
+          >
+            <span className="hidden sm:inline">Nächste Woche</span>
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Info Banner for Default Mode */}
+      {editingMode === 'default' && (
+        <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+          <p className="text-purple-200 text-sm">
+            ⚙️ <strong>Standard-Verfügbarkeit bearbeiten</strong> - Diese Zeiten werden für alle Wochen verwendet, die du nicht individuell angepasst hast.
+          </p>
+        </div>
+      )}
 
       {/* Stundenplan Grid */}
       <div className="bg-secondary-dark/50 rounded-xl p-4 sm:p-6 space-y-4">
@@ -246,10 +357,11 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
                       <motion.button
                         key={window.id}
                         onClick={() => toggleWindow(dayId, window.id)}
+                        onContextMenu={(e) => handleContextMenu(e, dayId, window.id)}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`
-                          p-3 rounded-lg transition-all border-2 text-sm font-medium
+                          p-3 rounded-lg transition-all border-2 text-sm font-medium relative
                           ${isSelected
                             ? 'bg-green-500/30 text-green-200 border-green-500/50'
                             : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
@@ -258,6 +370,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
                       >
                         <div className="font-semibold">{window.name}</div>
                         <div className="text-xs opacity-75">{window.start} - {window.end}</div>
+                        <div className="text-xs mt-1 opacity-50">Rechtsklick für Details</div>
                       </motion.button>
                     );
                   })}
@@ -267,6 +380,42 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
           })}
         </div>
       </div>
+
+      {/* Context Menu for Time Selection */}
+      <AnimatePresence>
+        {contextMenu && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed z-50 bg-secondary-dark border border-white/20 rounded-lg shadow-2xl p-2 min-w-[200px]"
+            style={{
+              left: `${contextMenu.x}px`,
+              top: `${contextMenu.y}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-white text-sm font-semibold px-2 py-1 border-b border-white/10 mb-1">
+              Zeitslots wählen
+            </div>
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {TIME_WINDOWS.find(w => w.id === contextMenu.windowId)?.times.map(time => (
+                <button
+                  key={time}
+                  onClick={() => toggleTimeSlot(contextMenu.dayId, time)}
+                  className={`w-full text-left px-3 py-2 rounded text-sm transition-all ${
+                    isTimeSelected(contextMenu.dayId, time)
+                      ? 'bg-green-500/30 text-green-200 font-medium'
+                      : 'text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  {isTimeSelected(contextMenu.dayId, time) ? '✓ ' : ''}{time} Uhr
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Save Button */}
       <div className="flex items-center gap-4">
@@ -283,7 +432,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
           ) : (
             <>
               <Save className="w-4 h-4" />
-              Verfügbarkeit speichern
+              {editingMode === 'default' ? 'Standard speichern' : 'Verfügbarkeit speichern'}
             </>
           )}
         </Button>
@@ -301,7 +450,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
         )}
       </div>
 
-      {isUsingDefault && (
+      {isUsingDefault && editingMode === 'week' && (
         <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
           <p className="text-blue-200 text-sm">
             💡 <strong>Standard-Verfügbarkeit aktiv</strong> - Klicke auf die Zeitfenster, um die Verfügbarkeit für diese Woche anzupassen. Nicht gesetzte Wochen verwenden automatisch deine Standard-Verfügbarkeit.

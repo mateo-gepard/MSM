@@ -765,6 +765,28 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                   throw error;
                 }
               }}
+              onSaveDefault={async (defaultAvail) => {
+                // Save default availability
+                try {
+                  const { saveTutorAvailability } = await import('@/lib/supabase');
+                  await saveTutorAvailability(tutor.name, defaultAvail);
+                  
+                  // Save to localStorage
+                  localStorage.setItem(`tutorAvailability_${tutorId}`, JSON.stringify(defaultAvail));
+                  
+                  const globalAvailability = JSON.parse(localStorage.getItem('tutorAvailabilities') || '{}');
+                  globalAvailability[tutorId] = defaultAvail;
+                  localStorage.setItem('tutorAvailabilities', JSON.stringify(globalAvailability));
+                  
+                  // Update local state
+                  setAvailability(defaultAvail);
+                  
+                  console.log(`✅ Saved default availability to all storage locations`);
+                } catch (error) {
+                  console.error('Failed to save default availability:', error);
+                  throw error;
+                }
+              }}
             />
           </motion.div>
         )}

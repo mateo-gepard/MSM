@@ -33,12 +33,13 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
     return date;
   });
 
-  // Check if a date has available slots
+  // Check if a date has available slots (only green if times exist)
   const hasAvailability = (date: Date): boolean => {
     const dayOfWeek = date.getDay();
     const dayId = DAY_IDS[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Convert to our day IDs
     const dayAvailability = tutorAvailability.find(a => a.day === dayId);
-    return dayAvailability ? dayAvailability.times.length > 0 : false;
+    // Only return true if the day exists AND has actual time slots
+    return !!(dayAvailability && Array.isArray(dayAvailability.times) && dayAvailability.times.length > 0);
   };
 
   // Get available times for selected date
