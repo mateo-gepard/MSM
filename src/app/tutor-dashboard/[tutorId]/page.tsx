@@ -8,6 +8,7 @@ import TutorChatWidget from '@/components/chat/TutorChatWidget';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { WeekAvailabilityEditor } from '@/components/tutor/WeekAvailabilityEditor';
+import { cancelBooking } from '@/lib/calcom';
 import { 
   Calendar,
   MessageCircle,
@@ -19,7 +20,8 @@ import {
   Home,
   Save,
   Plus,
-  Trash2
+  Trash2,
+  XCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -77,6 +79,10 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   const [viewMode, setViewMode] = useState<'grid' | 'schedule' | 'slider'>('schedule'); // Default to Stundenplan
   const [timeRanges, setTimeRanges] = useState<Record<string, Array<{ start: string; end: string }>>>({});
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true); // Track Supabase connection
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<TutorBooking | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   
   // Find the tutor from our data
   const tutor = tutors.find(t => t.id === tutorId);
@@ -296,6 +302,83 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   // Handle mouse up to end drag selection
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+  
+  // Handle cancel booking - show confirmation modal
+  const handleCancelClick = (booking: TutorBooking) => {
+    setBookingToCancel(booking);
+    setShowCancelModal(true);
+    setCancelError(null);
+  };
+
+  // Confirm cancellation with Cal.com API
+  const confirmCancellation = async () => {
+    if (!bookingToCancel) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      console.log('🚫 Tutor cancelling booking:', bookingToCancel.id);
+
+      // Get the actual Cal.com booking ID
+      const calcomIdToUse = bookingToCancel.id;
+      
+      // Check if this is a local-only booking
+      const isLocalBooking = String(calcomIdToUse).startsWith('booking_') || String(calcomIdToUse).startsWith('mock-');
+      
+      console.log('📋 Booking details:', {
+        id: bookingToCancel.id,
+        isLocalBooking: isLocalBooking
+      });
+
+      // Try to cancel in Cal.com (if it's not a local-only booking)
+      if (!isLocalBooking) {
+        try {
+          await cancelBooking(String(calcomIdToUse), 'Tutor requested cancellation');
+          console.log('\u2705 Cal.com cancellation successful');
+        } catch (error) {
+          console.warn('\u26a0\ufe0f Cal.com cancellation failed, continuing with local cancellation:', error);
+        }
+      } else {
+        console.log('\u2139\ufe0f Local booking only, skipping Cal.com API call');
+      }
+
+      // Update in Supabase
+      try {
+        const { updateBookingStatus } = await import('@/lib/supabase');
+        await updateBookingStatus(calcomIdToUse, 'cancelled');
+        console.log('\u2705 Supabase updated successfully');
+      } catch (supabaseError) {
+        console.warn('\u26a0\ufe0f Supabase update failed:', supabaseError);
+      }
+
+      // Update local state
+      const updatedBookings = bookings.map(b => 
+        b.id === bookingToCancel.id 
+          ? { ...b, status: 'cancelled' as const }
+          : b
+      );
+
+      // Save to localStorage
+      const storageKey = `tutorBookings_${tutorId}`;
+      localStorage.setItem(storageKey, JSON.stringify(updatedBookings));
+      console.log('💾 Local storage updated');
+      
+      // Update React state
+      setBookings(updatedBookings);
+      
+      // Close modal
+      setShowCancelModal(false);
+      setBookingToCancel(null);
+      
+      console.log('✅ Cancellation completed successfully');
+    } catch (error) {
+      console.error('❌ Cancellation error:', error);
+      setCancelError(error instanceof Error ? error.message : 'Stornierung fehlgeschlagen');
+    } finally {
+      setIsCancelling(false);
+    }
   };
   
   // Quick select entire day
@@ -633,6 +716,19 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
                         <p className="text-gray-300 text-xs sm:text-sm">{booking.message}</p>
                       </div>
                     )}
+                    {booking.status === 'scheduled' && (
+                      <div className="mt-3 sm:mt-4">
+                        <Button
+                          onClick={() => handleCancelClick(booking)}
+                          variant="secondary"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Stunde stornieren
+                        </Button>
+                      </div>
+                    )}
                   </FrostedCard>
                 ))}
               </div>
@@ -791,6 +887,79 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
           </motion.div>
         )}
       </main>
+
+      {/* Cancellation Confirmation Modal */}
+      {showCancelModal && bookingToCancel && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-secondary-dark border border-white/10 rounded-xl p-6 max-w-md w-full"
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <XCircle className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  Stunde stornieren?
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Möchtest du die Stunde am <strong className="text-white">
+                    {new Date(bookingToCancel.date).toLocaleDateString('de-DE', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long'
+                    })}
+                  </strong> um <strong className="text-white">{bookingToCancel.time.slice(0, 5)} Uhr</strong> mit{' '}
+                  <strong className="text-white">{bookingToCancel.parentName}</strong> wirklich stornieren?
+                </p>
+                <p className="text-xs text-gray-500">
+                  Die Eltern werden automatisch benachrichtigt.
+                </p>
+              </div>
+            </div>
+
+            {cancelError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-sm text-red-400">{cancelError}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setBookingToCancel(null);
+                  setCancelError(null);
+                }}
+                variant="secondary"
+                disabled={isCancelling}
+                className="flex-1"
+              >
+                Abbrechen
+              </Button>
+              <Button
+                onClick={confirmCancellation}
+                disabled={isCancelling}
+                className="flex-1 bg-red-500 hover:bg-red-600"
+              >
+                {isCancelling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    Storniere...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Ja, stornieren
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
