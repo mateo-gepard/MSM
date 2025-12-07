@@ -36,7 +36,9 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
   // Check if a date has available slots (only green if times exist)
   const hasAvailability = (date: Date): boolean => {
     const dayOfWeek = date.getDay();
-    const dayId = DAY_IDS[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Convert to our day IDs
+    // Convert JavaScript day (0=Sunday) to our DAY_IDS (0=Monday)
+    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const dayId = DAY_IDS[dayIndex];
     const dayAvailability = tutorAvailability.find(a => a.day === dayId);
     // Only return true if the day exists AND has actual time slots
     return !!(dayAvailability && Array.isArray(dayAvailability.times) && dayAvailability.times.length > 0);
@@ -47,7 +49,9 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
     if (!dateString) return [];
     const date = new Date(dateString + 'T00:00:00');
     const dayOfWeek = date.getDay();
-    const dayId = DAY_IDS[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+    // Convert JavaScript day (0=Sunday) to our DAY_IDS (0=Monday)
+    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const dayId = DAY_IDS[dayIndex];
     const dayAvailability = tutorAvailability.find(a => a.day === dayId);
     return dayAvailability?.times || [];
   };
