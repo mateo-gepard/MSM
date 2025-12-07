@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { tutors, packages, subjects } from '@/data/mockData';
 import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Monitor, Home } from 'lucide-react';
 import { TutorCard } from '@/components/tutors/TutorCard';
+import { WeekCalendar } from '@/components/booking/WeekCalendar';
 
 function BookingContent() {
   const router = useRouter();
@@ -965,74 +966,16 @@ function BookingContent() {
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">Wähle Datum und Uhrzeit</h2>
               
-              {/* Date Selection */}
-              <div className="mb-6">
-                <label className="block text-white font-semibold mb-2">Datum</label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    // Reset time when date changes
-                    setSelectedTime('');
-                  }}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full p-3 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none"
-                />
-              </div>
-
-              {/* Time Selection - Only show if date is selected */}
-              {selectedDate && (
-                <div className="mb-6">
-                  <label className="block text-white font-semibold mb-3">Verfügbare Uhrzeiten</label>
-                  
-                  {availableTimes.length > 0 ? (
-                    <>
-                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        {availableTimes.map(time => (
-                          <button
-                            key={time}
-                            type="button"
-                            onClick={() => setSelectedTime(time)}
-                            className={`p-4 rounded-lg font-semibold transition-all border-2 ${
-                              selectedTime === time
-                                ? 'bg-accent text-white border-accent shadow-lg scale-105'
-                                : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark hover:border-accent/50 border-white/20'
-                            }`}
-                          >
-                            {time}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      {selectedTime && (
-                        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                          <p className="text-green-200 text-sm">
-                            ✓ Ausgewählt: <strong>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> um <strong>{selectedTime} Uhr</strong>
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                      <p className="text-yellow-200 text-sm">
-                        ⚠️ Der gewählte Tutor ist an diesem Tag nicht verfügbar. Bitte wähle ein anderes Datum.
-                      </p>
-                      <p className="text-yellow-200/70 text-xs mt-2">
-                        {tutors.find(t => t.id === selectedTutor)?.availability || 'Verfügbarkeit nicht angegeben'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!selectedDate && (
-                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <p className="text-blue-200 text-sm">
-                    💡 Wähle zuerst ein Datum, um die verfügbaren Uhrzeiten zu sehen
-                  </p>
-                </div>
-              )}
+              <WeekCalendar
+                tutorAvailability={availableSlots}
+                selectedDate={selectedDate}
+                onSelectDate={(date) => {
+                  setSelectedDate(date);
+                  setSelectedTime(''); // Reset time when date changes
+                }}
+                onSelectTime={setSelectedTime}
+                selectedTime={selectedTime}
+              />
             </div>
           )}
 

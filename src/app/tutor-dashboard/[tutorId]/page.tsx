@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import TutorChatWidget from '@/components/chat/TutorChatWidget';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { WeekAvailabilityEditor } from '@/components/tutor/WeekAvailabilityEditor';
 import { 
   Calendar,
   MessageCircle,
@@ -73,7 +74,7 @@ export default function TutorDashboard({ params }: { params: Promise<{ tutorId: 
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
-  const [viewMode, setViewMode] = useState<'grid' | 'schedule' | 'slider'>('grid'); // View selection
+  const [viewMode, setViewMode] = useState<'grid' | 'schedule' | 'slider'>('schedule'); // Default to Stundenplan
   const [timeRanges, setTimeRanges] = useState<Record<string, Array<{ start: string; end: string }>>>({});
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true); // Track Supabase connection
   
