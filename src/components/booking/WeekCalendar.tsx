@@ -32,6 +32,9 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
     date.setDate(currentWeekStart.getDate() + i);
     return date;
   });
+  
+  // Debug: Log the week days
+  console.log('📅 Week days:', weekDays.map((d, i) => `${i}: ${d.toDateString()}`));
 
   // Check if a date has available slots (only green if times exist)
   const hasAvailability = (date: Date): boolean => {
