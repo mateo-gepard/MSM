@@ -54,9 +54,12 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
     // Convert JavaScript day (0=Sunday) to our DAY_IDS (0=Monday)
     const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const dayId = DAY_IDS[dayIndex];
-    console.log(`🔍 Getting times for ${dateString}: dayOfWeek=${dayOfWeek}, dayIndex=${dayIndex}, dayId=${dayId}`);
+    const dayName = DAY_NAMES[dayIndex];
+    console.log(`🔍 Getting times for ${dateString} (${dayName}): dayOfWeek=${dayOfWeek}, dayIndex=${dayIndex}, dayId=${dayId}`);
     const dayAvailability = tutorAvailability.find(a => a.day === dayId);
-    return dayAvailability?.times || [];
+    const times = dayAvailability?.times || [];
+    console.log(`   → Found ${times.length} time slots for ${dayName}:`, times);
+    return times;
   };
 
   const availableTimes = getAvailableTimes(selectedDate);
