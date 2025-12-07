@@ -444,9 +444,43 @@ function BookingContent() {
       } else {
         // Create new booking via Cal.com API
         console.log('Creating booking via Cal.com API...');
+        
+        // CRITICAL FIX: Timezone handling for Cal.com API
+        // Problem: Sending `2025-12-14T18:30:00` without timezone is interpreted as UTC
+        // Solution: Detect Berlin timezone offset and convert to proper ISO format
+        
+        // Helper function to get timezone offset for Berlin at a specific date
+        const getBerlinOffset = (dateStr: string): string => {
+          const date = new Date(dateStr + 'T12:00:00');
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Europe/Berlin',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+          });
+          
+          const formatted = formatter.format(date);
+          // Check if it's CEST (summer) or CET (winter)
+          return formatted.includes('CEST') || formatted.includes('GMT+2') ? '+02:00' : '+01:00';
+        };
+        
+        const berlinOffset = getBerlinOffset(selectedDate);
+        const isoWithOffset = `${selectedDate}T${selectedTime}:00${berlinOffset}`;
+        const isoString = new Date(isoWithOffset).toISOString();
+        
+        console.log('🕐 Time Conversion for Cal.com:');
+        console.log('  Selected (Berlin):', `${selectedDate} ${selectedTime}`);
+        console.log('  Berlin Offset:', berlinOffset);
+        console.log('  ISO with TZ:', isoWithOffset);
+        console.log('  Final UTC:', isoString);
+        console.log('  Verify:', new Date(isoString).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'short', timeStyle: 'short' }));
+        
         bookingResult = await createBooking({
           eventTypeId: parseInt(process.env.NEXT_PUBLIC_CALCOM_EVENT_TYPE_ID || '3976917'),
-          start: `${selectedDate}T${selectedTime}:00`,
+          start: isoString,
           responses: {
             name: contactInfo.name || user?.user_metadata?.name || user?.email || 'Unbekannt',
             email: contactInfo.email || user?.email || '',
