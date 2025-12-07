@@ -203,7 +203,6 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const bookingSuccess = searchParams.get('bookingSuccess');
-  const rescheduleSuccess = searchParams.get('rescheduleSuccess');
   const [activeTab, setActiveTab] = useState<'bookings' | 'messages' | 'calendar' | 'profile'>('bookings');
   const [userBookings, setUserBookings] = useState<any[]>([]);
   const [bookingFilter, setBookingFilter] = useState<'scheduled' | 'completed' | 'cancelled' | 'all'>('scheduled');
@@ -367,14 +366,6 @@ function DashboardContent() {
     // Just hide for this session
     sessionStorage.removeItem('show_password_banner');
     setShowPasswordPrompt(false);
-  };
-
-  // Umbuchen - redirect to booking page with pre-filled data
-  const handleReschedule = (booking: any) => {
-    // Store the booking ID to reschedule
-    localStorage.setItem('rescheduleBookingId', booking.id);
-    // Redirect to booking page
-    router.push(`/booking?reschedule=${booking.id}`);
   };
 
   // Stornieren - show confirmation modal
@@ -551,18 +542,6 @@ function DashboardContent() {
           </motion.div>
         )}
         
-        {/* Reschedule Success Message */}
-        {rescheduleSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-blue-400 flex items-center gap-2 sm:gap-3"
-          >
-            <Check className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base">Buchung erfolgreich umgebucht! Die Änderungen wurden gespeichert.</span>
-          </motion.div>
-        )}
-
         {/* Password Prompt Banner */}
         {showPasswordPrompt && (
           <motion.div
@@ -810,16 +789,21 @@ function DashboardContent() {
                           <div>
                             <div className="text-gray-500 mb-1">Datum</div>
                             <div className="text-white font-medium">
-                              {new Date(booking.date).toLocaleDateString('de-DE')}
+                              {new Date(booking.date).toLocaleDateString('de-DE', {
+                                weekday: 'long',
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: '2-digit'
+                              }).replace(',', ' der')}
                             </div>
                           </div>
                           <div>
                             <div className="text-gray-500 mb-1">Uhrzeit</div>
-                            <div className="text-white font-medium">{booking.time} Uhr</div>
+                            <div className="text-white font-medium">{booking.time.slice(0, 5)} Uhr</div>
                           </div>
                           <div>
                             <div className="text-gray-500 mb-1">Dauer</div>
-                            <div className="text-white font-medium">{booking.duration} Min</div>
+                            <div className="text-white font-medium">60 Min.</div>
                           </div>
                           <div>
                             <div className="text-gray-500 mb-1">Ort</div>
@@ -840,14 +824,7 @@ function DashboardContent() {
                         </div>
 
                         {booking.status === 'scheduled' && (
-                          <div className="mt-4 pt-4 border-t border-white/10 flex gap-3">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleReschedule(booking)}
-                            >
-                              Umbuchen
-                            </Button>
+                          <div className="mt-4 pt-4 border-t border-white/10">
                             <Button 
                               size="sm" 
                               variant="outline"
