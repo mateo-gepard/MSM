@@ -170,11 +170,19 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
           // Use the actual weekday from the date object, not the index
           const dayOfWeek = date.getDay();
           const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          
+          // Debug logging
+          if (index === 4) { // Friday
+            console.log(`🔍 Button ${index}: date=${date.toDateString()}, dayOfWeek=${dayOfWeek}, dayIndex=${dayIndex}, dayName=${DAY_NAMES[dayIndex]}, dateString=${dateString}`);
+          }
 
           return (
             <motion.button
               key={dateString}
-              onClick={() => !isPastDate && onSelectDate(dateString)}
+              onClick={() => {
+                console.log(`🖱️ Clicked button ${index}: ${DAY_NAMES[dayIndex]} ${dateString}`);
+                if (!isPastDate) onSelectDate(dateString);
+              }}
               disabled={isPastDate}
               whileHover={!isPastDate ? { scale: 1.05 } : {}}
               whileTap={!isPastDate ? { scale: 0.95 } : {}}
