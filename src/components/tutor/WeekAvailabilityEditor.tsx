@@ -111,6 +111,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
 
   // Toggle a time window (left click)
   const toggleWindow = (dayId: string, windowId: string) => {
+    console.log(`🎯 Toggle window - dayId: ${dayId}, windowId: ${windowId}`);
     const window = TIME_WINDOWS.find(w => w.id === windowId);
     if (!window) return;
 
@@ -237,6 +238,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
     try {
       if (editingMode === 'default') {
         // Save default availability
+        console.log('💾 Saving default availability:', defaultAvail);
         if (onSaveDefault) {
           await onSaveDefault(defaultAvail);
           setSaveMessage('✓ Standard-Verfügbarkeit gespeichert!');
@@ -244,6 +246,7 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave,
       } else {
         // Save week-specific availability
         const availabilityToSave = weekAvailability[currentWeekKey] || currentAvailability;
+        console.log('💾 Saving week availability:', availabilityToSave);
         await onSave(currentWeekKey, availabilityToSave);
         setSaveMessage('✓ Verfügbarkeit gespeichert!');
       }
