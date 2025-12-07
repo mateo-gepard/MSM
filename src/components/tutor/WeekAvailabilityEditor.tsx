@@ -168,7 +168,10 @@ export function WeekAvailabilityEditor({ tutorName, defaultAvailability, onSave 
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      await onSave(currentWeekKey, currentAvailability);
+      // Get the actual current week's availability from state
+      // This ensures we save what the user has actually configured for this week
+      const availabilityToSave = weekAvailability[currentWeekKey] || currentAvailability;
+      await onSave(currentWeekKey, availabilityToSave);
       setSaveMessage('✓ Verfügbarkeit gespeichert!');
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {

@@ -155,19 +155,46 @@ export async function saveTutorAvailability(tutorName: string, availableSlots: a
   try {
     console.log('💾 Saving tutor availability to Supabase...', { tutorName, availableSlots });
     
-    const { data, error } = await supabase
+    // First, try to find the tutor
+    const { data: existingTutor } = await supabase
       .from('tutors')
-      .update({ 
-        available_slots: availableSlots,
-        updated_at: new Date().toISOString()
-      })
+      .select('id, name')
       .eq('name', tutorName)
-      .select();
-
-    if (error) throw error;
+      .maybeSingle();
     
-    console.log('✅ Tutor availability saved to Supabase:', data);
-    return data?.[0] || null;
+    if (existingTutor) {
+      // Tutor exists, update their availability
+      const { data, error } = await supabase
+        .from('tutors')
+        .update({ 
+          available_slots: availableSlots,
+          updated_at: new Date().toISOString()
+        })
+        .eq('name', tutorName)
+        .select();
+
+      if (error) throw error;
+      
+      console.log('✅ Tutor availability updated in Supabase:', data);
+      return data?.[0] || null;
+    } else {
+      // Tutor doesn't exist, create them with availability
+      console.log(`ℹ️ Tutor "${tutorName}" not found, creating new entry...`);
+      const { data, error } = await supabase
+        .from('tutors')
+        .insert({
+          name: tutorName,
+          available_slots: availableSlots,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select();
+      
+      if (error) throw error;
+      
+      console.log('✅ New tutor created with availability in Supabase:', data);
+      return data?.[0] || null;
+    }
   } catch (error) {
     console.error('❌ Error saving tutor availability:', error);
     throw error;
