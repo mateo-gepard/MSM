@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, Phone, MapPin, Instagram, Linkedin } from 'lucide-react';
+import { Mail, MapPin, Instagram, Linkedin } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -13,19 +13,19 @@ export function Footer() {
           {/* Brand - Full width on mobile */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-3 sm:gap-4 mb-4">
-              <div className="relative w-14 h-14 sm:w-20 sm:h-20 flex-shrink-0">
+              <div className="relative w-20 h-20 sm:w-28 sm:h-28 flex-shrink-0">
                 <Image
                   src="/MSM_Logo_Light.png"
                   alt="MSM Munich Scholar Mentors Logo"
-                  width={80}
-                  height={80}
+                  width={112}
+                  height={112}
                   className="object-contain"
                 />
               </div>
               <div className="flex flex-col">
                 <span className="text-lg sm:text-xl font-bold text-white leading-tight">MSM</span>
                 <span className="text-xs text-gray-400 leading-tight">Munich Scholar Mentors</span>
-                <span className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">Learn Better - Be Better</span>
+                <span className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">Don't be good be excellent</span>
               </div>
             </div>
           {/* End Brand column */}
@@ -88,12 +88,6 @@ export function Footer() {
                 <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent flex-shrink-0" />
                 <a href="mailto:munichscholarmentors@gmail.com" className="hover:text-accent active:text-accent transition-colors truncate">
                   munichscholarmentors@gmail.com
-                </a>
-              </li>
-              <li className="flex items-center gap-2 text-gray-400 text-xs sm:text-sm">
-                <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent flex-shrink-0" />
-                <a href="tel:+4917652547548" className="hover:text-accent active:text-accent transition-colors">
-                  +49 176 52547548
                 </a>
               </li>
               <li className="flex items-center gap-2 text-gray-400 text-xs sm:text-sm">
