@@ -13,7 +13,7 @@ export default function AGBPage() {
             <div className="prose prose-invert max-w-none">
               <section className="mb-8">
                 <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">1. Geltungsbereich</h2>
-                <p>Diese AGB gelten für die Nutzung der von Mateo Mamaladze (minderjährig) betriebenen Vermittlungsplattform, gesetzlich vertreten durch [Name des gesetzlichen Vertreters].</p>
+                <p>Diese AGB gelten für die Nutzung der von Mateo Mamaladze (minderjährig) betriebenen Vermittlungsplattform, gesetzlich vertreten durch George Mamaladze.</p>
               </section>
 
               <section className="mb-8">

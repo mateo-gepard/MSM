@@ -20,10 +20,11 @@ export default function DatenschutzPage() {
                 <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">1. Verantwortlicher</h2>
                 <p className="mb-2">Verantwortlich für die Datenverarbeitung im Sinne der DSGVO ist:</p>
                 <div className="bg-secondary-dark/50 p-4 rounded-lg mb-4">
-                  <p className="mb-1">[Name des gesetzlichen Vertreters]</p>
+                  <p className="mb-1">George Mamaladze</p>
                   <p className="mb-1">als gesetzlicher Vertreter von</p>
                   <p className="mb-1">Mateo Mamaladze (minderjährig)</p>
-                  <p className="mb-1">[Adresse]</p>
+                  <p className="mb-1">Welfenstraße 14</p>
+                  <p className="mb-1">81541 München</p>
                   <p className="mb-1">Deutschland</p>
                   <p className="mt-3">E-Mail: mateo.mamaladze@gmail.com</p>
                 </div>
