@@ -1005,7 +1005,7 @@ function BookingContent() {
                               src={tutor.image}
                               alt={tutor.name}
                               fill
-                              sizes="64px"
+                              sizes="128px"
                               quality={100}
                               className="object-cover"
                               priority={false}
