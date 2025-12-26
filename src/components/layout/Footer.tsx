@@ -36,6 +36,11 @@ export function Footer() {
             <h3 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Quick Links</h3>
             <ul className="space-y-2">
               <li>
+                <Link href="/uber-uns" className="text-gray-400 hover:text-accent active:text-accent transition-colors text-xs sm:text-sm py-1 block">
+                  Über uns
+                </Link>
+              </li>
+              <li>
                 <Link href="/#tutors" className="text-gray-400 hover:text-accent active:text-accent transition-colors text-xs sm:text-sm py-1 block">
                   Tutoren
                 </Link>

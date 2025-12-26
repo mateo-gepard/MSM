@@ -23,6 +23,7 @@ export function Navigation() {
 
   const navItems = [
     { label: 'Start', href: '/' },
+    { label: 'Über uns', href: '/uber-uns' },
     { label: 'Tutoren', href: '/#tutors' },
     { label: 'Preise', href: '/#pricing' }
   ];
