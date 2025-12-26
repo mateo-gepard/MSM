@@ -35,6 +35,14 @@ export default function RootLayout({
       <html lang="de" data-scroll-behavior="smooth">
         <head>
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/MSM_FAVICON.png" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/MSM_FAVICON.png" />
+          <link rel="icon" type="image/png" sizes="512x512" href="/MSM_FAVICON.png" />
+          <link rel="manifest" href="/site.webmanifest" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="theme-color" content="#081525" />
         </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
