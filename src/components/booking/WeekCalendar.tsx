@@ -38,6 +38,16 @@ export function WeekCalendar({ tutorAvailability, selectedDate, onSelectDate, on
 
   // Check if a date has available slots (only green if times exist)
   const hasAvailability = (date: Date): boolean => {
+    // Prevent same-day bookings - don't allow today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    if (checkDate <= today) {
+      return false; // Disable today and past dates
+    }
+    
     const dayOfWeek = date.getDay();
     // Convert JavaScript day (0=Sunday) to our DAY_IDS (0=Monday)
     const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;

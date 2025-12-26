@@ -629,33 +629,45 @@ function BookingContent() {
       }
     }
 
+    // Get base available times
+    let times: string[] = [];
+
     // If tutor has saved availability, use it
     if (tutorAvailability && tutorAvailability.length > 0) {
       const daySlot = tutorAvailability.find(slot => slot.day === dayOfWeek);
       if (daySlot && daySlot.times.length > 0) {
-        return daySlot.times.sort();
+        times = daySlot.times.sort();
       }
-      // Tutor has availability set but not for this day
-      return [];
+    } else {
+      // Fall back to tutor's default availableSlots from tutor data
+      const tutor = tutors.find(t => t.id === selectedTutor);
+      if (tutor?.availableSlots) {
+        const daySlot = tutor.availableSlots.find(slot => slot.day === dayOfWeek);
+        if (daySlot && daySlot.times.length > 0) {
+          times = daySlot.times.sort();
+        }
+      } else {
+        // Ultimate fallback: all times available (for tutors without any availability set)
+        times = [
+          '09:00', '10:00', '11:00', '12:00', 
+          '13:00', '14:00', '15:00', '16:00', 
+          '17:00', '18:00', '19:00', '20:00'
+        ];
+      }
     }
 
-    // Fall back to tutor's default availableSlots from tutor data
-    const tutor = tutors.find(t => t.id === selectedTutor);
-    if (tutor?.availableSlots) {
-      const daySlot = tutor.availableSlots.find(slot => slot.day === dayOfWeek);
-      if (daySlot && daySlot.times.length > 0) {
-        return daySlot.times.sort();
-      }
-      // Tutor has default slots but not for this day
-      return [];
-    }
-
-    // Ultimate fallback: all times available (for tutors without any availability set)
-    return [
-      '09:00', '10:00', '11:00', '12:00', 
-      '13:00', '14:00', '15:00', '16:00', 
-      '17:00', '18:00', '19:00', '20:00'
-    ];
+    // Filter out past time slots
+    const now = new Date();
+    const selectedDateObj = new Date(selectedDate + 'T00:00:00');
+    
+    return times.filter(time => {
+      const [hours, minutes] = time.split(':').map(Number);
+      const slotDateTime = new Date(selectedDateObj);
+      slotDateTime.setHours(hours, minutes, 0, 0);
+      
+      // Only show times that are in the future
+      return slotDateTime > now;
+    });
   };
 
   const availableTimes = getAvailableTimes();
