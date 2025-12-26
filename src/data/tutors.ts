@@ -25,7 +25,7 @@ export const tutors: Tutor[] = [
   {
     id: '4',
     name: 'Mateo Mamaladze',
-    subjects: ['Physik', 'Informatik', 'Mathematik'],
+    subjects: ['Physik', 'Informatik', 'Mathematik', 'Biologie'],
     achievements: [
       'Erfolgreiche Teilnahme an internationaler Physik-Olympiade',
       'Leitet Robotics-Kurs an seiner Schule',
