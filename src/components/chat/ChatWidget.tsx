@@ -221,19 +221,31 @@ export default function ChatWidget({ tutorId, tutorName, parentId }: ChatWidgetP
         onSubmit={handleSendMessage}
         className="bg-secondary-dark/50 backdrop-blur-md border-t border-white/10 p-4"
       >
-        <div className="flex gap-2">
-          <input
-            type="text"
+        <div className="flex gap-2 items-end">
+          <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Schreibe eine Nachricht..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e as any);
+              }
+            }}
+            placeholder="Schreibe eine Nachricht... (Enter zum Senden, Shift+Enter für neue Zeile)"
             disabled={isSending}
-            className="flex-1 bg-primary-dark/50 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+            rows={1}
+            className="flex-1 bg-primary-dark/50 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50 resize-none min-h-[42px] max-h-[200px] overflow-y-auto"
+            style={{ height: 'auto' }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+            }}
           />
           <Button
             type="submit"
             disabled={!newMessage.trim() || isSending}
-            className="px-4"
+            className="px-4 mb-0.5"
           >
             {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />

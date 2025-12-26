@@ -257,26 +257,17 @@ export async function createPackagePurchase(data: {
 /**
  * Get all active packages for a user
  * Returns packages with remaining_sessions > 0
+ * Packages are now flexible and can be used with any tutor/subject
  */
-export async function getActivePackages(userId: string, tutorId?: string, subject?: string) {
+export async function getActivePackages(userId: string) {
   try {
-    let query = supabase
+    const { data, error } = await supabase
       .from('packages_purchased')
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'active')
       .gt('remaining_sessions', 0)
       .order('created_at', { ascending: true });
-
-    if (tutorId) {
-      query = query.eq('tutor_id', tutorId);
-    }
-    
-    if (subject) {
-      query = query.eq('subject', subject);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       console.error('❌ Error fetching active packages:', error);

@@ -65,8 +65,8 @@ function BookingContent() {
     const loadActivePackages = async () => {
       if (currentStep === 1 && user?.id && selectedTutor && selectedSubject) {
         try {
-          const packages = await getActivePackages(user.id, selectedTutor, selectedSubject);
-          console.log('Active packages for this tutor/subject:', packages);
+          const packages = await getActivePackages(user.id);
+          console.log('Active packages (universal):', packages);
           setActivePackages(packages);
           
           // If user has active packages, show choice screen
@@ -469,8 +469,8 @@ function BookingContent() {
         if (isMultiSessionPackage && user?.id) {
           console.log('📦 Multi-session package detected:', selectedPackageData.name);
           
-          // Check if user has an active package for this tutor/subject combo
-          const activePackages = await getActivePackages(user.id, selectedTutor, selectedSubject);
+          // Check if user has an active package (now universal)
+          const activePackages = await getActivePackages(user.id);
           const matchingPackage = activePackages.find(pkg => pkg.package_id === selectedPackage);
 
           if (matchingPackage) {
@@ -1005,8 +1005,8 @@ function BookingContent() {
                               src={tutor.image}
                               alt={tutor.name}
                               fill
-                              sizes="128px"
-                              quality={100}
+                              sizes="96px"
+                              quality={95}
                               className="object-cover"
                               priority={false}
                             />

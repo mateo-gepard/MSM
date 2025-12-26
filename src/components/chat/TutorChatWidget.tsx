@@ -254,19 +254,31 @@ export default function TutorChatWidget({ tutorId, parentId, parentName }: Tutor
       
       {/* Message Input */}
       <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10 bg-primary-dark/50">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
+        <div className="flex items-end gap-2">
+          <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Nachricht schreiben..."
-            className="flex-1 bg-secondary-dark border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e as any);
+              }
+            }}
+            placeholder="Nachricht schreiben... (Enter zum Senden, Shift+Enter für neue Zeile)"
+            className="flex-1 bg-secondary-dark border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-none min-h-[48px] max-h-[200px] overflow-y-auto"
             disabled={isSending}
+            rows={1}
+            style={{ height: 'auto' }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+            }}
           />
           <button
             type="submit"
             disabled={!newMessage.trim() || isSending}
-            className="bg-accent hover:bg-accent/80 disabled:bg-gray-600 disabled:cursor-not-allowed text-white p-3 rounded-xl transition-colors"
+            className="bg-accent hover:bg-accent/80 disabled:bg-gray-600 disabled:cursor-not-allowed text-white p-3 rounded-xl transition-colors mb-0.5"
           >
             {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />

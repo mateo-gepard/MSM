@@ -31,8 +31,8 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
             src={tutor.image}
             alt={tutor.name}
             fill
-            sizes="(max-width: 640px) 800px, (max-width: 1024px) 1000px, 800px"
-            quality={100}
+            sizes="(max-width: 640px) 600px, (max-width: 1024px) 700px, 600px"
+            quality={95}
             className="object-cover transition-opacity duration-500 group-hover:opacity-90"
             priority={false}
           />
