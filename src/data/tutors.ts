@@ -53,7 +53,7 @@ export const tutors: Tutor[] = [
       'Frühstudium in Mathematik',
       'Frühstudium in Luft- und Raumfahrttechnik'
     ],
-    image: '/tutors/Roman.JPG',
+    image: '/tutors/Roman.png',
     bio: 'Leidenschaftlicher Mathematiker und Physiker',
     languages: ['Deutsch', 'Russisch'],
     availability: 'Mo, Mi, Fr 15-17 Uhr',
