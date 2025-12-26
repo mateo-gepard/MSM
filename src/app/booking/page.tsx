@@ -815,11 +815,25 @@ function BookingContent() {
                 </div>
               )}
               
-              {/* Show selected subject if from matching */}
+              {/* Show selected subject if from matching - now editable */}
               {matchingData && selectedSubject && (
-                <div className="mb-6 p-3 bg-accent/10 border border-accent/30 rounded-lg">
-                  <div className="text-xs text-gray-400 mb-1">Ausgewähltes Fach</div>
-                  <div className="text-white font-semibold">{selectedSubject}</div>
+                <div className="mb-6">
+                  <label className="block text-white font-semibold mb-2 text-sm">
+                    Fach {cameFromMatching && <span className="text-xs text-gray-400">(vom Matching vorgeschlagen)</span>}
+                  </label>
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => {
+                      setSelectedSubject(e.target.value);
+                      setSelectedTutor(''); // Reset tutor when subject changes
+                    }}
+                    className="w-full p-2.5 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none text-sm"
+                  >
+                    <option value="">Fach auswählen...</option>
+                    {subjects.map(subject => (
+                      <option key={subject.name} value={subject.name}>{subject.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -875,9 +889,6 @@ function BookingContent() {
                               <h3 className={`font-bold text-base ${selectedTutor === tutor.id ? 'text-white' : 'text-white'}`}>
                                 {tutor.name}
                               </h3>
-                              <div className={`text-sm font-semibold whitespace-nowrap ${selectedTutor === tutor.id ? 'text-accent' : 'text-accent'}`}>
-                                €{tutor.hourlyRate}/Std
-                              </div>
                             </div>
                             
                             <p className="text-xs text-gray-400 mb-2 line-clamp-1">{tutor.bio}</p>
