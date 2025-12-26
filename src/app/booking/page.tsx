@@ -838,6 +838,28 @@ function BookingContent() {
                     onChange={(e) => {
                       setSelectedSubject(e.target.value);
                       setSelectedTutor(''); // Reset tutor when subject changes
+                      
+                      // Update matchingData when subject is manually changed
+                      const subjectIdMap: Record<string, string> = {
+                        'Mathematik': 'math',
+                        'Physik': 'physics',
+                        'Chemie': 'chemistry',
+                        'Biologie': 'biology',
+                        'Informatik': 'cs',
+                        'Englisch': 'english',
+                        'Deutsch': 'german',
+                        'Spanisch': 'spanish',
+                        'Latein': 'latin',
+                        'Geschichte': 'history'
+                      };
+                      const subjectId = subjectIdMap[e.target.value] || e.target.value;
+                      const updatedMatchingData = {
+                        ...matchingData,
+                        subjects: [subjectId]
+                      };
+                      setMatchingData(updatedMatchingData);
+                      localStorage.setItem('matchingData', JSON.stringify(updatedMatchingData));
+                      console.log('📝 Updated matchingData with new subject:', e.target.value);
                     }}
                     className="w-full p-2.5 rounded-lg bg-secondary-dark text-white border border-accent/30 focus:border-accent outline-none text-sm"
                   >
