@@ -94,7 +94,7 @@ export const tutors: Tutor[] = [
       'Frühstudent in Analysis und Technischer Mechanik',
       'Sehr erfahren in Wettbewerbsvorbereitung von jungen Talenten'
     ],
-    image: '/tutors/johannes.jpg',
+    image: '/tutors/Johannes.jpg',
     bio: 'Äußerst erfolgreicher Mathematiker',
     languages: ['Deutsch'],
     availability: 'Mo-Fr ab 14 Uhr',
