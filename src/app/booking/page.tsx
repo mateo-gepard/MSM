@@ -1006,7 +1006,9 @@ function BookingContent() {
                               alt={tutor.name}
                               fill
                               sizes="64px"
+                              quality={60}
                               className="object-cover"
+                              priority={false}
                             />
                             {matchingData && tutor.matchScore > 0 && index === 0 && (
                               <div className="absolute top-0 left-0 bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br">

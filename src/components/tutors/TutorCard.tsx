@@ -32,7 +32,9 @@ export function TutorCard({ tutor, onSelect }: TutorCardProps) {
             alt={tutor.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            quality={75}
             className="object-cover transition-opacity duration-500 group-hover:opacity-90"
+            priority={false}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-transparent" />
           <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
