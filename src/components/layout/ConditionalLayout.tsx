@@ -11,14 +11,14 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const isTutorPage = pathname?.startsWith('/tutor-dashboard') || pathname?.startsWith('/tutor-login');
   
   if (isTutorPage) {
-    return <>{children}</>;
+    return <div className="min-h-screen bg-primary-dark">{children}</div>;
   }
   
   return (
-    <>
+    <div className="min-h-screen bg-primary-dark">
       <Navigation />
-      <main>{children}</main>
+      <main className="bg-primary-dark">{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }

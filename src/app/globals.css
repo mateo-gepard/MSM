@@ -23,17 +23,34 @@
   --color-accent: #6E56CF;
 }
 
+html {
+  background: var(--primary-dark);
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
-  background: var(--background);
+  background: var(--primary-dark);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent mobile browser UI from causing layout shifts */
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+  }
 }
 
 /* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
 
 html[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
