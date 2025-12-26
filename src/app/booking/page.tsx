@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
 import { tutors, packages, subjects } from '@/data/mockData';
-import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Monitor, Home } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Monitor, Home, MapPin, Coffee } from 'lucide-react';
 import { TutorCard } from '@/components/tutors/TutorCard';
 import { WeekCalendar } from '@/components/booking/WeekCalendar';
 
@@ -43,6 +43,7 @@ function BookingContent() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<'online' | 'in-person'>('online');
+  const [locationVenue, setLocationVenue] = useState<'student-home' | 'public-place' | null>(null);
   const [contactInfo, setContactInfo] = useState({
     name: '',
     email: '',
@@ -321,7 +322,15 @@ function BookingContent() {
         return selectedPackage;
       }
       case 2: return selectedDate && selectedTime;
-      case 3: return hasLocation || selectedLocation; // If from matching, location is already set
+      case 3: {
+        // If from matching, location is already set
+        if (hasLocation) return true;
+        // If online, no venue needed
+        if (selectedLocation === 'online') return true;
+        // If in-person, need venue selection
+        if (selectedLocation === 'in-person') return locationVenue !== null;
+        return false;
+      }
       default: return false;
     }
   };
@@ -415,6 +424,7 @@ function BookingContent() {
         date: selectedDate,
         time: selectedTime,
         location: selectedLocation,
+        locationVenue: locationVenue,
         contact: contactInfo,
         matchingData,
         userId: user?.id
@@ -484,7 +494,7 @@ function BookingContent() {
           responses: {
             name: contactInfo.name || user?.user_metadata?.name || user?.email || 'Unbekannt',
             email: contactInfo.email || user?.email || '',
-            notes: `Tutor: ${selectedTutorData.name} (ID: ${selectedTutor})\nPaket: ${selectedPackageData.name}\nFach: ${selectedSubject}\n${contactInfo.message || ''}`
+            notes: `Tutor: ${selectedTutorData.name} (ID: ${selectedTutor})\nPaket: ${selectedPackageData.name}\nFach: ${selectedSubject}\nOrt: ${selectedLocation === 'online' ? 'Online' : locationVenue === 'student-home' ? 'Bei Schüler zu Hause' : 'Öffentlicher Ort (Bibliothek/Café)'}\n${contactInfo.message || ''}`
           },
           metadata: {
             tutorId: selectedTutor,
@@ -492,6 +502,7 @@ function BookingContent() {
             packageId: selectedPackage,
             subject: selectedSubject,
             location: selectedLocation,
+            locationVenue: locationVenue || undefined,
             phone: contactInfo.phone
           },
           userId: user?.id // Pass Supabase User ID for synchronization
@@ -1092,46 +1103,102 @@ function BookingContent() {
           {currentStep === 3 && (
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">Wo soll der Unterricht stattfinden?</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
-                  onClick={() => setSelectedLocation('online')}
-                  className={`p-8 rounded-xl transition-all border-2 ${
-                    selectedLocation === 'online'
-                      ? 'bg-accent text-white border-accent'
-                      : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
-                  }`}
-                >
-                  <Monitor className="w-12 h-12 mx-auto mb-3" />
-                  <div className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Online</div>
-                  <p className="text-xs sm:text-sm opacity-80">Via Zoom oder Google Meet</p>
-                </button>
-                {(() => {
-                  const selectedTutorData = tutors.find(t => t.id === selectedTutor);
-                  const isOnlineOnly = selectedTutorData?.onlineOnly;
-                  
-                  return (
-                    <button
-                      onClick={() => !isOnlineOnly && setSelectedLocation('in-person')}
-                      disabled={isOnlineOnly}
-                      className={`p-5 sm:p-8 rounded-xl transition-all border-2 active:scale-[0.98] ${
-                        isOnlineOnly
-                          ? 'bg-gray-800/50 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'
-                          : selectedLocation === 'in-person'
-                          ? 'bg-accent text-white border-accent'
-                          : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
-                      }`}
-                    >
-                      <Home className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3" />
-                      <div className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Vor Ort</div>
-                      <p className="text-xs sm:text-sm opacity-80">
-                        {isOnlineOnly 
-                          ? 'Nicht verfügbar für diesen Tutor'
-                          : 'In München oder Umgebung'
-                        }
-                      </p>
-                    </button>
-                  );
-                })()}
+              <div className="space-y-6">
+                {/* Step 1: Online vs In-Person */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => {
+                      setSelectedLocation('online');
+                      setLocationVenue(null);
+                    }}
+                    className={`p-8 rounded-xl transition-all border-2 ${
+                      selectedLocation === 'online'
+                        ? 'bg-accent text-white border-accent'
+                        : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                    }`}
+                  >
+                    <Monitor className="w-12 h-12 mx-auto mb-3" />
+                    <div className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Online</div>
+                    <p className="text-xs sm:text-sm opacity-80">Via Zoom oder Google Meet</p>
+                  </button>
+                  {(() => {
+                    const selectedTutorData = tutors.find(t => t.id === selectedTutor);
+                    const isOnlineOnly = selectedTutorData?.onlineOnly;
+                    
+                    return (
+                      <button
+                        onClick={() => !isOnlineOnly && setSelectedLocation('in-person')}
+                        disabled={isOnlineOnly}
+                        className={`p-5 sm:p-8 rounded-xl transition-all border-2 active:scale-[0.98] ${
+                          isOnlineOnly
+                            ? 'bg-gray-800/50 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'
+                            : selectedLocation === 'in-person'
+                            ? 'bg-accent text-white border-accent'
+                            : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                        }`}
+                      >
+                        <Home className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3" />
+                        <div className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Vor Ort</div>
+                        <p className="text-xs sm:text-sm opacity-80">
+                          {isOnlineOnly 
+                            ? 'Nicht verfügbar für diesen Tutor'
+                            : 'Persönliches Treffen in München'
+                          }
+                        </p>
+                      </button>
+                    );
+                  })()}
+                </div>
+
+                {/* Step 2: If In-Person, choose venue type */}
+                {selectedLocation === 'in-person' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-4"
+                  >
+                    <h3 className="text-lg font-semibold text-white">Wo soll das Treffen stattfinden?</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button
+                        onClick={() => setLocationVenue('student-home')}
+                        className={`p-6 rounded-xl transition-all border-2 ${
+                          locationVenue === 'student-home'
+                            ? 'bg-accent text-white border-accent'
+                            : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                        }`}
+                      >
+                        <Home className="w-10 h-10 mx-auto mb-3" />
+                        <div className="text-lg font-bold mb-2">Bei dir zu Hause</div>
+                        <p className="text-xs opacity-80">Keine Adresse nötig - Details werden mit dem Tutor ausgemacht</p>
+                      </button>
+                      <button
+                        onClick={() => setLocationVenue('public-place')}
+                        className={`p-6 rounded-xl transition-all border-2 ${
+                          locationVenue === 'public-place'
+                            ? 'bg-accent text-white border-accent'
+                            : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                        }`}
+                      >
+                        <Coffee className="w-10 h-10 mx-auto mb-3" />
+                        <div className="text-lg font-bold mb-2">Öffentlicher Ort</div>
+                        <p className="text-xs opacity-80">Bibliothek, Café oder ähnliches - wird gemeinsam festgelegt</p>
+                      </button>
+                    </div>
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <MapPin className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-blue-200">
+                          <p className="font-semibold mb-1">Details werden mit deinem Tutor abgesprochen</p>
+                          <p className="text-blue-300 text-xs">
+                            Du erhältst in Kürze eine Bestätigungsmail und eine Nachricht von deinem Tutor über unser Chat-System, 
+                            um den genauen Treffpunkt zu vereinbaren.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
           )}

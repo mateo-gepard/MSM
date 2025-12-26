@@ -79,6 +79,7 @@ export async function createBooking(data: {
     packageId: string;
     subject?: string;
     location?: string;
+    locationVenue?: string;
     phone?: string;
   };
   timeZone?: string;
