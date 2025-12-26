@@ -1,20 +1,6 @@
 import { supabase } from './supabase';
 
 export async function signUp(email: string, password: string, name: string) {
-  // Check if user already exists
-  const { data: existingUsers } = await supabase
-    .from('profiles')
-    .select('email')
-    .eq('email', email)
-    .single();
-
-  if (existingUsers) {
-    return {
-      data: null,
-      error: { message: 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.' }
-    };
-  }
-
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -22,6 +8,15 @@ export async function signUp(email: string, password: string, name: string) {
       data: { name }
     }
   });
+  
+  // Check if error indicates user already exists
+  if (error?.message?.includes('already registered') || error?.message?.includes('already exists')) {
+    return {
+      data: null,
+      error: { message: 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.' }
+    };
+  }
+  
   return { data, error };
 }
 
