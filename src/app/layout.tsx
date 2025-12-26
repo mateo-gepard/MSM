@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { SendbirdProvider } from "@/contexts/SendbirdContext";
@@ -42,6 +43,7 @@ export default function RootLayout({
         <SendbirdProvider>
           <ConditionalLayout>{children}</ConditionalLayout>
         </SendbirdProvider>
+        <Analytics />
       </body>
     </html>
   );
