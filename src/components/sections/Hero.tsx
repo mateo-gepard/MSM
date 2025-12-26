@@ -101,7 +101,7 @@ export function Hero() {
             </div>
             <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
               <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">1.2</div>
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">1.0</div>
               <div className="text-xs sm:text-sm text-gray-400">Notenschnitt</div>
             </div>
             <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">

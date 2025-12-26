@@ -10,7 +10,7 @@ export const tutors: Tutor[] = [
       'IB Student an Top-Schule in England',
       'Mehrsprachig und international erfahren'
     ],
-    image: '/tutors/Juan.png',
+    image: '/tutors/juan.jpg',
     bio: 'Erfolgreich in Mathe und Physik, quadrilingual',
     languages: ['Deutsch', 'Englisch', 'Spanisch', 'Französisch'],
     availability: 'Di, Mi, Sa 17:30-19:00',
@@ -94,7 +94,7 @@ export const tutors: Tutor[] = [
       'Frühstudent in Analysis und Technischer Mechanik',
       'Sehr erfahren in Wettbewerbsvorbereitung von jungen Talenten'
     ],
-    image: '/tutors/Johannes.jpg',
+    image: '/tutors/johannes.jpg',
     bio: 'Äußerst erfolgreicher Mathematiker',
     languages: ['Deutsch'],
     availability: 'Mo-Fr ab 14 Uhr',
