@@ -61,7 +61,7 @@ function LoginContent() {
     if (authError) {
       setError(authError.message);
       setLoading(false);
-    } else if (data.user) {
+    } else if (data?.user) {
       // Redirect after signup
       setSuccess('Account erstellt! Du wirst weitergeleitet...');
       setTimeout(() => {
