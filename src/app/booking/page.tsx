@@ -55,6 +55,35 @@ function BookingContent() {
   const [isReschedule, setIsReschedule] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
   const [cameFromMatching, setCameFromMatching] = useState(false); // Track if user came from matching wizard
+  const [activePackages, setActivePackages] = useState<any[]>([]);
+  const [showPackageChoice, setShowPackageChoice] = useState(false);
+  const [useExistingPackage, setUseExistingPackage] = useState(false);
+  const [selectedExistingPackageId, setSelectedExistingPackageId] = useState<string | null>(null);
+
+  // Load active packages when reaching step 1 (service selection)
+  useEffect(() => {
+    const loadActivePackages = async () => {
+      if (currentStep === 1 && user?.id && selectedTutor && selectedSubject) {
+        try {
+          const packages = await getActivePackages(user.id, selectedTutor, selectedSubject);
+          console.log('Active packages for this tutor/subject:', packages);
+          setActivePackages(packages);
+          
+          // If user has active packages, show choice screen
+          if (packages.length > 0) {
+            setShowPackageChoice(true);
+          } else {
+            setShowPackageChoice(false);
+          }
+        } catch (error) {
+          console.error('Error loading active packages:', error);
+          setActivePackages([]);
+        }
+      }
+    };
+    
+    loadActivePackages();
+  }, [currentStep, user, selectedTutor, selectedSubject]);
 
   // Sync currentStep with URL using pushState for proper browser history
   useEffect(() => {
@@ -315,6 +344,14 @@ function BookingContent() {
     switch (currentStep) {
       case 0: return selectedSubject && selectedTutor;
       case 1: {
+        // If user chose existing package, that's valid
+        if (useExistingPackage && selectedExistingPackageId) {
+          return true;
+        }
+        // If showing package choice but user hasn't chosen, can't proceed
+        if (showPackageChoice && !useExistingPackage) {
+          return false;
+        }
         // Block trial package if user has existing bookings
         if (selectedPackage === 'trial' && hasExistingBookings) {
           return false;
@@ -417,40 +454,49 @@ function BookingContent() {
       // ============================================
       // PACKAGE CREDITS SYSTEM
       // ============================================
-      // Check if this is a multi-session package (5er, 10er)
-      const isMultiSessionPackage = selectedPackageData.sessions > 1 && selectedPackage !== 'trial';
       let packagePurchaseId: string | null = null;
 
-      if (isMultiSessionPackage && user?.id) {
-        console.log('📦 Multi-session package detected:', selectedPackageData.name);
-        
-        // Check if user has an active package for this tutor/subject combo
-        const activePackages = await getActivePackages(user.id, selectedTutor, selectedSubject);
-        const matchingPackage = activePackages.find(pkg => pkg.package_id === selectedPackage);
+      if (useExistingPackage && selectedExistingPackageId) {
+        // User chose to use an existing package - just consume a credit
+        console.log('📦 Using existing package:', selectedExistingPackageId);
+        await usePackageCredit(selectedExistingPackageId);
+        packagePurchaseId = selectedExistingPackageId;
+      } else {
+        // User is booking new service or doesn't have existing packages
+        // Check if this is a multi-session package (5er, 10er)
+        const isMultiSessionPackage = selectedPackageData.sessions > 1 && selectedPackage !== 'trial';
 
-        if (matchingPackage) {
-          // Use existing package credit
-          console.log('✅ Found active package with', matchingPackage.remaining_sessions, 'sessions remaining');
-          await usePackageCredit(matchingPackage.id);
-          packagePurchaseId = matchingPackage.id;
-        } else {
-          // Create new package purchase
-          console.log('📦 Creating new package purchase...');
-          const newPackage = await createPackagePurchase({
-            user_id: user.id,
-            package_id: selectedPackage,
-            package_name: selectedPackageData.name,
-            tutor_id: selectedTutor,
-            tutor_name: selectedTutorData.name,
-            subject: selectedSubject,
-            total_sessions: selectedPackageData.sessions,
-            price_paid: selectedPackageData.price
-          });
+        if (isMultiSessionPackage && user?.id) {
+          console.log('📦 Multi-session package detected:', selectedPackageData.name);
           
-          // Use first credit immediately for this booking
-          await usePackageCredit(newPackage.id);
-          packagePurchaseId = newPackage.id;
-          console.log('✅ New package created and first session booked');
+          // Check if user has an active package for this tutor/subject combo
+          const activePackages = await getActivePackages(user.id, selectedTutor, selectedSubject);
+          const matchingPackage = activePackages.find(pkg => pkg.package_id === selectedPackage);
+
+          if (matchingPackage) {
+            // Use existing package credit
+            console.log('✅ Found active package with', matchingPackage.remaining_sessions, 'sessions remaining');
+            await usePackageCredit(matchingPackage.id);
+            packagePurchaseId = matchingPackage.id;
+          } else {
+            // Create new package purchase
+            console.log('📦 Creating new package purchase...');
+            const newPackage = await createPackagePurchase({
+              user_id: user.id,
+              package_id: selectedPackage,
+              package_name: selectedPackageData.name,
+              tutor_id: selectedTutor,
+              tutor_name: selectedTutorData.name,
+              subject: selectedSubject,
+              total_sessions: selectedPackageData.sessions,
+              price_paid: selectedPackageData.price
+            });
+            
+            // Use first credit immediately for this booking
+            await usePackageCredit(newPackage.id);
+            packagePurchaseId = newPackage.id;
+            console.log('✅ New package created and first session booked');
+          }
         }
       }
 
@@ -1051,23 +1097,110 @@ function BookingContent() {
                 </div>
               )}
               
-              {bookingHistoryLoaded && hasExistingBookings && (
-                <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-blue-200 font-semibold mb-1">
-                        Probestunde nicht verfügbar
+              {/* Package Choice: Use Existing or Buy New */}
+              {showPackageChoice && activePackages.length > 0 ? (
+                <div className="space-y-4">
+                  <p className="text-gray-300 mb-6">
+                    Du hast bereits aktive Pakete. Möchtest du eine Session davon nutzen oder einen neuen Service buchen?
+                  </p>
+                  
+                  {/* Option 1: Use Existing Package */}
+                  <div className="space-y-3">
+                    {activePackages.map((pkg) => {
+                      const progressPercentage = (pkg.used_sessions / pkg.total_sessions) * 100;
+                      const isSelected = useExistingPackage && selectedExistingPackageId === pkg.id;
+                      
+                      return (
+                        <button
+                          key={pkg.id}
+                          onClick={() => {
+                            setUseExistingPackage(true);
+                            setSelectedExistingPackageId(pkg.id);
+                            setSelectedPackage(pkg.package_id); // Set package type for later use
+                          }}
+                          className={`w-full p-6 rounded-xl transition-all border-2 text-left ${
+                            isSelected
+                              ? 'bg-accent text-white border-accent'
+                              : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h3 className="text-xl font-bold mb-1">
+                                Verwende bestehendes Paket: {pkg.package_name}
+                              </h3>
+                              <p className="text-sm opacity-80">{pkg.subject} - {pkg.tutor_name}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold">{pkg.remaining_sessions}</div>
+                              <div className="text-xs opacity-80">Sessions übrig</div>
+                            </div>
+                          </div>
+                          
+                          <div className="mb-2">
+                            <div className="flex items-center justify-between text-sm mb-2">
+                              <span className="opacity-80">Fortschritt</span>
+                              <span className="font-semibold">
+                                {pkg.used_sessions} / {pkg.total_sessions} genutzt
+                              </span>
+                            </div>
+                            <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
+                                style={{ width: `${progressPercentage}%` }}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 pt-3 border-t border-white/10 text-sm opacity-90">
+                            ✓ Keine zusätzlichen Kosten - Session wird vom Paket abgezogen
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Option 2: Buy New Service */}
+                  <button
+                    onClick={() => {
+                      setUseExistingPackage(false);
+                      setSelectedExistingPackageId(null);
+                      setShowPackageChoice(false);
+                    }}
+                    className={`w-full p-6 rounded-xl transition-all border-2 text-left ${
+                      !useExistingPackage && !showPackageChoice
+                        ? 'bg-accent text-white border-accent'
+                        : 'bg-secondary-dark/50 text-gray-300 hover:bg-secondary-dark border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold mb-1">Neuen Service buchen</h3>
+                        <p className="text-sm opacity-80">Einzelstunde oder neues Paket kaufen</p>
                       </div>
-                      <div className="text-blue-300 text-sm">
-                        Die kostenlose Probestunde ist nur für Neukunden verfügbar. 
-                        Du hast bereits eine Buchungshistorie (auch stornierte Buchungen zählen).
+                      <ChevronRight className="w-6 h-6" />
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {bookingHistoryLoaded && hasExistingBookings && (
+                    <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-blue-200 font-semibold mb-1">
+                            Probestunde nicht verfügbar
+                          </div>
+                          <div className="text-blue-300 text-sm">
+                            Die kostenlose Probestunde ist nur für Neukunden verfügbar. 
+                            Du hast bereits eine Buchungshistorie (auch stornierte Buchungen zählen).
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {packages
                   .filter(pkg => {
                     // Filter out trial if user has existing bookings
@@ -1117,6 +1250,8 @@ function BookingContent() {
                     );
                   })}
               </div>
+              </>
+              )}
               
               {/* Additional info card removed since trial is now shown as disabled in the main grid */}
             </div>
