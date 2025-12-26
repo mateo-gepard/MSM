@@ -201,3 +201,193 @@ export async function getTutorAvailability(tutorName: string) {
     return [];
   }
 }
+
+// ============================================
+// PACKAGE CREDITS SYSTEM
+// ============================================
+
+/**
+ * Create a new package purchase record
+ * This is called when a user books a multi-session package (5er, 10er)
+ */
+export async function createPackagePurchase(data: {
+  user_id: string;
+  package_id: string;
+  package_name: string;
+  tutor_id?: string;
+  tutor_name?: string;
+  subject?: string;
+  total_sessions: number;
+  price_paid?: number;
+}) {
+  try {
+    console.log('📦 Creating package purchase...', data);
+    
+    const { data: packageData, error } = await supabase
+      .from('packages_purchased')
+      .insert([{
+        user_id: data.user_id,
+        package_id: data.package_id,
+        package_name: data.package_name,
+        tutor_id: data.tutor_id,
+        tutor_name: data.tutor_name,
+        subject: data.subject,
+        total_sessions: data.total_sessions,
+        used_sessions: 0,
+        remaining_sessions: data.total_sessions,
+        status: 'active',
+        price_paid: data.price_paid || 0
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error creating package purchase:', error);
+      throw error;
+    }
+    
+    console.log('✅ Package purchase created:', packageData);
+    return packageData;
+  } catch (error) {
+    console.error('Error creating package purchase:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all active packages for a user
+ * Returns packages with remaining_sessions > 0
+ */
+export async function getActivePackages(userId: string, tutorId?: string, subject?: string) {
+  try {
+    let query = supabase
+      .from('packages_purchased')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .gt('remaining_sessions', 0)
+      .order('created_at', { ascending: true });
+
+    if (tutorId) {
+      query = query.eq('tutor_id', tutorId);
+    }
+    
+    if (subject) {
+      query = query.eq('subject', subject);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('❌ Error fetching active packages:', error);
+      throw error;
+    }
+    
+    console.log(`✅ Found ${data?.length || 0} active packages`);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching active packages:', error);
+    return [];
+  }
+}
+
+/**
+ * Use one credit from a package
+ * Decrements remaining_sessions and increments used_sessions
+ */
+export async function usePackageCredit(packageId: string) {
+  try {
+    console.log('💳 Using package credit...', packageId);
+    
+    // First, get the current package
+    const { data: pkg, error: fetchError } = await supabase
+      .from('packages_purchased')
+      .select('*')
+      .eq('id', packageId)
+      .single();
+
+    if (fetchError || !pkg) {
+      console.error('❌ Package not found:', fetchError);
+      throw new Error('Package not found');
+    }
+
+    if (pkg.remaining_sessions <= 0) {
+      throw new Error('No remaining sessions in package');
+    }
+
+    // Update the package
+    const newRemaining = pkg.remaining_sessions - 1;
+    const newUsed = pkg.used_sessions + 1;
+    const newStatus = newRemaining === 0 ? 'completed' : 'active';
+
+    const { data, error } = await supabase
+      .from('packages_purchased')
+      .update({
+        used_sessions: newUsed,
+        remaining_sessions: newRemaining,
+        status: newStatus,
+        completed_at: newRemaining === 0 ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', packageId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error updating package:', error);
+      throw error;
+    }
+    
+    console.log('✅ Package credit used:', data);
+    return data;
+  } catch (error) {
+    console.error('Error using package credit:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get a specific package by ID
+ */
+export async function getPackageById(packageId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('packages_purchased')
+      .select('*')
+      .eq('id', packageId)
+      .single();
+
+    if (error) {
+      console.error('❌ Error fetching package:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching package:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all packages for a user (active and completed)
+ */
+export async function getUserPackages(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('packages_purchased')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching user packages:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching user packages:', error);
+    return [];
+  }
+}

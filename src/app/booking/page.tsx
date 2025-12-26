@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { createBooking, rescheduleBooking } from '@/lib/calcom';
-import { getUserBookings, saveBookingToSupabase } from '@/lib/supabase';
+import { getUserBookings, saveBookingToSupabase, getActivePackages, createPackagePurchase, usePackageCredit } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
@@ -414,6 +414,46 @@ function BookingContent() {
         throw new Error('Bitte wähle ein Paket aus');
       }
 
+      // ============================================
+      // PACKAGE CREDITS SYSTEM
+      // ============================================
+      // Check if this is a multi-session package (5er, 10er)
+      const isMultiSessionPackage = selectedPackageData.sessions > 1 && selectedPackage !== 'trial';
+      let packagePurchaseId: string | null = null;
+
+      if (isMultiSessionPackage && user?.id) {
+        console.log('📦 Multi-session package detected:', selectedPackageData.name);
+        
+        // Check if user has an active package for this tutor/subject combo
+        const activePackages = await getActivePackages(user.id, selectedTutor, selectedSubject);
+        const matchingPackage = activePackages.find(pkg => pkg.package_id === selectedPackage);
+
+        if (matchingPackage) {
+          // Use existing package credit
+          console.log('✅ Found active package with', matchingPackage.remaining_sessions, 'sessions remaining');
+          await usePackageCredit(matchingPackage.id);
+          packagePurchaseId = matchingPackage.id;
+        } else {
+          // Create new package purchase
+          console.log('📦 Creating new package purchase...');
+          const newPackage = await createPackagePurchase({
+            user_id: user.id,
+            package_id: selectedPackage,
+            package_name: selectedPackageData.name,
+            tutor_id: selectedTutor,
+            tutor_name: selectedTutorData.name,
+            subject: selectedSubject,
+            total_sessions: selectedPackageData.sessions,
+            price_paid: selectedPackageData.price
+          });
+          
+          // Use first credit immediately for this booking
+          await usePackageCredit(newPackage.id);
+          packagePurchaseId = newPackage.id;
+          console.log('✅ New package created and first session booked');
+        }
+      }
+
       const bookingData = {
         subject: selectedSubject,
         tutorId: selectedTutor,
@@ -421,6 +461,7 @@ function BookingContent() {
         packageId: selectedPackage,
         packageName: selectedPackageData.name,
         packageSessions: selectedPackageData.sessions,
+        packagePurchaseId: packagePurchaseId, // Link to package purchase for multi-session packages
         date: selectedDate,
         time: selectedTime,
         location: selectedLocation,

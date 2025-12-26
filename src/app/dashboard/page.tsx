@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
 import { cancelBooking } from '@/lib/calcom';
-import { getUserBookings, updateBookingStatus, supabase } from '@/lib/supabase';
+import { getUserBookings, updateBookingStatus, supabase, getUserPackages } from '@/lib/supabase';
 import { tutors } from '@/data/mockData';
 import { FrostedCard } from '@/components/ui/FrostedCard';
 import { Button } from '@/components/ui/Button';
@@ -25,7 +25,8 @@ import {
   Monitor,
   Home,
   KeyRound,
-  AlertCircle
+  AlertCircle,
+  Package
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -203,8 +204,9 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const bookingSuccess = searchParams.get('bookingSuccess');
-  const [activeTab, setActiveTab] = useState<'bookings' | 'messages' | 'calendar' | 'profile'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'messages' | 'calendar' | 'packages' | 'profile'>('bookings');
   const [userBookings, setUserBookings] = useState<any[]>([]);
+  const [userPackages, setUserPackages] = useState<any[]>([]);
   const [bookingFilter, setBookingFilter] = useState<'scheduled' | 'completed' | 'cancelled' | 'all'>('scheduled');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<any>(null);
@@ -312,6 +314,23 @@ function DashboardContent() {
     };
     
     loadBookings();
+  }, [user]);
+
+  // Load user packages from Supabase
+  useEffect(() => {
+    const loadPackages = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const packages = await getUserPackages(user.id);
+        console.log('Loaded user packages:', packages);
+        setUserPackages(packages);
+      } catch (error) {
+        console.error('Failed to load packages:', error);
+      }
+    };
+    
+    loadPackages();
   }, [user]);
 
   // Load user name from metadata and check if user needs to set password
@@ -493,7 +512,8 @@ function DashboardContent() {
   }
 
   const tabs = [
-    { id: 'bookings', label: 'Buchungen', icon: BookOpen, badge: userBookings.length },
+    { id: 'bookings', label: 'Buchungen', icon: BookOpen, badge: userBookings.filter(b => b.status === 'scheduled').length },
+    { id: 'packages', label: 'Pakete', icon: Package, badge: userPackages.filter(p => p.status === 'active').length },
     { id: 'messages', label: 'Nachrichten', icon: MessageCircle, badge: mockMessages.filter(m => m.unread).length },
     { id: 'calendar', label: 'Kalender', icon: Calendar },
     { id: 'profile', label: 'Profil', icon: User }
@@ -840,6 +860,127 @@ function DashboardContent() {
                         </div>
                       )}
                     </>
+                  )}
+                </div>
+              )}
+
+              {/* Packages Tab */}
+              {activeTab === 'packages' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-6">Meine Pakete</h2>
+                  
+                  {userPackages.length === 0 ? (
+                    <div className="p-12 bg-secondary-dark/30 rounded-xl text-center">
+                      <Package className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                      <h3 className="text-xl font-bold text-white mb-2">Keine Pakete vorhanden</h3>
+                      <p className="text-gray-400 mb-6">
+                        Buche ein 5er oder 10er-Paket für regelmäßige Unterstützung!
+                      </p>
+                      <Link href="/booking">
+                        <Button>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Paket buchen
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Active Packages */}
+                      {userPackages.filter(p => p.status === 'active').length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-white mb-3">Aktive Pakete</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {userPackages.filter(p => p.status === 'active').map((pkg) => {
+                              const progressPercentage = (pkg.used_sessions / pkg.total_sessions) * 100;
+                              
+                              return (
+                                <motion.div
+                                  key={pkg.id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="bg-secondary-dark/50 rounded-xl p-6 border border-accent/30"
+                                >
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div>
+                                      <h4 className="text-lg font-bold text-white mb-1">{pkg.package_name}</h4>
+                                      <p className="text-sm text-gray-400">{pkg.subject}</p>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
+                                      <Package className="w-6 h-6 text-accent" />
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="mb-4">
+                                    <div className="flex items-center justify-between text-sm mb-2">
+                                      <span className="text-gray-400">Fortschritt</span>
+                                      <span className="text-white font-semibold">
+                                        {pkg.used_sessions} / {pkg.total_sessions} Sessions
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-secondary-dark rounded-full h-3 overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-accent to-purple-500 transition-all duration-500"
+                                        style={{ width: `${progressPercentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between text-sm pt-4 border-t border-white/10">
+                                    <div>
+                                      <p className="text-gray-400 mb-1">Tutor</p>
+                                      <p className="text-white font-medium">{pkg.tutor_name || 'Flexibel'}</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-gray-400 mb-1">Verbleibend</p>
+                                      <p className="text-accent font-bold text-lg">{pkg.remaining_sessions}</p>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="mt-4">
+                                    <Link href="/booking">
+                                      <Button size="sm" variant="outline" className="w-full">
+                                        Nächste Session buchen
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Completed Packages */}
+                      {userPackages.filter(p => p.status === 'completed').length > 0 && (
+                        <div className="mt-6">
+                          <h3 className="text-lg font-semibold text-gray-400 mb-3">Abgeschlossene Pakete</h3>
+                          <div className="space-y-3">
+                            {userPackages.filter(p => p.status === 'completed').map((pkg) => (
+                              <div
+                                key={pkg.id}
+                                className="bg-secondary-dark/30 rounded-lg p-4 border border-white/5"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <Check className="w-5 h-5 text-green-400" />
+                                    <div>
+                                      <h4 className="text-white font-semibold">{pkg.package_name}</h4>
+                                      <p className="text-sm text-gray-500">{pkg.subject} - {pkg.tutor_name}</p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm text-gray-400">
+                                      {new Date(pkg.completed_at).toLocaleDateString('de-DE')}
+                                    </p>
+                                    <p className="text-xs text-green-400">{pkg.total_sessions} Sessions abgeschlossen</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

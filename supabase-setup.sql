@@ -48,7 +48,31 @@ create table if not exists public.bookings (
 );
 
 -- ============================================
--- 3. MESSAGES TABLE (für Sendbird Sync)
+-- 3. PACKAGES PURCHASED TABLE (Credits System)
+-- ============================================
+create table if not exists public.packages_purchased (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  package_id text not null, -- 'trial', 'single', 'small', 'medium'
+  package_name text not null, -- 'Probestunde', '5er-Paket', etc.
+  tutor_id uuid references public.tutors(id) on delete set null, -- Optional: package kann tutor-spezifisch sein
+  tutor_name text, -- Cached tutor name for display
+  subject text, -- Optional: package kann fach-spezifisch sein
+  total_sessions integer not null, -- 1, 5, 10, etc.
+  used_sessions integer default 0, -- Anzahl verbrauchter Sessions
+  remaining_sessions integer not null, -- Anzahl verbleibender Sessions
+  status text default 'active' check (status in ('active', 'completed', 'expired', 'cancelled')),
+  price_paid integer, -- In Euro (kann 0 sein für trial)
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now()),
+  completed_at timestamp with time zone -- When all sessions are used
+);
+
+-- Index for fast lookups
+create index if not exists idx_packages_user_status on public.packages_purchased(user_id, status);
+
+-- ============================================
+-- 4. MESSAGES TABLE (für Sendbird Sync)
 -- ============================================
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
@@ -62,14 +86,15 @@ create table if not exists public.messages (
 );
 
 -- ============================================
--- 4. ENABLE ROW LEVEL SECURITY
+-- 5. ENABLE ROW LEVEL SECURITY
 -- ============================================
 alter table public.tutors enable row level security;
 alter table public.bookings enable row level security;
+alter table public.packages_purchased enable row level security;
 alter table public.messages enable row level security;
 
 -- ============================================
--- 5. POLICIES FOR TUTORS
+-- 6. POLICIES FOR TUTORS
 -- ============================================
 -- Everyone can view tutors (public)
 create policy "Tutors are viewable by everyone"
@@ -81,7 +106,28 @@ using (true);
 -- (You can add admin role logic here later)
 
 -- ============================================
--- 6. POLICIES FOR BOOKINGS
+-- 7. POLICIES FOR PACKAGES PURCHASED
+-- ============================================
+-- Users can view their own packages
+create policy "Users can view own packages"
+on public.packages_purchased
+for select
+using (auth.uid() = user_id);
+
+-- Users can insert their own packages
+create policy "Users can insert own packages"
+on public.packages_purchased
+for insert
+with check (auth.uid() = user_id);
+
+-- Users can update their own packages
+create policy "Users can update own packages"
+on public.packages_purchased
+for update
+using (auth.uid() = user_id);
+
+-- ============================================
+-- 8. POLICIES FOR BOOKINGS
 -- ============================================
 -- Users can view their own bookings
 create policy "Users can view own bookings"
@@ -108,7 +154,7 @@ for delete
 using (auth.uid() = user_id);
 
 -- ============================================
--- 7. POLICIES FOR MESSAGES
+-- 9. POLICIES FOR MESSAGES
 -- ============================================
 -- Users can view their own messages
 create policy "Users can view own messages"
