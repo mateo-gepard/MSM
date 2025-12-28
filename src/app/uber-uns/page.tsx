@@ -119,20 +119,6 @@ export default function UberUnsPage() {
           className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 text-center py-20 sm:py-0"
           style={{ opacity, scale }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="inline-block mb-4 sm:mb-6"
-          >
-            <div className="frosted-glass px-4 py-2 sm:px-6 sm:py-3 rounded-full border border-accent/30">
-              <p className="text-accent font-medium flex items-center gap-2 text-sm sm:text-base">
-                <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-accent" />
-                Von Olympiade-Siegern lernen
-              </p>
-            </div>
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
