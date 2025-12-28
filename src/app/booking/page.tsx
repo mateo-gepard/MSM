@@ -1233,9 +1233,17 @@ function BookingContent() {
                         } ${!bookingHistoryLoaded ? 'opacity-50 cursor-wait' : ''}`}
                       >
                         <div className="text-2xl font-bold mb-2">{pkg.name}</div>
-                        <div className="text-3xl font-bold mb-2">€{pkg.price}</div>
+                        <div className="flex flex-col">
+                          <div className="text-3xl font-bold mb-1">
+                            €{pkg.hourlyRate || pkg.price}
+                            <span className="text-lg text-gray-400 ml-1">/ Stunde</span>
+                          </div>
+                          {pkg.sessions > 1 && (
+                            <div className="text-xs text-gray-500">Gesamt: €{pkg.price}</div>
+                          )}
+                        </div>
                         {pkg.savings && (
-                          <div className="text-sm text-green-400 mb-3">Spare €{pkg.savings}!</div>
+                          <div className="text-sm text-green-400 mb-3 mt-2">Spare €{pkg.savings}!</div>
                         )}
                         {pkg.id === 'trial' && isTrialDisabled && (
                           <div className="text-sm text-red-400 mb-3">Nur für Neukunden</div>

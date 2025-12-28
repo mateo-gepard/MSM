@@ -25,10 +25,17 @@ export function PricingCard({ package: pkg, onSelect }: PricingCardProps) {
 
       <div className="text-center mb-4 sm:mb-6">
         <h3 className="text-xl sm:text-2xl font-bold text-white mb-1.5 sm:mb-2">{pkg.name}</h3>
-        <div className="flex items-baseline justify-center gap-1">
-          <span className="text-3xl sm:text-4xl font-bold text-accent">€{pkg.price}</span>
+        <div className="flex flex-col items-center">
+          <div className="flex items-baseline justify-center gap-1">
+            <span className="text-3xl sm:text-4xl font-bold text-accent">
+              €{pkg.hourlyRate || pkg.price}
+            </span>
+            <span className="text-gray-400 text-sm sm:text-base">/ Stunde</span>
+          </div>
           {pkg.sessions > 1 && (
-            <span className="text-gray-400 text-xs sm:text-sm">/ {pkg.sessions} Std</span>
+            <p className="text-xs text-gray-500 mt-1">
+              Gesamt: €{pkg.price}
+            </p>
           )}
         </div>
         {pkg.savings && (

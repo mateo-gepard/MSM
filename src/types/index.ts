@@ -65,6 +65,7 @@ export interface Package {
   name: string;
   sessions: number;
   price: number;
+  hourlyRate?: number;
   savings?: number;
   popular?: boolean;
   features: string[];
