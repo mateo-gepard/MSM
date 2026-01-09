@@ -46,7 +46,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight px-2"
           >
-              Elite{' '}
+            Erstklassiges{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">
               1:1 Mentoring
             </span>
@@ -59,8 +59,8 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto px-4"
           >
-            Überqualifizierte Schüler und Studenten unterrichten 1:1 mit intensiver 
-            Vorbereitung, personalisierten Lernplänen und wenn nötig billingual.
+            Hochqualifizierte Schüler und Studenten unterrichten dich individuell mit 
+            maßgeschneiderten Lernplänen – online oder vor Ort, auf Wunsch auch bilingual.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -72,12 +72,12 @@ export function Hero() {
           >
             <Link href="/matching" className="w-full sm:w-auto">
               <Button size="lg" variant="primary" className="w-full sm:w-auto py-4 text-base">
-                Erstgespräch buchen
+                Kostenloses Erstgespräch
               </Button>
             </Link>
             <Link href="#tutors" className="w-full sm:w-auto">
               <Button size="lg" variant="outline" className="w-full sm:w-auto py-4 text-base">
-                Tutoren kennenlernen
+                Tutoren entdecken
               </Button>
             </Link>
           </motion.div>

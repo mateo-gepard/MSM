@@ -173,7 +173,7 @@ export default function UberUnsPage() {
             className="text-center mb-12 sm:mb-16 lg:mb-20"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 px-4">
-              Deine Reise zu <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">Excellence</span>
+              Deine Reise zu <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">Spitzenleistungen</span>
             </h2>
             <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto px-4">
               In 4 Schritten zum nachhaltigen Lernerfolg

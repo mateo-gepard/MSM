@@ -11,8 +11,8 @@ const features = [
   },
   {
     icon: GraduationCap,
-    title: 'Peer-to-Peer Tutoring',
-    description: 'Die Tutoren sind ebenfalls noch in der Schule und können die Herausforderungen aus erster Hand nachvollziehen.'
+    title: 'Peer-to-Peer Mentoring',
+    description: 'Unsere Tutoren sind selbst Schüler oder Studenten und verstehen deine Herausforderungen aus eigener Erfahrung.'
   },
   {
     icon: Users,
@@ -21,8 +21,8 @@ const features = [
   },
   {
     icon: Brain,
-    title: 'Tiefgreifendes Verständnis',
-    description: 'Wir legen viel Wert darauf, dasss Konzepte wirklich verstanden werden, und nicht unverstanden auswendig gelernt.'
+    title: 'Tiefgehendes Verständnis',
+    description: 'Wir legen Wert darauf, dass Konzepte wirklich verstanden werden – nicht nur auswendig gelernt.'
   },
   {
     icon: Calendar,
@@ -48,10 +48,10 @@ export function FeaturesSection() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Warum Elite Tutoring?
+            Warum MSM?
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Mehr als nur Nachhilfe – eine einzigartige Lernerfahrung
+            Mehr als nur Nachhilfe – ein ganzheitliches Lernkonzept
           </p>
         </motion.div>
 
