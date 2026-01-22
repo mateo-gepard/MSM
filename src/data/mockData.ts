@@ -18,6 +18,23 @@ export const packages: Package[] = [
     ]
   },
   {
+    id: 'medium',
+    name: '10er-Paket',
+    sessions: 10,
+    price: 290,
+    hourlyRate: 29,
+    savings: 100,
+    popular: true,
+    features: [
+      '10 × 60 Minuten',
+      '€100 Ersparnis',
+      'Umfassende Lernbegleitung',
+      'Individuelle Lernmaterialien',
+      'Zwischenevaluationen',
+      'Elterngespräche inklusive'
+    ]
+  },
+  {
     id: 'single',
     name: 'Einzelstunde',
     sessions: 1,
@@ -42,23 +59,6 @@ export const packages: Package[] = [
       'Kontinuierlicher Lernfortschritt',
       'Priorität bei Terminbuchung',
       'Wöchentliche Fortschrittsberichte'
-    ]
-  },
-  {
-    id: 'medium',
-    name: '10er-Paket',
-    sessions: 10,
-    price: 290,
-    hourlyRate: 29,
-    savings: 100,
-    popular: true,
-    features: [
-      '10 × 60 Minuten',
-      '€100 Ersparnis',
-      'Umfassende Lernbegleitung',
-      'Individuelle Lernmaterialien',
-      'Zwischenevaluationen',
-      'Elterngespräche inklusive'
     ]
   },
 ];
