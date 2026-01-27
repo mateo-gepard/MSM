@@ -16,7 +16,7 @@ export function TutorsSection() {
           className="text-center mb-10 sm:mb-16"
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">
-            Unsere Elite-Tutoren
+            Unsere Tutoren
           </h2>
           <p className="text-base sm:text-xl text-gray-300 max-w-3xl mx-auto px-2">
             Jeder Tutor ist ein Experte auf seinem Gebiet mit nachweisbaren Erfolgen 
