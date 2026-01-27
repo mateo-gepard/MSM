@@ -18,15 +18,20 @@ export const packages: Package[] = [
     ]
   },
   {
-    id: 'single',
-    name: 'Einzelstunde',
-    sessions: 1,
-    price: 39,
+    id: 'medium',
+    name: '10er-Paket',
+    sessions: 10,
+    price: 290,
+    hourlyRate: 29,
+    savings: 100,
+    popular: true,
     features: [
-      '60 Minuten intensive Betreuung',
-      'Flexibel buchbar',
-      'Online oder vor Ort',
-      'Personalisierter Unterricht'
+      '10 × 60 Minuten',
+      '€100 Ersparnis',
+      'Umfassende Lernbegleitung',
+      'Individuelle Lernmaterialien',
+      'Zwischenevaluationen',
+      'Elterngespräche inklusive'
     ]
   },
   {
@@ -45,20 +50,15 @@ export const packages: Package[] = [
     ]
   },
   {
-    id: 'medium',
-    name: '10er-Paket',
-    sessions: 10,
-    price: 290,
-    hourlyRate: 29,
-    savings: 100,
-    popular: true,
+    id: 'single',
+    name: 'Einzelstunde',
+    sessions: 1,
+    price: 39,
     features: [
-      '10 × 60 Minuten',
-      '€100 Ersparnis',
-      'Umfassende Lernbegleitung',
-      'Individuelle Lernmaterialien',
-      'Zwischenevaluationen',
-      'Elterngespräche inklusive'
+      '60 Minuten intensive Betreuung',
+      'Flexibel buchbar',
+      'Online oder vor Ort',
+      'Personalisierter Unterricht'
     ]
   },
 ];
