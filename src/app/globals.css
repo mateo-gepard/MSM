@@ -42,8 +42,8 @@
   --color-primary: var(--canvas);
   --color-secondary: var(--surface);
   --color-accent: var(--purple);
-  --font-sans: "Manrope", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Newsreader", "Newsreader Fallback", ui-serif, Georgia, serif;
+  --font-sans: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  --font-display: Helvetica, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -68,7 +68,7 @@ body {
     radial-gradient(circle at 5% 22%, rgb(128 103 232 / 9%), transparent 28rem),
     var(--canvas);
   color: var(--ink);
-  font-family: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
+  font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -130,7 +130,7 @@ textarea {
 
 .section-heading {
   max-width: 12ch;
-  font-family: var(--font-newsreader), "Newsreader", ui-serif, Georgia, serif;
+  font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
   font-size: clamp(2.55rem, 7vw, 5rem);
   font-weight: 500;
   letter-spacing: -0.045em;
@@ -139,7 +139,7 @@ textarea {
 }
 
 .font-display {
-  font-family: var(--font-newsreader), "Newsreader", ui-serif, Georgia, serif;
+  font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
 }
 
 .eyebrow {

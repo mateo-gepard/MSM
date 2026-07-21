@@ -1,21 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import { Manrope, Newsreader } from 'next/font/google';
 import { ConditionalLayout } from '@/components/layout/ConditionalLayout';
 import { Footer } from '@/components/layout/Footer';
 import { Navigation } from '@/components/layout/Navigation';
 import './globals.css';
-
-const manrope = Manrope({
-  variable: '--font-manrope',
-  subsets: ['latin'],
-  display: 'swap',
-});
-
-const newsreader = Newsreader({
-  variable: '--font-newsreader',
-  subsets: ['latin'],
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
@@ -80,11 +67,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="de"
-      className={`${manrope.variable} ${newsreader.variable}`}
-      data-scroll-behavior="smooth"
-    >
+    <html lang="de" data-scroll-behavior="smooth">
       <body>
         <a className="skip-link" href="#main-content">
           Zum Inhalt springen
