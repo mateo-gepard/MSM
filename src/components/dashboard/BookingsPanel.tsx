@@ -89,7 +89,7 @@ function displayStatus(booking: BookingDto, bucket: BookingBucket): string {
 
 function StatusBadge({ booking, bucket }: { booking: BookingDto; bucket: BookingBucket }) {
   const styles = {
-    upcoming: 'border-[#8067e8]/35 bg-[#8067e8]/10 text-[#d7ceff]',
+    upcoming: 'border-[var(--purple)]/35 bg-[var(--purple)]/10 text-[var(--purple-soft)]',
     past: 'border-emerald-300/20 bg-emerald-300/5 text-emerald-200',
     cancelled: 'border-red-300/20 bg-red-300/5 text-red-200',
   }[bucket];
@@ -165,7 +165,7 @@ function CancellationConfirmation({
       </p>
 
       <label htmlFor={reasonId} className="mt-4 block text-sm font-semibold text-[#d8d4df]">
-        Grund <span className="font-normal text-[#8d8996]">(optional)</span>
+        Grund <span className="font-normal text-[var(--ink-subtle)]">(optional)</span>
       </label>
       <textarea
         id={reasonId}
@@ -174,7 +174,7 @@ function CancellationConfirmation({
         disabled={isSubmitting}
         maxLength={500}
         rows={2}
-        className="mt-2 w-full resize-y rounded-lg border border-white/15 bg-[#09090d] px-3 py-2.5 text-sm text-white placeholder:text-[#77727f] focus:border-[#8067e8] focus:outline-none"
+        className="mt-2 w-full resize-y rounded-lg border border-[var(--line-strong)] bg-[var(--canvas)] px-3 py-2.5 text-sm text-white placeholder:text-[var(--ink-subtle)] focus:border-[var(--action)] focus:outline-none"
         placeholder="Zum Beispiel: Terminüberschneidung"
       />
 
@@ -222,7 +222,7 @@ function BookingCard({
   const isOnline = booking.location === 'online';
 
   return (
-    <article className="rounded-2xl border border-white/10 bg-[#121219] p-5 sm:p-6">
+    <article className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -236,25 +236,25 @@ function BookingCard({
         <p className="shrink-0 text-sm font-semibold text-[#d7ceff]">{booking.package.name}</p>
       </div>
 
-      <dl className="mt-5 grid gap-4 border-t border-white/10 pt-5 text-sm sm:grid-cols-3">
+      <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-5 text-sm sm:grid-cols-3">
         <div>
-          <dt className="flex items-center gap-2 text-[#8d8996]">
+          <dt className="flex items-center gap-2 text-[var(--ink-subtle)]">
             <CalendarClock aria-hidden="true" className="h-4 w-4" />
             Termin
           </dt>
-          <dd className="mt-1 font-semibold text-[#f7f5fb]">
+          <dd className="mt-1 font-semibold text-[var(--ink)]">
             {formatted.date}, {formatted.time} Uhr
           </dd>
         </div>
         <div>
-          <dt className="flex items-center gap-2 text-[#8d8996]">
+          <dt className="flex items-center gap-2 text-[var(--ink-subtle)]">
             <Clock3 aria-hidden="true" className="h-4 w-4" />
             Dauer
           </dt>
-          <dd className="mt-1 font-semibold text-[#f7f5fb]">{booking.durationMinutes} Minuten</dd>
+          <dd className="mt-1 font-semibold text-[var(--ink)]">{booking.durationMinutes} Minuten</dd>
         </div>
         <div>
-          <dt className="flex items-center gap-2 text-[#8d8996]">
+          <dt className="flex items-center gap-2 text-[var(--ink-subtle)]">
             {isOnline ? (
               <Monitor aria-hidden="true" className="h-4 w-4" />
             ) : (
@@ -262,7 +262,7 @@ function BookingCard({
             )}
             Ort
           </dt>
-          <dd className="mt-1 font-semibold text-[#f7f5fb]">
+          <dd className="mt-1 font-semibold text-[var(--ink)]">
             {isOnline ? 'Online' : booking.locationVenue || 'Vor Ort'}
           </dd>
         </div>
@@ -279,7 +279,7 @@ function BookingCard({
       ) : null}
 
       {bucket === 'upcoming' ? (
-        <div className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-5 sm:flex-row">
+        <div className="mt-5 flex flex-col gap-2 border-t border-[var(--line)] pt-5 sm:flex-row">
           <Link
             href={rescheduleHref(booking)}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 px-4 text-sm font-bold text-white transition-colors hover:border-white/30 hover:bg-white/5"
@@ -321,14 +321,14 @@ function EmptyBookings({ bucket, audience }: { bucket: BookingBucket; audience: 
   }[bucket];
 
   return (
-    <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-12 text-center">
-      <CalendarClock aria-hidden="true" className="mx-auto h-8 w-8 text-[#8067e8]" />
+    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-6 py-12 text-center">
+      <CalendarClock aria-hidden="true" className="mx-auto h-8 w-8 text-[var(--purple-bright)]" />
       <h3 className="mt-4 font-bold text-white">Keine Termine in dieser Ansicht</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b5b1bf]">{copy}</p>
       {bucket === 'upcoming' && audience === 'parent' ? (
         <Link
           href="/matching"
-          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#8067e8] px-4 text-sm font-bold text-white transition-colors hover:bg-[#927cf0]"
+          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
         >
           Tutor finden
         </Link>
@@ -367,7 +367,7 @@ export function BookingsPanel({ bookings, audience, onBookingCancelled }: Bookin
         {audience === 'parent' ? (
           <Link
             href="/booking"
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#8067e8] px-4 text-sm font-bold text-white transition-colors hover:bg-[#927cf0]"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
           >
             Neue Stunde buchen
           </Link>
@@ -375,14 +375,14 @@ export function BookingsPanel({ bookings, audience, onBookingCancelled }: Bookin
       </div>
 
       <div className="mt-6 overflow-x-auto pb-1">
-        <div className="inline-flex min-w-full gap-1 rounded-xl border border-white/10 bg-[#0d0d13] p-1 sm:min-w-0" role="group" aria-label="Termine filtern">
+        <div className="inline-flex min-w-full gap-1 rounded-xl border border-[var(--line)] bg-[var(--canvas-soft)] p-1 sm:min-w-0" role="group" aria-label="Termine filtern">
           {(Object.keys(bucketLabels) as BookingBucket[]).map((bucket) => (
             <button
               key={bucket}
               type="button"
               aria-pressed={activeBucket === bucket}
               onClick={() => setActiveBucket(bucket)}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-semibold text-[#b5b1bf] transition-colors hover:text-white aria-pressed:bg-[#20202b] aria-pressed:text-white sm:flex-none"
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-semibold text-[var(--ink-muted)] transition-colors hover:text-white aria-pressed:bg-[var(--surface-raised)] aria-pressed:text-white sm:flex-none"
             >
               {bucketLabels[bucket]}
               <span className="rounded-full bg-white/8 px-2 py-0.5 text-xs tabular-nums">

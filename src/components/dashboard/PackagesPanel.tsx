@@ -25,13 +25,13 @@ export function PackagesPanel({ entitlements }: { entitlements: EntitlementDto[]
             Verifizierte Pakete
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#b5b1bf]">
-            Hier stehen ausschließlich bezahlte und serverseitig bestätigte Unterrichtsguthaben – keine
-            öffentliche Preisübersicht.
+            Hier stehen ausschließlich bezahlte und serverseitig bestätigte Unterrichtsguthaben. Dies ist
+            keine öffentliche Preisübersicht.
           </p>
         </div>
         <Link
           href="/booking"
-          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#8067e8] px-4 text-sm font-bold text-white transition-colors hover:bg-[#927cf0]"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
         >
           Stunde buchen
         </Link>
@@ -47,7 +47,7 @@ export function PackagesPanel({ entitlements }: { entitlements: EntitlementDto[]
             );
 
             return (
-              <article key={entitlement.id} className="rounded-2xl border border-white/10 bg-[#121219] p-5 sm:p-6">
+              <article key={entitlement.id} className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-200">
@@ -65,7 +65,7 @@ export function PackagesPanel({ entitlements }: { entitlements: EntitlementDto[]
                   <p className="text-sm text-[#b5b1bf]">Verbleibende Stunden</p>
                   <p className="text-3xl font-bold tabular-nums text-white">
                     {entitlement.remainingSessions}
-                    <span className="text-base font-semibold text-[#8d8996]"> / {entitlement.totalSessions}</span>
+                    <span className="text-base font-semibold text-[var(--ink-subtle)]"> / {entitlement.totalSessions}</span>
                   </p>
                 </div>
                 <div
@@ -76,9 +76,9 @@ export function PackagesPanel({ entitlements }: { entitlements: EntitlementDto[]
                   aria-valuemax={entitlement.totalSessions}
                   aria-valuenow={entitlement.remainingSessions}
                 >
-                  <div className="h-full rounded-full bg-[#8067e8]" style={{ width: `${remainingPercentage}%` }} />
+                  <div className="h-full rounded-full bg-[var(--action)]" style={{ width: `${remainingPercentage}%` }} />
                 </div>
-                <p className="mt-3 text-xs text-[#8d8996]">
+                <p className="mt-3 text-xs text-[var(--ink-subtle)]">
                   {entitlement.usedSessions} von {entitlement.totalSessions} Stunden verwendet
                 </p>
               </article>
@@ -86,8 +86,8 @@ export function PackagesPanel({ entitlements }: { entitlements: EntitlementDto[]
           })}
         </div>
       ) : (
-        <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-12 text-center">
-          <PackageCheck aria-hidden="true" className="mx-auto h-8 w-8 text-[#8067e8]" />
+        <div className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-6 py-12 text-center">
+          <PackageCheck aria-hidden="true" className="mx-auto h-8 w-8 text-[var(--purple-bright)]" />
           <h3 className="mt-4 font-bold text-white">Noch kein verifiziertes Guthaben</h3>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b5b1bf]">
             Sobald ein Paket bestätigt wurde, erscheinen hier die tatsächlich verfügbaren Stunden.

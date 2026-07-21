@@ -139,7 +139,7 @@ export default function LegalNoticePage() {
                     rel="noreferrer"
                     target="_blank"
                   >
-                    § 5 DDG – Allgemeine Informationspflichten
+                    § 5 DDG: Allgemeine Informationspflichten
                     <span className="sr-only"> (öffnet in einem neuen Tab)</span>
                   </a>
                 </li>
@@ -150,7 +150,7 @@ export default function LegalNoticePage() {
                     rel="noreferrer"
                     target="_blank"
                   >
-                    § 18 MStV – Informationspflichten
+                    § 18 MStV: Informationspflichten
                     <span className="sr-only"> (öffnet in einem neuen Tab)</span>
                   </a>
                 </li>
@@ -161,7 +161,7 @@ export default function LegalNoticePage() {
                     rel="noreferrer"
                     target="_blank"
                   >
-                    § 36 VSBG – Verbraucherstreitbeilegung
+                    § 36 VSBG: Verbraucherstreitbeilegung
                     <span className="sr-only"> (öffnet in einem neuen Tab)</span>
                   </a>
                 </li>

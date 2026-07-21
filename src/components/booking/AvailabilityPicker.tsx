@@ -135,7 +135,7 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
             <ArrowLeft className="size-4" />
           </button>
           <span className="min-w-36 text-center text-sm text-white/70">
-            {format(rangeStart, 'd. MMM', { locale: de })} –{' '}
+            {format(rangeStart, 'd. MMM', { locale: de })} bis{' '}
             {format(addDays(rangeStart, 6), 'd. MMM', { locale: de })}
           </span>
           <button
@@ -206,7 +206,7 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
                         );
                       })
                     ) : (
-                      <p className="py-3 text-center text-xs text-white/35">Keine Termine</p>
+                      <p className="py-3 text-center text-xs text-[var(--ink-subtle)]">Keine Termine</p>
                     )}
                   </div>
                 </section>

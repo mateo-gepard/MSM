@@ -68,7 +68,7 @@ export default function PrivacyPage() {
             aria-labelledby="privacy-review-title"
           >
             <p id="privacy-review-title" className="text-sm font-bold text-amber-100">
-              Technische Bestandsaufnahme – rechtliche Freigabe ausstehend
+              Technische Bestandsaufnahme. Rechtliche Freigabe ausstehend.
             </p>
             <p className="mt-2 text-sm leading-6 text-amber-50/75">
               Rechtsgrundlagen, Aufbewahrungsfristen, Hosting und internationale Datenübermittlungen

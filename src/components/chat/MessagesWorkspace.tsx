@@ -22,21 +22,21 @@ export function MessagesWorkspace({
 
   if (!selectedConversation) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-12 text-center">
-        <MessageCircle aria-hidden="true" className="mx-auto h-8 w-8 text-[#8067e8]" />
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-6 py-12 text-center">
+        <MessageCircle aria-hidden="true" className="mx-auto h-8 w-8 text-[var(--purple-bright)]" />
         <h3 className="mt-4 font-bold text-white">{emptyTitle}</h3>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b5b1bf]">{emptyDescription}</p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--ink-muted)]">{emptyDescription}</p>
       </div>
     );
   }
 
   return (
     <SendbirdProvider>
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121219] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
-        <aside className="border-b border-white/10 bg-[#0d0d13] md:border-b-0 md:border-r" aria-label="Unterhaltungen">
-          <div className="border-b border-white/10 px-4 py-4">
+      <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside className="border-b border-[var(--line)] bg-[var(--canvas-soft)] md:border-b-0 md:border-r" aria-label="Unterhaltungen">
+          <div className="border-b border-[var(--line)] px-4 py-4">
             <h3 className="text-sm font-bold text-white">Unterhaltungen</h3>
-            <p className="mt-1 text-xs text-[#8d8996]">
+            <p className="mt-1 text-xs text-[var(--ink-subtle)]">
               {conversations.length} {conversations.length === 1 ? 'Kontakt' : 'Kontakte'}
             </p>
           </div>
@@ -47,10 +47,10 @@ export function MessagesWorkspace({
                 type="button"
                 aria-pressed={conversation.key === selectedConversation.key}
                 onClick={() => setSelectedKey(conversation.key)}
-                className="min-w-48 rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/5 aria-pressed:bg-[#20202b] md:min-w-0 md:w-full"
+                className="min-w-48 rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/5 aria-pressed:bg-[var(--surface-raised)] md:min-w-0 md:w-full"
               >
                 <span className="block truncate text-sm font-bold text-white">{conversation.title}</span>
-                <span className="mt-1 block truncate text-xs text-[#8d8996]">{conversation.description}</span>
+                <span className="mt-1 block truncate text-xs text-[var(--ink-subtle)]">{conversation.description}</span>
               </button>
             ))}
           </div>

@@ -68,7 +68,7 @@ export default function ResetPasswordPage() {
               <p className="mt-2 leading-7 text-[var(--ink-muted)]">
                 Dein neues Passwort ist aktiv. Du kannst jetzt zum Dashboard wechseln.
               </p>
-              <Link className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[var(--purple)] px-6 font-bold text-white hover:bg-[var(--purple-bright)]" href="/dashboard">
+              <Link className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[var(--action)] px-6 font-bold text-white hover:bg-[var(--action-hover)]" href="/dashboard">
                 Zum Dashboard
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Link>

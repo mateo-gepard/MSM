@@ -20,16 +20,16 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: {
-    default: 'MSM | 1:1 Nachhilfe online und in München',
+    default: 'MSM | Persönliche Nachhilfe online und in München',
     template: '%s | MSM Munich Scholar Mentors',
   },
   description:
-    'Persönliche 1:1 Nachhilfe in Mathematik, Physik, Informatik, Biologie und Spanisch – online oder in München. Kostenlose Probestunde für Neukund:innen.',
+    'Persönliche Nachhilfe im Einzelunterricht für Mathematik, Physik, Informatik, Biologie und Spanisch. Online oder in München. Kostenlose Probestunde für Neukund:innen.',
   applicationName: 'MSM Munich Scholar Mentors',
   keywords: [
     'Nachhilfe München',
     'Online Nachhilfe',
-    '1:1 Nachhilfe',
+    'Einzelnachhilfe',
     'Mathematik Nachhilfe',
     'Physik Nachhilfe',
     'Informatik Nachhilfe',
@@ -45,9 +45,9 @@ export const metadata: Metadata = {
     apple: '/MSM_FAVICON.png',
   },
   openGraph: {
-    title: 'MSM | 1:1 Nachhilfe online und in München',
+    title: 'MSM | Persönliche Nachhilfe online und in München',
     description:
-      'Persönliche Nachhilfe mit einem passenden Tutor – online oder in München, mit kostenloser Probestunde.',
+      'Persönliche Nachhilfe mit einem passenden Tutor. Online oder in München und mit kostenloser Probestunde.',
     locale: 'de_DE',
     type: 'website',
     siteName: 'MSM Munich Scholar Mentors',
@@ -62,15 +62,15 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MSM | 1:1 Nachhilfe online und in München',
+    title: 'MSM | Persönliche Nachhilfe online und in München',
     description:
-      'Persönliche Nachhilfe mit einem passenden Tutor – online oder in München, mit kostenloser Probestunde.',
+      'Persönliche Nachhilfe mit einem passenden Tutor. Online oder in München und mit kostenloser Probestunde.',
     images: ['/og.png'],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#09090d',
+  themeColor: '#191620',
   colorScheme: 'dark',
 };
 

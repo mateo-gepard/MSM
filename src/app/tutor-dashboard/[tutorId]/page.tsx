@@ -10,7 +10,7 @@ interface TutorDashboardPageProps {
 export async function generateMetadata({ params }: TutorDashboardPageProps): Promise<Metadata> {
   const { tutorId } = await params;
   if (!isTutorSlug(tutorId)) return { title: 'Tutor-Dashboard' };
-  return { title: `Tutor-Dashboard – ${getTutorBySlug(tutorId).name}` };
+  return { title: `Tutor-Dashboard von ${getTutorBySlug(tutorId).name}` };
 }
 
 export default async function TutorDashboardPage({ params }: TutorDashboardPageProps) {

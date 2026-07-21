@@ -213,7 +213,7 @@ export function ChatPanel({ conversation }: { conversation: ChatConversation }) 
     return (
       <div className="flex min-h-[28rem] items-center justify-center p-8" role="status">
         <div className="text-center">
-          <LoaderCircle aria-hidden="true" className="mx-auto h-7 w-7 animate-spin text-[#8067e8]" />
+          <LoaderCircle aria-hidden="true" className="mx-auto h-7 w-7 animate-spin text-[var(--purple-bright)]" />
           <p className="mt-3 text-sm text-[#b5b1bf]">
             {connectionStatus === 'connecting' ? 'Sichere Verbindung wird aufgebaut …' : 'Unterhaltung wird geladen …'}
           </p>
@@ -252,10 +252,10 @@ export function ChatPanel({ conversation }: { conversation: ChatConversation }) 
     <div className="flex min-h-[31rem] flex-col">
       <header className="border-b border-white/10 px-4 py-4 sm:px-5">
         <h3 className="font-bold text-white">{conversation.title}</h3>
-        <p className="mt-0.5 text-xs text-[#8d8996]">{conversation.description}</p>
+        <p className="mt-0.5 text-xs text-[var(--ink-subtle)]">{conversation.description}</p>
       </header>
 
-      <div className="h-[25rem] flex-1 overflow-y-auto bg-[#0d0d13] px-4 py-5 sm:px-5">
+      <div className="h-[25rem] flex-1 overflow-y-auto bg-[var(--canvas-soft)] px-4 py-5 sm:px-5">
         {canLoadOlder ? (
           <div className="mb-5 text-center">
             <button
@@ -272,9 +272,9 @@ export function ChatPanel({ conversation }: { conversation: ChatConversation }) 
         {messages.length === 0 ? (
           <div className="flex min-h-64 items-center justify-center text-center">
             <div>
-              <MessageCircle aria-hidden="true" className="mx-auto h-8 w-8 text-[#8067e8]" />
+              <MessageCircle aria-hidden="true" className="mx-auto h-8 w-8 text-[var(--purple-bright)]" />
               <p className="mt-3 font-semibold text-white">Noch keine Nachrichten</p>
-              <p className="mt-1 text-sm text-[#8d8996]">Du kannst die Unterhaltung hier beginnen.</p>
+              <p className="mt-1 text-sm text-[var(--ink-subtle)]">Du kannst die Unterhaltung hier beginnen.</p>
             </div>
           </div>
         ) : (
@@ -286,14 +286,14 @@ export function ChatPanel({ conversation }: { conversation: ChatConversation }) 
                   <div
                     className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 sm:max-w-[72%] ${
                       isOwnMessage
-                        ? 'rounded-br-md bg-[#8067e8] text-white'
-                        : 'rounded-bl-md border border-white/10 bg-[#181821] text-[#f7f5fb]'
+                        ? 'rounded-br-md bg-[var(--action)] text-white'
+                        : 'rounded-bl-md border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink)]'
                     }`}
                   >
                     <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.message}</p>
                     <time
                       dateTime={new Date(message.createdAt).toISOString()}
-                      className={`mt-1 block text-[0.7rem] ${isOwnMessage ? 'text-white/70' : 'text-[#8d8996]'}`}
+                      className={`mt-1 block text-[0.7rem] ${isOwnMessage ? 'text-white/70' : 'text-[var(--ink-subtle)]'}`}
                     >
                       {new Intl.DateTimeFormat('de-DE', {
                         day: '2-digit',
@@ -330,12 +330,12 @@ export function ChatPanel({ conversation }: { conversation: ChatConversation }) 
             rows={2}
             disabled={isSending}
             placeholder="Nachricht schreiben …"
-            className="min-h-12 flex-1 resize-none rounded-xl border border-white/15 bg-[#09090d] px-3.5 py-3 text-sm text-white placeholder:text-[#77727f] focus:border-[#8067e8] focus:outline-none disabled:opacity-60"
+            className="min-h-12 flex-1 resize-none rounded-xl border border-[var(--line-strong)] bg-[var(--canvas)] px-3.5 py-3 text-sm text-white placeholder:text-[var(--ink-subtle)] focus:border-[var(--action)] focus:outline-none disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={!messageText.trim() || isSending}
-            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#8067e8] text-white transition-colors hover:bg-[#927cf0] disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--action)] text-white transition-colors hover:bg-[var(--action-hover)] disabled:cursor-not-allowed disabled:opacity-45"
             aria-label={isSending ? 'Nachricht wird gesendet' : 'Nachricht senden'}
           >
             {isSending ? (

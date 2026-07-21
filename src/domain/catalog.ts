@@ -157,13 +157,13 @@ export const TUTOR_CATALOG: readonly Tutor[] = [
     subjectIds: ['math', 'physics', 'spanish'],
     achievements: [
       '1. Preis Mathematik-Olympiade',
-      'IB Student an Top-Schule in England',
+      'Schüler an einer englischen Schule mit International Baccalaureate',
       'Mehrsprachig und international erfahren',
     ],
     image: '/tutors/juan.jpg',
     bio: 'Erfolgreich in Mathe und Physik, quadrilingual',
     languages: ['Deutsch', 'Englisch', 'Spanisch', 'Französisch'],
-    availability: 'Di, Mi, Sa 17:30-19:00',
+    availability: 'Di, Mi, Sa 17:30 bis 19:00',
     grade: 'Klasse 12 (L6)',
     availableSlots: [
       { day: 'tuesday', times: ['17:30', '18:00', '18:30'] },
@@ -186,7 +186,7 @@ export const TUTOR_CATALOG: readonly Tutor[] = [
     image: '/tutors/Mateo.JPG',
     bio: 'Hobby-Ingenieur und Physik-Begeisterter',
     languages: ['Deutsch', 'Englisch', 'Georgisch'],
-    availability: 'Mo-Fr ab 14 Uhr',
+    availability: 'Montag bis Freitag ab 14 Uhr',
     grade: 'Klassenstufe 12',
     availableSlots: [
       { day: 'monday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
@@ -210,7 +210,7 @@ export const TUTOR_CATALOG: readonly Tutor[] = [
     image: '/tutors/Roman.png',
     bio: 'Leidenschaftlicher Mathematiker und Physiker',
     languages: ['Deutsch', 'Russisch'],
-    availability: 'Mo, Mi, Fr 15-17 Uhr',
+    availability: 'Mo, Mi, Fr 15 bis 17 Uhr',
     grade: 'Klassenstufe 11',
     availableSlots: [
       { day: 'monday', times: ['15:00', '15:30', '16:00', '16:30'] },
@@ -232,7 +232,7 @@ export const TUTOR_CATALOG: readonly Tutor[] = [
     image: '/tutors/Len.JPG',
     bio: 'Physiker, talentierter Programmierer und Robotik-Experte',
     languages: ['Deutsch', 'Englisch'],
-    availability: 'Mo-Fr ab 14 Uhr',
+    availability: 'Montag bis Freitag ab 14 Uhr',
     grade: 'Klassenstufe 13',
     availableSlots: [
       { day: 'monday', times: ['16:30', '17:00', '17:30', '18:00'] },
@@ -248,14 +248,14 @@ export const TUTOR_CATALOG: readonly Tutor[] = [
     name: 'Johannes Jacob',
     subjectIds: ['math', 'physics'],
     achievements: [
-      'Bester Mathematiker unter allen Schülern in Deutschland',
+      'Begeistert von anspruchsvoller Mathematik',
       'Frühstudent in Analysis und Technischer Mechanik',
       'Sehr erfahren in Wettbewerbsvorbereitung von jungen Talenten',
     ],
     image: '/tutors/Johannes.jpg',
-    bio: 'Äußerst erfolgreicher Mathematiker',
+    bio: 'Begeisterter Mathematiker',
     languages: ['Deutsch'],
-    availability: 'Mo-Fr ab 14 Uhr',
+    availability: 'Montag bis Freitag ab 14 Uhr',
     grade: 'Klassenstufe 11',
     availableSlots: [
       { day: 'monday', times: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },

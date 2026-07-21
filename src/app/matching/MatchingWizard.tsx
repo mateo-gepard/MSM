@@ -353,7 +353,7 @@ export default function MatchingWizard() {
                               <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">
                                 {index === 0 ? 'Erste Empfehlung' : 'Weitere Empfehlung'}
                               </p>
-                              <Award className="size-4 text-white/35" />
+                              <Award className="size-4 text-[var(--ink-subtle)]" />
                             </div>
                             <h3 className="mt-2 text-xl font-semibold">{tutor.name}</h3>
                             <p className="mt-1 text-sm leading-6 text-white/55">{tutor.bio}</p>
@@ -379,11 +379,11 @@ export default function MatchingWizard() {
                   })}
                 </div>
               ) : (
-                <div className="mt-8 rounded-2xl border border-dashed border-white/20 p-8 text-center">
+                <div className="mt-8 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-8 text-center">
                   <Target className="mx-auto size-8 text-[var(--color-accent-soft)]" />
                   <h3 className="mt-4 text-lg font-medium">Aktuell kein exakter Treffer</h3>
                   <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-white/55">
-                    Für diese Kombination ist noch kein Mentor hinterlegt. Schreib uns kurz – wir
+                    Für diese Kombination ist noch kein Mentor hinterlegt. Schreib uns kurz. Wir
                     prüfen persönlich, wer passen könnte.
                   </p>
                   <a

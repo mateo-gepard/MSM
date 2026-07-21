@@ -69,8 +69,8 @@ function DashboardLoading({ label = 'Dashboard wird geladen …' }: { label?: st
   return (
     <div className="site-container flex min-h-[65vh] items-center justify-center py-16" role="status">
       <div className="text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#8067e8]" />
-        <p className="mt-4 text-sm text-[#b5b1bf]">{label}</p>
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--action)]" />
+        <p className="mt-4 text-sm text-[var(--ink-muted)]">{label}</p>
       </div>
     </div>
   );
@@ -183,7 +183,7 @@ export function ParentDashboard() {
   if (loadError || !data) {
     return (
       <div className="site-container py-16 sm:py-24">
-        <div className="mx-auto max-w-xl rounded-2xl border border-amber-200/20 bg-[#121219] p-7 text-center">
+        <div className="mx-auto max-w-xl rounded-2xl border border-amber-200/20 bg-[var(--surface)] p-7 text-center">
           <RefreshCw aria-hidden="true" className="mx-auto h-8 w-8 text-amber-200" />
           <h1 className="mt-4 text-xl font-bold text-white">Dashboard nicht verfügbar</h1>
           <p className="mt-2 text-sm leading-6 text-[#b5b1bf]">
@@ -192,7 +192,7 @@ export function ParentDashboard() {
           <button
             type="button"
             onClick={() => setReloadKey((current) => current + 1)}
-            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#8067e8] px-4 text-sm font-bold text-white transition-colors hover:bg-[#927cf0]"
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
           >
             Erneut laden
           </button>
@@ -209,7 +209,7 @@ export function ParentDashboard() {
   const firstName = data.profile.displayName?.trim().split(/\s+/)[0];
 
   return (
-    <div className="min-h-screen bg-[#09090d]">
+    <div className="min-h-screen bg-[var(--canvas)]">
       <div className="site-container py-10 sm:py-14">
         <header className="flex flex-col gap-6 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -243,25 +243,25 @@ export function ParentDashboard() {
         </header>
 
         <section className="grid gap-3 py-6 sm:grid-cols-3" aria-label="Übersicht">
-          <div className="rounded-xl border border-white/10 bg-[#121219] p-4">
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
             <CalendarDays aria-hidden="true" className="h-5 w-5 text-[#9b83ff]" />
             <p className="mt-4 text-2xl font-bold tabular-nums text-white">{upcomingCount}</p>
-            <p className="mt-1 text-sm text-[#8d8996]">Anstehende Termine</p>
+            <p className="mt-1 text-sm text-[var(--ink-subtle)]">Anstehende Termine</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-[#121219] p-4">
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
             <BookOpenCheck aria-hidden="true" className="h-5 w-5 text-[#9b83ff]" />
             <p className="mt-4 text-2xl font-bold tabular-nums text-white">{remainingSessions}</p>
-            <p className="mt-1 text-sm text-[#8d8996]">Verifizierte Stunden übrig</p>
+            <p className="mt-1 text-sm text-[var(--ink-subtle)]">Verifizierte Stunden übrig</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-[#121219] p-4">
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
             <UsersRound aria-hidden="true" className="h-5 w-5 text-[#9b83ff]" />
             <p className="mt-4 text-2xl font-bold tabular-nums text-white">{tutorCount}</p>
-            <p className="mt-1 text-sm text-[#8d8996]">Tutor-Kontakte</p>
+            <p className="mt-1 text-sm text-[var(--ink-subtle)]">Tutor-Kontakte</p>
           </div>
         </section>
 
         <nav className="mb-8 overflow-x-auto" aria-label="Dashboardbereiche">
-          <div className="inline-flex min-w-full gap-1 rounded-xl border border-white/10 bg-[#0d0d13] p-1 sm:min-w-0">
+          <div className="inline-flex min-w-full gap-1 rounded-xl border border-[var(--line)] bg-[var(--canvas-soft)] p-1 sm:min-w-0">
             {dashboardSections.map((section) => {
               const Icon = section.icon;
               return (
@@ -270,7 +270,7 @@ export function ParentDashboard() {
                   type="button"
                   aria-current={activeSection === section.id ? 'page' : undefined}
                   onClick={() => setActiveSection(section.id)}
-                  className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-bold text-[#b5b1bf] transition-colors hover:text-white aria-[current=page]:bg-[#20202b] aria-[current=page]:text-white sm:flex-none"
+                  className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-bold text-[var(--ink-muted)] transition-colors hover:text-white aria-[current=page]:bg-[var(--surface-raised)] aria-[current=page]:text-white sm:flex-none"
                 >
                   <Icon aria-hidden="true" className="h-4 w-4" />
                   {section.label}
@@ -318,7 +318,7 @@ export function ParentDashboard() {
           </section>
         ) : null}
 
-        <div className="mt-12 border-t border-white/10 pt-6 text-sm text-[#8d8996]">
+        <div className="mt-12 border-t border-[var(--line)] pt-6 text-sm text-[var(--ink-subtle)]">
           Brauchst du Hilfe? Die rechtlichen Hinweise findest du in den{' '}
           <Link href="/agb" className="font-semibold text-[#d7ceff] underline underline-offset-4">
             AGB

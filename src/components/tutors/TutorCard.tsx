@@ -13,10 +13,10 @@ export function TutorCard({ tutor }: TutorCardProps) {
 
   return (
     <article
-      className="group interactive-surface flex h-full min-w-0 flex-col overflow-hidden border border-white/10 bg-[#111118]"
+      className="group interactive-surface flex h-full min-w-0 flex-col overflow-hidden border border-[var(--line)] bg-[var(--surface)]"
       aria-labelledby={titleId}
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#181821]">
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[var(--surface-raised)]">
         <Image
           src={tutor.image}
           alt={`Foto von ${tutor.name}`}
@@ -45,17 +45,17 @@ export function TutorCard({ tutor }: TutorCardProps) {
         </div>
 
         <div className="mt-5">
-          <h3 id={titleId} className="text-xl font-bold tracking-[-0.025em] text-white">
+          <h3 id={titleId} className="text-xl font-bold tracking-[-0.025em] text-[var(--ink)]">
             {tutor.name}
           </h3>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[#8f8a97]">{tutor.grade}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ink-subtle)]">{tutor.grade}</p>
         </div>
 
-        <div className="mt-6 flex-1 border-t border-white/10 pt-5">
-          <h4 className="text-xs font-bold uppercase tracking-[0.13em] text-[#b8b3c0]">Aus dem Profil</h4>
+        <div className="mt-6 flex-1 border-t border-[var(--line)] pt-5">
+          <h4 className="text-xs font-bold uppercase tracking-[0.13em] text-[var(--ink-muted)]">Aus dem Profil</h4>
           <ul className="mt-3 space-y-2.5">
             {tutor.achievements.slice(0, 2).map((achievement) => (
-              <li key={achievement} className="grid grid-cols-[0.45rem_1fr] gap-2.5 text-sm leading-6 text-[#c4c0ca]">
+              <li key={achievement} className="grid grid-cols-[0.45rem_1fr] gap-2.5 text-sm leading-6 text-[var(--ink-muted)]">
                 <span className="mt-[0.6rem] h-1 w-1 rounded-full bg-[#6e56cf]" aria-hidden="true" />
                 <span>{achievement}</span>
               </li>
@@ -63,7 +63,7 @@ export function TutorCard({ tutor }: TutorCardProps) {
           </ul>
         </div>
 
-        <dl className="mt-6 space-y-2.5 border-t border-white/10 pt-5 text-xs text-[#9d98a5]">
+        <dl className="mt-6 space-y-2.5 border-t border-[var(--line)] pt-5 text-xs text-[var(--ink-subtle)]">
           <div className="flex items-start gap-2">
             <Languages aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9b83ff]" />
             <dt className="sr-only">Sprachen</dt>
@@ -78,7 +78,7 @@ export function TutorCard({ tutor }: TutorCardProps) {
 
         <Link
           href={`/booking?tutor=${tutor.slug}`}
-          className="mt-6 inline-flex min-h-11 items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm font-bold text-white hover:text-[#d7ceff]"
+          className="mt-6 inline-flex min-h-11 items-center justify-between gap-3 border-t border-[var(--line)] pt-5 text-sm font-bold text-[var(--ink)] hover:text-[var(--purple-soft)]"
           aria-label={`Termin mit ${tutor.name} auswählen`}
         >
           Termin auswählen

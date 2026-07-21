@@ -2,30 +2,33 @@
 
 :root {
   color-scheme: dark;
-  --ink: #f7f5fb;
-  --ink-muted: #b5b1bf;
-  --ink-subtle: #8d8996;
-  --canvas: #09090d;
-  --canvas-soft: #0d0d13;
-  --surface: #121219;
-  --surface-raised: #181821;
-  --line: #292833;
-  --line-strong: #3a3747;
-  --purple: #6e56cf;
-  --purple-bright: #9b83ff;
-  --purple-soft: #d7ceff;
-  --success: #8fc7a6;
+  --ink: #fdfbff;
+  --ink-muted: #d0cad7;
+  --ink-subtle: #aaa3b5;
+  --canvas: #191620;
+  --canvas-soft: #211c2b;
+  --surface: #292333;
+  --surface-raised: #332b40;
+  --surface-accent: #302641;
+  --line: #4a4057;
+  --line-strong: #63546f;
+  --purple: #8067e8;
+  --purple-bright: #b5a2ff;
+  --purple-soft: #e3dcff;
+  --action: #6e56cf;
+  --action-hover: #745bd1;
+  --success: #a4d8b7;
 
   /* Shared aliases for the booking and matching product surfaces. */
   --color-ink: var(--canvas);
-  --color-accent: var(--purple);
+  --color-accent: var(--action);
   --color-accent-soft: var(--purple-soft);
-  --color-accent-strong: var(--purple-bright);
+  --color-accent-strong: var(--action-hover);
 
   /* Compatibility aliases used by the signed-in product. */
   --primary-dark: var(--canvas);
   --secondary-dark: var(--surface);
-  --accent-purple: var(--purple);
+  --accent-purple: var(--action);
   --background: var(--canvas);
   --foreground: var(--ink);
 }
@@ -61,7 +64,8 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 85% -10%, rgb(128 103 232 / 10%), transparent 30rem),
+    radial-gradient(circle at 85% -10%, rgb(181 162 255 / 18%), transparent 34rem),
+    radial-gradient(circle at 5% 22%, rgb(128 103 232 / 9%), transparent 28rem),
     var(--canvas);
   color: var(--ink);
   font-family: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
@@ -141,20 +145,12 @@ textarea {
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
   color: var(--purple-soft);
   font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.16em;
   line-height: 1.4;
   text-transform: uppercase;
-}
-
-.eyebrow::before {
-  width: 1.75rem;
-  height: 1px;
-  background: var(--purple);
-  content: "";
 }
 
 .text-pretty {

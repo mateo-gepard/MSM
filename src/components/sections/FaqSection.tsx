@@ -7,7 +7,7 @@ const questions = [
   {
     question: 'Findet die Nachhilfe online oder vor Ort statt?',
     answer:
-      'Online-Unterricht ist ortsunabhängig möglich. Termine vor Ort in München hängen vom gewählten Tutor und seiner aktuellen Verfügbarkeit ab.',
+      'Unterricht online ist ortsunabhängig möglich. Termine vor Ort in München hängen vom gewählten Tutor und seiner aktuellen Verfügbarkeit ab.',
   },
   {
     question: 'Was passiert in der kostenlosen Probestunde?',
@@ -17,7 +17,7 @@ const questions = [
   {
     question: 'Muss ich direkt ein Paket buchen?',
     answer:
-      'Nein. Neben der Probestunde gibt es eine einzelne 60-Minuten-Einheit für 39 €. Bezahlte Einzelstunden und Pakete werden nach bestätigtem Zahlungseingang als Buchungsguthaben im Account freigeschaltet.',
+      'Nein. Neben der Probestunde gibt es eine einzelne Stunde mit 60 Minuten für 39 €. Bezahlte Einzelstunden und Pakete werden nach bestätigtem Zahlungseingang als Buchungsguthaben im Account freigeschaltet.',
   },
   {
     question: 'Wie finde ich den passenden Tutor?',
@@ -32,24 +32,21 @@ export function FaqSection() {
       <div className="site-container grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
         <div>
           <p className="eyebrow">Kurz geklärt</p>
-          <h2 id="faq-title" className="section-heading mt-6 text-white">
+          <h2 id="faq-title" className="section-heading mt-6 text-[var(--ink)]">
             Häufige Fragen vor dem Start.
           </h2>
         </div>
 
-        <div className="border-t border-white/10">
+        <div className="border-t border-[var(--line)]">
           {questions.map((item) => (
-            <details key={item.question} className="group border-b border-white/10">
-              <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-6 py-5 text-left font-bold text-white marker:hidden">
+            <details key={item.question} className="group border-b border-[var(--line)]">
+              <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-6 py-5 text-left font-bold text-[var(--ink)] marker:hidden">
                 <span>{item.question}</span>
-                <span className="text-xl font-normal text-[#9b83ff] group-open:hidden" aria-hidden="true">
+                <span className="text-xl font-normal text-[var(--purple-bright)] transition-transform group-open:rotate-45" aria-hidden="true">
                   +
                 </span>
-                <span className="hidden text-xl font-normal text-[#9b83ff] group-open:inline" aria-hidden="true">
-                  −
-                </span>
               </summary>
-              <p className="max-w-2xl pb-6 pr-10 text-sm leading-7 text-[#aaa6b2]">{item.answer}</p>
+              <p className="max-w-2xl pb-6 pr-10 text-sm leading-7 text-[var(--ink-muted)]">{item.answer}</p>
             </details>
           ))}
         </div>

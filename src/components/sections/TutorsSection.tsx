@@ -8,12 +8,12 @@ export function TutorsSection() {
         <div className="grid gap-7 lg:grid-cols-[1fr_0.8fr] lg:items-end">
           <div>
             <p className="eyebrow">Das Team</p>
-            <h2 id="tutoren-title" className="section-heading mt-6 text-white">
-              Fünf Profile. Klare fachliche Schwerpunkte.
+            <h2 id="tutoren-title" className="section-heading mt-6 text-[var(--ink)]">
+              Unsere Tutoren
             </h2>
           </div>
-          <p className="text-pretty max-w-xl text-base leading-7 text-[#aaa6b2] lg:justify-self-end">
-            Vergleicht Fächer, Sprachen, Verfügbarkeit und die konkreten Stationen jedes Tutors. Das Matching hilft danach bei der Auswahl.
+          <p className="text-pretty max-w-xl text-base leading-7 text-[var(--ink-muted)] lg:justify-self-end">
+            Unsere Tutoren verbinden fachliche Expertise mit nachweisbaren Erfolgen, Wettbewerbserfahrung und Frühstudium.
           </p>
         </div>
 

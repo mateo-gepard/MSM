@@ -62,10 +62,10 @@ export default function TutorAccessPage() {
 
   if (authLoading || isLoading || (user && !profile && !error)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-6" role="status">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-6" role="status">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#8067e8]" />
-          <p className="mt-4 text-sm text-[#b5b1bf]">Tutor-Zugang wird geprüft …</p>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--action)]" />
+          <p className="mt-4 text-sm text-[var(--ink-muted)]">Tutor-Zugang wird geprüft …</p>
         </div>
       </div>
     );
@@ -73,22 +73,22 @@ export default function TutorAccessPage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-5">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#121219] p-7 text-center sm:p-8">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-5">
+        <div className="w-full max-w-md rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-7 text-center sm:p-8">
           <UserRoundCheck aria-hidden="true" className="mx-auto h-9 w-9 text-[#9b83ff]" />
           <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Tutor-Zugang</h1>
-          <p className="mt-3 text-sm leading-6 text-[#b5b1bf]">
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
             Melde dich mit deinem persönlichen Tutor-Konto an. Das zugeordnete Dashboard wird danach
             automatisch geöffnet.
           </p>
           <Link
             href="/login?redirect=%2Ftutor-login"
-            className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#8067e8] px-4 text-sm font-bold text-white transition-colors hover:bg-[#927cf0]"
+            className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
           >
             Sicher anmelden
             <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </Link>
-          <p className="mt-5 text-xs leading-5 text-[#8d8996]">
+          <p className="mt-5 text-xs leading-5 text-[var(--ink-subtle)]">
             Es gibt keine manuelle Tutor-Auswahl. Der Zugriff folgt ausschließlich der serverseitigen
             Kontozuordnung.
           </p>
@@ -99,11 +99,11 @@ export default function TutorAccessPage() {
 
   if (error || profile?.role === 'parent' || (profile?.role === 'tutor' && !profile.tutorSlug)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-5">
-        <div className="w-full max-w-md rounded-2xl border border-amber-200/20 bg-[#121219] p-7 text-center sm:p-8">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-5">
+        <div className="w-full max-w-md rounded-2xl border border-amber-200/20 bg-[var(--surface)] p-7 text-center sm:p-8">
           <ShieldCheck aria-hidden="true" className="mx-auto h-9 w-9 text-amber-200" />
           <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Kein Tutor-Zugriff</h1>
-          <p className="mt-3 text-sm leading-6 text-[#b5b1bf]">
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
             {error ||
               (profile?.role === 'tutor'
                 ? 'Deinem Konto ist noch kein Tutorprofil zugeordnet. Bitte wende dich an die Administration.'
@@ -121,15 +121,15 @@ export default function TutorAccessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090d] px-5 py-12 sm:py-16">
+    <div className="min-h-screen bg-[var(--canvas)] px-5 py-12 sm:py-16">
       <div className="mx-auto max-w-3xl">
-        <div className="rounded-2xl border border-white/10 bg-[#121219] p-6 sm:p-8">
+        <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8">
           <div className="flex items-start gap-4">
             <ShieldCheck aria-hidden="true" className="mt-0.5 h-7 w-7 shrink-0 text-[#9b83ff]" />
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9b83ff]">Adminzugriff</p>
               <h1 className="mt-2 text-2xl font-bold tracking-tight text-white">Tutor-Dashboard öffnen</h1>
-              <p className="mt-2 text-sm leading-6 text-[#b5b1bf]">
+              <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
                 Dein administratives Profil wurde geprüft. Wähle ein Dashboard über seinen stabilen
                 Tutor-Eintrag.
               </p>
@@ -141,7 +141,7 @@ export default function TutorAccessPage() {
               <li key={tutor.slug}>
                 <Link
                   href={`/tutor-dashboard/${tutor.slug}`}
-                  className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0d0d13] px-4 py-3 font-bold text-white transition-colors hover:border-white/25 hover:bg-[#181821]"
+                  className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--canvas-soft)] px-4 py-3 font-bold text-white transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-raised)]"
                 >
                   <span>{tutor.name}</span>
                   <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-[#9b83ff]" />

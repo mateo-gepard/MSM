@@ -7,10 +7,11 @@ import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 
 const navigationItems = [
+  { label: 'Start', href: '/' },
+  { label: 'Über uns', href: '/uber-uns' },
   { label: 'Tutoren', href: '/#tutoren' },
-  { label: 'So funktioniert’s', href: '/#ablauf' },
+  { label: 'Warum MSM?', href: '/#ablauf' },
   { label: 'Preise', href: '/#preise' },
-  { label: 'Über MSM', href: '/uber-uns' },
 ] as const;
 
 export function Navigation() {
@@ -37,13 +38,13 @@ export function Navigation() {
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#09090d]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--canvas)]/95 backdrop-blur-md">
       <nav className="site-container" aria-label="Hauptnavigation">
         <div className="flex h-[4.75rem] items-center justify-between gap-6">
           <Link
             href="/"
-            className="relative h-10 w-[8.5rem] shrink-0 overflow-hidden rounded-sm"
-            aria-label="MSM Munich Scholar Mentors – Startseite"
+            className="relative h-[3.25rem] w-[10.5rem] shrink-0 overflow-hidden rounded-sm"
+            aria-label="MSM Munich Scholar Mentors, Startseite"
           >
             <Image
               src="/MSM_Logo_Light.png"
@@ -63,7 +64,7 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   aria-current={isCurrent ? 'page' : undefined}
-                  className="rounded-lg px-3.5 py-2.5 text-sm font-semibold text-[#b5b1bf] transition-colors hover:bg-white/5 hover:text-white aria-[current=page]:text-white"
+                  className="rounded-lg px-3.5 py-2.5 text-sm font-semibold text-[var(--ink-muted)] transition-colors hover:bg-white/5 hover:text-white aria-[current=page]:text-white"
                 >
                   {item.label}
                 </Link>
@@ -82,14 +83,14 @@ export function Navigation() {
               href="/matching"
               className="rounded-lg bg-[#6e56cf] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#745bd1]"
             >
-              Tutor finden
+              Erstgespräch
             </Link>
           </div>
 
           <button
             ref={menuButtonRef}
             type="button"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 text-white transition-colors hover:bg-white/5 lg:hidden"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--line-strong)] text-white transition-colors hover:bg-white/5 lg:hidden"
             aria-expanded={isOpen}
             aria-controls="mobile-navigation"
             aria-label={isOpen ? 'Menü schließen' : 'Menü öffnen'}
@@ -100,7 +101,7 @@ export function Navigation() {
         </div>
 
         {isOpen ? (
-          <div id="mobile-navigation" className="border-t border-white/10 py-4 lg:hidden">
+          <div id="mobile-navigation" className="border-t border-[var(--line)] py-4 lg:hidden">
             <div className="flex flex-col gap-1">
               {navigationItems.map((item, index) => (
                 <Link
@@ -108,14 +109,14 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   aria-current={item.href === currentPath ? 'page' : undefined}
-                  className="rounded-lg px-3 py-3 text-base font-semibold text-[#d8d4df] hover:bg-white/5 hover:text-white aria-[current=page]:text-white"
+                  className="rounded-lg px-3 py-3 text-base font-semibold text-[var(--ink-muted)] hover:bg-white/5 hover:text-white aria-[current=page]:text-white"
                   onClick={closeMenu}
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
+            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[var(--line)] pt-4">
               <Link
                 href="/login"
                 className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-4 text-sm font-bold text-white"
@@ -128,7 +129,7 @@ export function Navigation() {
                 className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#6e56cf] px-4 text-sm font-bold text-white"
                 onClick={closeMenu}
               >
-                Tutor finden
+                Erstgespräch
               </Link>
             </div>
           </div>

@@ -243,7 +243,7 @@ function Progress({ stage, rescheduling }: { stage: Stage; rescheduling: boolean
                 className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
                   complete || active
                     ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
-                    : 'border-white/15 text-white/40'
+                    : 'border-white/15 text-[var(--ink-subtle)]'
                 }`}
               >
                 {complete ? <Check className="size-4" /> : index + 1}
@@ -411,7 +411,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
               </Link>
             </div>
             {createdBookingId && (
-              <p className="mt-8 text-xs text-white/30">Buchungsreferenz: {createdBookingId}</p>
+              <p className="mt-8 text-xs text-[var(--ink-subtle)]">Buchungsreferenz: {createdBookingId}</p>
             )}
           </section>
         </div>
@@ -706,7 +706,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                                 onChange={(event) =>
                                   setContact((current) => ({ ...current, name: event.target.value }))
                                 }
-                                className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-black/20 px-4 text-white outline-none transition-colors placeholder:text-white/30 focus:border-[var(--color-accent)]"
+                                className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-black/20 px-4 text-white outline-none transition-colors placeholder:text-white/55 focus:border-[var(--color-accent)]"
                               />
                             </label>
                             <label className="block">
@@ -740,14 +740,14 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                                   required
                                   value={meetingPlace}
                                   onChange={(event) => setMeetingPlace(event.target.value)}
-                                  className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-black/20 px-4 text-white outline-none transition-colors placeholder:text-white/30 focus:border-[var(--color-accent)]"
+                                  className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-black/20 px-4 text-white outline-none transition-colors placeholder:text-white/55 focus:border-[var(--color-accent)]"
                                   placeholder={
                                     locationPreference === 'student-home'
                                       ? 'Straße, Hausnummer, PLZ und Ort'
                                       : 'Name und Adresse des vereinbarten Treffpunkts'
                                   }
                                 />
-                                <span className="mt-2 block text-xs leading-5 text-white/40">
+                                <span className="mt-2 block text-xs leading-5 text-[var(--ink-subtle)]">
                                   Diese Angabe wird erst nach dem Login erfasst und nicht in der Rückkehr-Adresse gespeichert.
                                 </span>
                               </label>
@@ -861,7 +861,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
           </div>
 
           <aside className="rounded-2xl border border-white/10 bg-black/15 p-5 lg:sticky lg:top-28">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-white/40">
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--ink-subtle)]">
               Deine Auswahl
             </p>
             {selectedTutor ? (
@@ -881,20 +881,20 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                 </div>
               </div>
             ) : (
-              <p className="mt-4 border-b border-white/10 pb-4 text-sm text-white/40">Noch kein Mentor gewählt</p>
+              <p className="mt-4 border-b border-white/10 pb-4 text-sm text-[var(--ink-subtle)]">Noch kein Mentor gewählt</p>
             )}
 
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex items-start justify-between gap-4">
                 <dt className="text-white/45">Format</dt>
-                <dd className="text-right text-white/75">{selectedPackage?.name ?? '–'}</dd>
+                <dd className="text-right text-white/75">{selectedPackage?.name ?? 'Noch offen'}</dd>
               </div>
               <div className="flex items-start justify-between gap-4">
                 <dt className="text-white/45">Preis</dt>
                 <dd className="text-right font-medium text-white">
                   {selectedPackage
                     ? PRICE_FORMATTER.format(selectedPackage.priceCents / 100)
-                    : '–'}
+                    : 'Noch offen'}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-4">
@@ -907,12 +907,12 @@ export function BookingFlow({ initial }: BookingFlowProps) {
               <div className="flex items-start justify-between gap-4">
                 <dt className="text-white/45">Termin</dt>
                 <dd className="max-w-44 text-right text-white/75">
-                  {startsAt ? formatAppointment(startsAt) : '–'}
+                  {startsAt ? formatAppointment(startsAt) : 'Noch offen'}
                 </dd>
               </div>
             </dl>
 
-            <div className="mt-5 flex items-start gap-2 border-t border-white/10 pt-4 text-xs leading-5 text-white/40">
+            <div className="mt-5 flex items-start gap-2 border-t border-white/10 pt-4 text-xs leading-5 text-[var(--ink-subtle)]">
               <Clock3 className="mt-0.5 size-3.5 shrink-0" />
               Der Termin ist erst nach erfolgreicher Bestätigung im Kalender reserviert.
             </div>

@@ -5,7 +5,7 @@ import { isPackageId, isSubjectId, isTutorSlug } from '@/domain/catalog';
 export const metadata: Metadata = {
   title: 'Termin buchen | MSM',
   description:
-    'Wähle Mentor, Unterrichtsformat und einen live verfügbaren Termin für dein 1:1 Mentoring.',
+    'Wähle Mentor, Unterrichtsformat und einen live verfügbaren Termin für dein persönliches Mentoring.',
 };
 
 interface BookingPageProps {

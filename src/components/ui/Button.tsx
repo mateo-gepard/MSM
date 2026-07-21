@@ -17,7 +17,7 @@ export function Button({
 }: ButtonProps) {
   const variants = {
     primary: 'bg-[#6e56cf] text-white hover:bg-[#745bd1]',
-    secondary: 'border border-white/10 bg-[#181821] text-white hover:bg-[#20202b]',
+    secondary: 'border border-[var(--line)] bg-[var(--surface-raised)] text-white hover:bg-[var(--surface-accent)]',
     outline: 'border border-white/20 bg-transparent text-white hover:border-white/35 hover:bg-white/5',
   };
 

@@ -70,10 +70,10 @@ function buildTutorConversations(bookings: BookingDto[], tutorSlug: TutorSlug): 
 
 function TutorLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-8" role="status">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-8" role="status">
       <div className="text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#8067e8]" />
-        <p className="mt-4 text-sm text-[#b5b1bf]">Zugriff wird geprüft …</p>
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--action)]" />
+        <p className="mt-4 text-sm text-[var(--ink-muted)]">Zugriff wird geprüft …</p>
       </div>
     </div>
   );
@@ -183,8 +183,8 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
 
   if (loadError || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-5">
-        <div className="w-full max-w-lg rounded-2xl border border-amber-200/20 bg-[#121219] p-7 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-5">
+        <div className="w-full max-w-lg rounded-2xl border border-amber-200/20 bg-[var(--surface)] p-7 text-center">
           <ShieldCheck aria-hidden="true" className="mx-auto h-8 w-8 text-amber-200" />
           <h1 className="mt-4 text-xl font-bold text-white">Zugriff nicht möglich</h1>
           <p className="mt-2 text-sm leading-6 text-[#b5b1bf]">
@@ -200,7 +200,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
             <button
               type="button"
               onClick={() => setReloadKey((current) => current + 1)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#8067e8] px-4 text-sm font-bold text-white hover:bg-[#927cf0]"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white hover:bg-[var(--action-hover)]"
             >
               <RefreshCw aria-hidden="true" className="h-4 w-4" />
               Erneut prüfen
@@ -215,8 +215,8 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
   const isAdmin = data.profile.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-[#09090d]">
-      <header className="border-b border-white/10 bg-[#0d0d13]">
+    <div className="min-h-screen bg-[var(--canvas)]">
+      <header className="border-b border-[var(--line)] bg-[var(--canvas-soft)]">
         <div className="site-container flex flex-col gap-5 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -230,12 +230,15 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-bold text-white">{tutor.name}</h1>
                 {isAdmin ? (
-                  <span className="rounded-full border border-[#8067e8]/30 bg-[#8067e8]/10 px-2 py-0.5 text-xs font-bold text-[#d7ceff]">
+                  <span className="rounded-full border border-[var(--purple)]/30 bg-[var(--purple)]/10 px-2 py-0.5 text-xs font-bold text-[var(--purple-soft)]">
                     Admin-Ansicht
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1 text-sm text-[#8d8996]">Tutor-Dashboard · {upcomingCount} kommende Termine</p>
+              <p className="mt-1 text-sm text-[var(--ink-subtle)]">
+                Tutor-Dashboard mit{' '}
+                {upcomingCount === 1 ? 'einem kommenden Termin' : `${upcomingCount} kommenden Terminen`}
+              </p>
             </div>
           </div>
           <div className="sm:text-right">
@@ -259,12 +262,12 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
 
       <div className="site-container py-8 sm:py-12">
         <nav aria-label="Tutor-Dashboardbereiche" className="mb-8">
-          <div className="inline-flex w-full gap-1 rounded-xl border border-white/10 bg-[#0d0d13] p-1 sm:w-auto">
+          <div className="inline-flex w-full gap-1 rounded-xl border border-[var(--line)] bg-[var(--canvas-soft)] p-1 sm:w-auto">
             <button
               type="button"
               aria-current={activeSection === 'bookings' ? 'page' : undefined}
               onClick={() => setActiveSection('bookings')}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold text-[#b5b1bf] hover:text-white aria-[current=page]:bg-[#20202b] aria-[current=page]:text-white sm:flex-none"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold text-[var(--ink-muted)] hover:text-white aria-[current=page]:bg-[var(--surface-raised)] aria-[current=page]:text-white sm:flex-none"
             >
               <CalendarClock aria-hidden="true" className="h-4 w-4" />
               Termine
@@ -273,7 +276,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
               type="button"
               aria-current={activeSection === 'messages' ? 'page' : undefined}
               onClick={() => setActiveSection('messages')}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold text-[#b5b1bf] hover:text-white aria-[current=page]:bg-[#20202b] aria-[current=page]:text-white sm:flex-none"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold text-[var(--ink-muted)] hover:text-white aria-[current=page]:bg-[var(--surface-raised)] aria-[current=page]:text-white sm:flex-none"
             >
               <MessageCircle aria-hidden="true" className="h-4 w-4" />
               Nachrichten
@@ -299,7 +302,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
                 )
               }
             />
-            <aside className="mt-8 flex gap-4 rounded-2xl border border-white/10 bg-[#121219] p-5 sm:p-6">
+            <aside className="mt-8 flex gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 sm:p-6">
               <CalendarCog aria-hidden="true" className="mt-0.5 h-6 w-6 shrink-0 text-[#9b83ff]" />
               <div>
                 <h2 className="font-bold text-white">Verfügbarkeit verwalten</h2>
@@ -322,8 +325,8 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
               Jede Unterhaltung wird über eine zugewiesene Buchung sicher freigegeben.
             </p>
             {isAdmin ? (
-              <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-8 text-center">
-                <ShieldCheck aria-hidden="true" className="mx-auto h-8 w-8 text-[#8067e8]" />
+              <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-8 text-center">
+                <ShieldCheck aria-hidden="true" className="mx-auto h-8 w-8 text-[var(--purple-bright)]" />
                 <h3 className="mt-4 font-bold text-white">Nachrichten in der Admin-Ansicht deaktiviert</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b5b1bf]">
                   Administrator:innen können keine Unterhaltung im Namen eines Tutors öffnen.
