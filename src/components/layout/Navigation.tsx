@@ -1,143 +1,139 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { Button } from '../ui/Button';
-import { Menu, X, User } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Menu, X } from 'lucide-react';
+
+const navigationItems = [
+  { label: 'Tutoren', href: '/#tutoren' },
+  { label: 'So funktioniert’s', href: '/#ablauf' },
+  { label: 'Preise', href: '/#preise' },
+  { label: 'Über MSM', href: '/uber-uns' },
+] as const;
 
 export function Navigation() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const currentPath = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const firstLinkRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    if (!isOpen) return;
 
-  const navItems = [
-    { label: 'Start', href: '/' },
-    { label: 'Über uns', href: '/uber-uns' },
-    { label: 'Tutoren', href: '/#tutors' },
-    { label: 'Preise', href: '/#pricing' }
-  ];
+    firstLinkRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isOpen]);
+
+  const closeMenu = () => setIsOpen(false);
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'frosted-glass shadow-lg' : 'bg-transparent'
-      }`}
-    >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center group">
-            <div className="relative px-0 py-0 transition-opacity group-hover:opacity-80">
-              <Image
-                src="/MSM_Logo_Light.png"
-                alt="MSM Munich Scholar Mentors"
-                width={220}
-                height={50}
-                className="object-contain h-auto w-[180px] sm:w-[220px]"
-                priority
-              />
-            </div>
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#09090d]/95 backdrop-blur-md">
+      <nav className="site-container" aria-label="Hauptnavigation">
+        <div className="flex h-[4.75rem] items-center justify-between gap-6">
+          <Link
+            href="/"
+            className="relative h-10 w-[8.5rem] shrink-0 overflow-hidden rounded-sm"
+            aria-label="MSM Munich Scholar Mentors – Startseite"
+          >
+            <Image
+              src="/MSM_Logo_Light.png"
+              alt=""
+              width={2560}
+              height={1440}
+              className="absolute -left-5 -top-[1.9rem] h-[7.35rem] w-[13.1rem] max-w-none"
+              priority
+            />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-gray-300 hover:text-white transition-colors font-medium"
-              >
-                {item.label}
-              </Link>
-            ))}
-            {user ? (
-              <Link href="/dashboard">
-                <Button size="sm">
-                  <User className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button size="sm" variant="outline">Login</Button>
-                </Link>
-                <Link href="/matching">
-                  <Button size="sm">Erstgespräch</Button>
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-white p-2 -mr-2 rounded-lg hover:bg-white/10 active:bg-white/20 transition-colors"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden absolute left-0 right-0 top-full bg-primary-dark/95 backdrop-blur-xl border-t border-b border-white/10 shadow-2xl"
-          >
-            <div className="container mx-auto px-4 py-6 flex flex-col gap-2">
-              {navItems.map((item) => (
+          <div className="hidden items-center gap-1 lg:flex">
+            {navigationItems.map((item) => {
+              const isCurrent = item.href === currentPath;
+              return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-gray-300 hover:text-white active:text-accent transition-colors font-medium py-3 px-4 rounded-xl hover:bg-white/5 active:bg-white/10"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className="rounded-lg px-3.5 py-2.5 text-sm font-semibold text-[#b5b1bf] transition-colors hover:bg-white/5 hover:text-white aria-[current=page]:text-white"
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="hidden items-center gap-3 lg:flex">
+            <Link
+              href="/login"
+              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#d8d4df] transition-colors hover:text-white"
+            >
+              Anmelden
+            </Link>
+            <Link
+              href="/matching"
+              className="rounded-lg bg-[#6e56cf] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#745bd1]"
+            >
+              Tutor finden
+            </Link>
+          </div>
+
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 text-white transition-colors hover:bg-white/5 lg:hidden"
+            aria-expanded={isOpen}
+            aria-controls="mobile-navigation"
+            aria-label={isOpen ? 'Menü schließen' : 'Menü öffnen'}
+            onClick={() => setIsOpen((open) => !open)}
+          >
+            {isOpen ? <X aria-hidden="true" className="h-5 w-5" /> : <Menu aria-hidden="true" className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {isOpen ? (
+          <div id="mobile-navigation" className="border-t border-white/10 py-4 lg:hidden">
+            <div className="flex flex-col gap-1">
+              {navigationItems.map((item, index) => (
+                <Link
+                  ref={index === 0 ? firstLinkRef : undefined}
+                  key={item.href}
+                  href={item.href}
+                  aria-current={item.href === currentPath ? 'page' : undefined}
+                  className="rounded-lg px-3 py-3 text-base font-semibold text-[#d8d4df] hover:bg-white/5 hover:text-white aria-[current=page]:text-white"
+                  onClick={closeMenu}
                 >
                   {item.label}
                 </Link>
               ))}
-              <div className="border-t border-white/10 my-2" />
-              {user ? (
-                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button size="lg" className="w-full py-4">
-                    <User className="w-5 h-5 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button size="lg" variant="outline" className="w-full py-4">Login</Button>
-                  </Link>
-                  <Link href="/matching" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button size="lg" className="w-full py-4">Erstgespräch</Button>
-                  </Link>
-                </div>
-              )}
             </div>
-          </motion.div>
-        )}
-      </div>
-    </motion.nav>
+            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
+              <Link
+                href="/login"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-4 text-sm font-bold text-white"
+                onClick={closeMenu}
+              >
+                Anmelden
+              </Link>
+              <Link
+                href="/matching"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#6e56cf] px-4 text-sm font-bold text-white"
+                onClick={closeMenu}
+              >
+                Tutor finden
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </nav>
+    </header>
   );
 }

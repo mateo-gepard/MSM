@@ -1,66 +1,80 @@
-'use client';
+import Link from 'next/link';
+import { ArrowRight, Check } from 'lucide-react';
+import type { Package } from '@/domain/catalog';
 
-import { Package } from '@/types';
-import { FrostedCard } from '../ui/FrostedCard';
-import { Check, Sparkles } from 'lucide-react';
-import { Button } from '../ui/Button';
+const euro = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 
 interface PricingCardProps {
   package: Package;
-  onSelect?: (pkg: Package) => void;
 }
 
-export function PricingCard({ package: pkg, onSelect }: PricingCardProps) {
-  return (
-    <FrostedCard 
-      className={`relative h-full flex flex-col w-[280px] sm:w-auto ${pkg.popular ? 'ring-2 ring-accent sm:scale-105' : ''}`}
-      hover={!pkg.popular}
-    >
-      {pkg.popular && (
-        <div className="absolute -top-3 sm:-top-4 left-1/2 -translate-x-1/2 px-3 sm:px-4 py-1 bg-accent rounded-full flex items-center gap-1">
-          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-          <span className="text-xs sm:text-sm font-bold text-white">Beliebtestes</span>
-        </div>
-      )}
+export function PricingCard({ package: pkg }: PricingCardProps) {
+  const isTrial = pkg.priceCents === 0;
+  const rateCents = pkg.hourlyRateCents ?? pkg.priceCents;
+  const visibleFeatures = pkg.features.filter((feature) => !feature.includes('Ersparnis')).slice(0, 4);
+  const actionHref = isTrial
+    ? `/booking?package=${pkg.id}`
+    : `mailto:munichscholarmentors@gmail.com?subject=${encodeURIComponent(`${pkg.name} anfragen`)}`;
 
-      <div className="text-center mb-4 sm:mb-6">
-        <h3 className="text-xl sm:text-2xl font-bold text-white mb-1.5 sm:mb-2">{pkg.name}</h3>
-        <div className="flex flex-col items-center">
-          <div className="flex items-baseline justify-center gap-1">
-            <span className="text-3xl sm:text-4xl font-bold text-accent">
-              €{pkg.hourlyRate || pkg.price}
-            </span>
-            <span className="text-gray-400 text-sm sm:text-base">/ Stunde</span>
-          </div>
-          {pkg.sessions > 1 && (
-            <p className="text-xs text-gray-500 mt-1">
-              Gesamt: €{pkg.price}
-            </p>
-          )}
-        </div>
-        {pkg.savings && (
-          <p className="text-xs sm:text-sm text-green-400 mt-1.5 sm:mt-2 font-semibold">
-            Spare €{pkg.savings}!
-          </p>
-        )}
+  return (
+    <article
+      className={`flex h-full min-w-0 flex-col border p-6 sm:p-7 ${
+        pkg.popular ? 'border-[#6e56cf] bg-[#171522]' : 'border-white/10 bg-[#111118]'
+      }`}
+      aria-labelledby={`package-${pkg.id}`}
+    >
+      <div className="min-h-6">
+        {pkg.popular ? (
+          <span className="text-[0.68rem] font-bold uppercase tracking-[0.13em] text-[#b9aaff]">
+            Niedrigster Paketpreis pro Stunde
+          </span>
+        ) : null}
       </div>
 
-      <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 flex-grow">
-        {pkg.features.map((feature, idx) => (
-          <li key={idx} className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-300">
-            <Check className="w-4 h-4 sm:w-5 sm:h-5 text-accent flex-shrink-0 mt-0.5" />
+      <h3 id={`package-${pkg.id}`} className="mt-4 text-lg font-bold text-white">
+        {pkg.name}
+      </h3>
+
+      <div className="mt-5 border-b border-white/10 pb-6">
+        <div className="flex items-end gap-2">
+          <span className="font-display text-5xl font-medium leading-none tracking-[-0.04em] text-white">
+            {euro.format(rateCents / 100)}
+          </span>
+          <span className="pb-1 text-xs text-[#9d98a5]">{isTrial ? 'einmalig' : '/ 60 Min.'}</span>
+        </div>
+        <p className="mt-3 min-h-5 text-xs text-[#9d98a5]">
+          {pkg.sessions > 1 ? `${euro.format(pkg.priceCents / 100)} Gesamtpreis` : 'Eine Einheit à 60 Minuten'}
+        </p>
+        {pkg.savingsCents ? (
+          <p className="mt-1 text-xs font-bold text-[#8fc7a6]">{euro.format(pkg.savingsCents / 100)} Ersparnis</p>
+        ) : null}
+      </div>
+
+      <ul className="mt-6 flex-1 space-y-3">
+        {visibleFeatures.map((feature) => (
+          <li key={feature} className="flex items-start gap-2.5 text-sm leading-5 text-[#c1bdc8]">
+            <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-[#9b83ff]" />
             <span>{feature}</span>
           </li>
         ))}
       </ul>
 
-      <Button
-        variant={pkg.popular ? 'primary' : 'outline'}
-        className="w-full py-3 sm:py-2 active:scale-95 transition-transform"
-        onClick={() => onSelect?.(pkg)}
+      <Link
+        href={actionHref}
+        className={`mt-7 inline-flex min-h-11 items-center justify-between gap-3 rounded-lg px-4 text-sm font-bold transition-colors ${
+          pkg.popular
+            ? 'bg-[#6e56cf] text-white hover:bg-[#745bd1]'
+            : 'border border-white/20 text-white hover:border-white/35 hover:bg-white/5'
+        }`}
       >
-        {pkg.price === 0 ? 'Kostenlos testen' : 'Jetzt buchen'}
-      </Button>
-    </FrostedCard>
+        {isTrial ? 'Probestunde wählen' : 'Paket anfragen'}
+        <ArrowRight aria-hidden="true" className="h-4 w-4" />
+      </Link>
+    </article>
   );
 }

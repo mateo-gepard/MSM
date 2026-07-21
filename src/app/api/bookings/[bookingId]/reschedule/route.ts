@@ -1,65 +1,69 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { addYears, isAfter, isBefore } from 'date-fns';
+import { NextResponse } from 'next/server';
+import { bookingIdSchema, rescheduleBookingSchema } from '@/domain/booking-schemas';
+import { ApiError, apiErrorResponse, parseJsonRequest } from '@/lib/api/errors';
+import { requireAuthenticatedUser, requireBookingAccess } from '@/lib/auth/server';
+import { CalcomApiError, rescheduleCalcomBooking } from '@/lib/calcom/server';
 
 export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ bookingId: string }> }
+  request: Request,
+  context: { params: Promise<{ bookingId: string }> },
 ) {
   try {
-    const { bookingId } = await context.params;
-    const apiKey = process.env.CALCOM_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Cal.com API key not configured' },
-        { status: 500 }
-      );
+    const bookingId = bookingIdSchema.parse((await context.params).bookingId);
+    const input = rescheduleBookingSchema.parse(await parseJsonRequest(request));
+    const startsAt = new Date(input.startsAt);
+    if (isBefore(startsAt, new Date()) || isAfter(startsAt, addYears(new Date(), 1))) {
+      throw new ApiError(400, 'INVALID_START_TIME', 'Choose a future time within the next year.');
     }
 
-    const body = await request.json();
-    const { start, timeZone = 'Europe/Berlin' } = body;
-
-    if (!start) {
-      return NextResponse.json(
-        { error: 'Start time is required' },
-        { status: 400 }
-      );
+    const user = await requireAuthenticatedUser();
+    const { booking, service } = await requireBookingAccess(bookingId, user);
+    if (booking.status !== 'scheduled') {
+      throw new ApiError(409, 'BOOKING_NOT_RESCHEDULABLE', 'This booking cannot be rescheduled.');
     }
 
-    console.log(`[API] Rescheduling booking ${bookingId} to ${start}`);
-
-    // Cal.com API endpoint for rescheduling
-    const url = new URL(`https://api.cal.com/v1/bookings/${bookingId}`);
-    url.searchParams.append('apiKey', apiKey);
-    
-    const response = await fetch(url.toString(), {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        start,
-        timeZone,
-        rescheduled: true
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('[API] Cal.com reschedule failed:', data);
-      return NextResponse.json(
-        { error: data.message || 'Reschedule failed', details: data },
-        { status: response.status }
-      );
-    }
-
-    console.log('[API] Booking rescheduled successfully:', data);
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('[API] Reschedule booking error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+    const calcom = await rescheduleCalcomBooking(
+      booking.calcom_booking_uid,
+      input.startsAt,
+      input.reason,
     );
+    const { data, error } = await service
+      .from('bookings')
+      .update({
+        starts_at: new Date(calcom.startsAt).toISOString(),
+        time_zone: input.timeZone,
+        calcom_booking_uid: calcom.uid,
+      })
+      .eq('id', booking.id)
+      .eq('calcom_booking_uid', booking.calcom_booking_uid)
+      .eq('status', 'scheduled')
+      .select('id')
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new ApiError(502, 'DATABASE_SYNC_FAILED', 'The provider rescheduled the booking, but synchronization failed.');
+    }
+    return NextResponse.json({
+      data: {
+        booking: {
+          id: booking.id,
+          startsAt: new Date(calcom.startsAt).toISOString(),
+          status: 'scheduled' as const,
+        },
+      },
+    });
+  } catch (error) {
+    if (error instanceof CalcomApiError) {
+      const unavailable = error.status === 409 || error.status === 400;
+      return apiErrorResponse(
+        new ApiError(
+          unavailable ? 409 : 502,
+          unavailable ? 'SLOT_UNAVAILABLE' : 'SCHEDULING_PROVIDER_ERROR',
+          unavailable ? 'That time is no longer available.' : 'The scheduling provider could not reschedule the booking.',
+        ),
+      );
+    }
+    return apiErrorResponse(error);
   }
 }

@@ -1,126 +1,156 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { tutors } from '@/data/mockData';
-import { FrostedCard } from '@/components/ui/FrostedCard';
-import { Button } from '@/components/ui/Button';
-import { User, ArrowRight, UserCheck } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowRight, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { TUTOR_CATALOG } from '@/domain/catalog';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  readApiResponse,
+  type ProfileDto,
+  type ProfileResponse,
+} from '@/components/dashboard/contracts';
 
-export default function TutorLogin() {
+export default function TutorAccessPage() {
   const router = useRouter();
-  const [selectedTutor, setSelectedTutor] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<ProfileDto | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!selectedTutor) {
-      setError('Bitte wähle deinen Namen aus');
-      return;
-    }
+  useEffect(() => {
+    if (authLoading || !user) return;
+    const controller = new AbortController();
 
-    const tutor = tutors.find(t => t.name === selectedTutor);
-    if (!tutor) {
-      setError('Tutor nicht gefunden');
-      return;
-    }
+    const resolveTutorAccess = async () => {
+      setIsLoading(true);
+      setError(null);
 
-    // Redirect to tutor dashboard
-    router.push(`/tutor-dashboard/${tutor.id}`);
-  };
+      try {
+        const response = await fetch('/api/profile', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const payload = await readApiResponse<ProfileResponse>(
+          response,
+          'Dein Zugriffsprofil konnte nicht geladen werden.',
+        );
+        const nextProfile = payload.data.profile;
+
+        if (nextProfile.role === 'tutor' && nextProfile.tutorSlug) {
+          router.replace(`/tutor-dashboard/${nextProfile.tutorSlug}`);
+          return;
+        }
+
+        setProfile(nextProfile);
+      } catch (caughtError) {
+        if (caughtError instanceof DOMException && caughtError.name === 'AbortError') return;
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : 'Der Tutor-Zugang konnte nicht geprüft werden.',
+        );
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    };
+
+    void resolveTutorAccess();
+    return () => controller.abort();
+  }, [authLoading, router, user]);
+
+  if (authLoading || isLoading || (user && !profile && !error)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-6" role="status">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#8067e8]" />
+          <p className="mt-4 text-sm text-[#b5b1bf]">Tutor-Zugang wird geprüft …</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-5">
+        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#121219] p-7 text-center sm:p-8">
+          <UserRoundCheck aria-hidden="true" className="mx-auto h-9 w-9 text-[#9b83ff]" />
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Tutor-Zugang</h1>
+          <p className="mt-3 text-sm leading-6 text-[#b5b1bf]">
+            Melde dich mit deinem persönlichen Tutor-Konto an. Das zugeordnete Dashboard wird danach
+            automatisch geöffnet.
+          </p>
+          <Link
+            href="/login?redirect=%2Ftutor-login"
+            className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#8067e8] px-4 text-sm font-bold text-white transition-colors hover:bg-[#927cf0]"
+          >
+            Sicher anmelden
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          </Link>
+          <p className="mt-5 text-xs leading-5 text-[#8d8996]">
+            Es gibt keine manuelle Tutor-Auswahl. Der Zugriff folgt ausschließlich der serverseitigen
+            Kontozuordnung.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || profile?.role === 'parent' || (profile?.role === 'tutor' && !profile.tutorSlug)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#09090d] p-5">
+        <div className="w-full max-w-md rounded-2xl border border-amber-200/20 bg-[#121219] p-7 text-center sm:p-8">
+          <ShieldCheck aria-hidden="true" className="mx-auto h-9 w-9 text-amber-200" />
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Kein Tutor-Zugriff</h1>
+          <p className="mt-3 text-sm leading-6 text-[#b5b1bf]">
+            {error ||
+              (profile?.role === 'tutor'
+                ? 'Deinem Konto ist noch kein Tutorprofil zugeordnet. Bitte wende dich an die Administration.'
+                : 'Dieses Konto ist keinem Tutorprofil zugeordnet.')}
+          </p>
+          <Link
+            href="/dashboard"
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg border border-white/15 px-4 text-sm font-bold text-white transition-colors hover:bg-white/5"
+          >
+            Zum persönlichen Bereich
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <FrostedCard className="p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserCheck className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-[#09090d] px-5 py-12 sm:py-16">
+      <div className="mx-auto max-w-3xl">
+        <div className="rounded-2xl border border-white/10 bg-[#121219] p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <ShieldCheck aria-hidden="true" className="mt-0.5 h-7 w-7 shrink-0 text-[#9b83ff]" />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9b83ff]">Adminzugriff</p>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-white">Tutor-Dashboard öffnen</h1>
+              <p className="mt-2 text-sm leading-6 text-[#b5b1bf]">
+                Dein administratives Profil wurde geprüft. Wähle ein Dashboard über seinen stabilen
+                Tutor-Eintrag.
+              </p>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Tutor Dashboard</h1>
-            <p className="text-gray-400">
-              Wähle deinen Namen, um auf dein Dashboard zuzugreifen
-            </p>
           </div>
 
-          {/* Tutor Selection */}
-          <div className="space-y-4 mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Dein Name
-            </label>
-            
-            <div className="space-y-2">
-              {tutors.map((tutor) => (
-                <button
-                  key={tutor.id}
-                  onClick={() => {
-                    setSelectedTutor(tutor.name);
-                    setError('');
-                  }}
-                  className={`w-full p-4 rounded-xl text-left transition-all border-2 ${
-                    selectedTutor === tutor.name
-                      ? 'border-accent bg-accent/10'
-                      : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                  }`}
+          <ul className="mt-7 grid gap-3 sm:grid-cols-2">
+            {TUTOR_CATALOG.map((tutor) => (
+              <li key={tutor.slug}>
+                <Link
+                  href={`/tutor-dashboard/${tutor.slug}`}
+                  className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0d0d13] px-4 py-3 font-bold text-white transition-colors hover:border-white/25 hover:bg-[#181821]"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
-                      selectedTutor === tutor.name
-                        ? 'bg-accent text-white'
-                        : 'bg-secondary-dark text-gray-400'
-                    }`}>
-                      {tutor.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <div className={`font-semibold ${
-                        selectedTutor === tutor.name ? 'text-white' : 'text-gray-300'
-                      }`}>
-                        {tutor.name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {tutor.subjects.slice(0, 2).join(', ')}
-                        {tutor.subjects.length > 2 && ` +${tutor.subjects.length - 2}`}
-                      </div>
-                    </div>
-                    {selectedTutor === tutor.name && (
-                      <UserCheck className="w-5 h-5 text-accent" />
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Login Button */}
-          <Button
-            onClick={handleLogin}
-            disabled={!selectedTutor}
-            className="w-full flex items-center justify-center gap-2"
-          >
-            Zum Dashboard
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-
-          {/* Info */}
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-xs text-gray-500 text-center">
-              🔒 Dieses Dashboard ist nur für Tutoren zugänglich
-            </p>
-          </div>
-        </FrostedCard>
-      </motion.div>
+                  <span>{tutor.name}</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-[#9b83ff]" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }

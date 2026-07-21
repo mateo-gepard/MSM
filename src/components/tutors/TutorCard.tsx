@@ -1,99 +1,90 @@
-'use client';
-
-import { Tutor } from '@/types';
-import { FrostedCard } from '../ui/FrostedCard';
-import { Award, Clock } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowRight, Clock3, Languages } from 'lucide-react';
+import type { Tutor } from '@/domain/catalog';
+import { getSubjectName } from '@/domain/catalog';
 
 interface TutorCardProps {
   tutor: Tutor;
-  onSelect?: (tutor: Tutor) => void;
 }
 
-export function TutorCard({ tutor, onSelect }: TutorCardProps) {
-  const handleClick = () => {
-    if (onSelect) {
-      console.log('Tutor selected:', tutor.name, tutor.id);
-      onSelect(tutor);
-    }
-  };
+export function TutorCard({ tutor }: TutorCardProps) {
+  const titleId = `tutor-${tutor.slug}`;
 
   return (
-    <div 
-      className={onSelect ? 'cursor-pointer' : ''}
-      onClick={onSelect ? handleClick : undefined}
+    <article
+      className="group interactive-surface flex h-full min-w-0 flex-col overflow-hidden border border-white/10 bg-[#111118]"
+      aria-labelledby={titleId}
     >
-      <FrostedCard 
-        className={`group transition-all ${onSelect ? 'hover:shadow-xl hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]' : ''}`}
-      >
-        <div className="relative h-40 sm:h-48 w-full mb-3 sm:mb-4 rounded-xl overflow-hidden">
-          <Image
-            src={tutor.image}
-            alt={tutor.name}
-            fill
-            sizes="(max-width: 640px) 600px, (max-width: 1024px) 700px, 600px"
-            quality={95}
-            className="object-cover transition-opacity duration-500 group-hover:opacity-90"
-            priority={false}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/80 to-transparent" />
-          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-1">{tutor.name}</h3>
-            {/* ...no price per hour... */}
-          </div>
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#181821]">
+        <Image
+          src={tutor.image}
+          alt={`Foto von ${tutor.name}`}
+          fill
+          sizes="(max-width: 767px) calc(100vw - 2rem), (max-width: 1279px) 50vw, 33vw"
+          className="object-cover grayscale-[15%] transition-transform duration-300 group-hover:scale-[1.02]"
+        />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/65 to-transparent" aria-hidden="true" />
+        {tutor.onlineOnly ? (
+          <span className="absolute right-3 top-3 rounded-md border border-white/15 bg-black/70 px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-white">
+            Online
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <div className="flex flex-wrap gap-1.5">
+          {tutor.subjectIds.map((subjectId) => (
+            <span
+              key={subjectId}
+              className="rounded-md bg-[#252136] px-2.5 py-1 text-[0.7rem] font-bold text-[#d7ceff]"
+            >
+              {getSubjectName(subjectId)}
+            </span>
+          ))}
         </div>
 
-        <div className="space-y-2 sm:space-y-3">
-          {/* Subjects */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {tutor.subjects.map((subject) => (
-              <span
-                key={subject}
-                className="px-2 sm:px-3 py-0.5 sm:py-1 bg-accent/20 text-accent rounded-full text-[10px] sm:text-xs font-medium"
-              >
-                {subject}
-              </span>
+        <div className="mt-5">
+          <h3 id={titleId} className="text-xl font-bold tracking-[-0.025em] text-white">
+            {tutor.name}
+          </h3>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[#8f8a97]">{tutor.grade}</p>
+        </div>
+
+        <div className="mt-6 flex-1 border-t border-white/10 pt-5">
+          <h4 className="text-xs font-bold uppercase tracking-[0.13em] text-[#b8b3c0]">Aus dem Profil</h4>
+          <ul className="mt-3 space-y-2.5">
+            {tutor.achievements.slice(0, 2).map((achievement) => (
+              <li key={achievement} className="grid grid-cols-[0.45rem_1fr] gap-2.5 text-sm leading-6 text-[#c4c0ca]">
+                <span className="mt-[0.6rem] h-1 w-1 rounded-full bg-[#6e56cf]" aria-hidden="true" />
+                <span>{achievement}</span>
+              </li>
             ))}
-          </div>
-
-          {/* Bio */}
-          <p className="text-sm text-gray-300 line-clamp-2">{tutor.bio}</p>
-
-          {/* Qualitäten */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-accent text-xs">
-              <Award className="w-4 h-4" />
-              <span className="font-semibold">Qualitäten:</span>
-            </div>
-            <ul className="space-y-1">
-              {tutor.achievements.slice(0, 3).map((achievement, idx) => (
-                <li key={idx} className="text-xs text-gray-400 flex items-start gap-2">
-                  <span className="text-accent mt-1">•</span>
-                  <span className="line-clamp-1">{achievement}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Footer */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1 text-gray-400">
-              <span>{tutor.languages.join(', ')}</span>
-            </div>
-            <div className="flex items-center gap-1 text-gray-400">
-              <Clock className="w-3 h-3" />
-              <span>{tutor.availability}</span>
-            </div>
-          </div>
+          </ul>
         </div>
 
-        {onSelect && (
-          <div className="mt-3 sm:mt-4 w-full py-2.5 sm:py-2 bg-accent/10 text-accent rounded-lg text-sm font-semibold text-center active:bg-accent/20 transition-colors">
-            Klicken zum Auswählen ➜
+        <dl className="mt-6 space-y-2.5 border-t border-white/10 pt-5 text-xs text-[#9d98a5]">
+          <div className="flex items-start gap-2">
+            <Languages aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9b83ff]" />
+            <dt className="sr-only">Sprachen</dt>
+            <dd>{tutor.languages.join(', ')}</dd>
           </div>
-        )}
-      </FrostedCard>
-    </div>
+          <div className="flex items-start gap-2">
+            <Clock3 aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9b83ff]" />
+            <dt className="sr-only">Verfügbarkeit</dt>
+            <dd>{tutor.availability}</dd>
+          </div>
+        </dl>
+
+        <Link
+          href={`/booking?tutor=${tutor.slug}`}
+          className="mt-6 inline-flex min-h-11 items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm font-bold text-white hover:text-[#d7ceff]"
+          aria-label={`Termin mit ${tutor.name} auswählen`}
+        >
+          Termin auswählen
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
+      </div>
+    </article>
   );
 }
-

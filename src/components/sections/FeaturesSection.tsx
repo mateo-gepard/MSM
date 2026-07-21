@@ -1,79 +1,99 @@
-'use client';
+import { CalendarCheck, Focus, MessageSquareText, Route, Search, UserRoundCheck } from 'lucide-react';
 
-import { motion } from 'framer-motion';
-import { Target, Users, MessageCircle, Calendar, GraduationCap, Brain } from 'lucide-react';
+const steps = [
+  {
+    number: '01',
+    icon: Search,
+    title: 'Bedarf eingrenzen',
+    description: 'Fach, Ziel, Lernpräferenzen und zeitlichen Bedarf im Matching angeben.',
+  },
+  {
+    number: '02',
+    icon: UserRoundCheck,
+    title: 'Tutor auswählen',
+    description: 'Passende Profile vergleichen und eine konkrete Präferenz festhalten.',
+  },
+  {
+    number: '03',
+    icon: CalendarCheck,
+    title: 'Probestunde buchen',
+    description: 'In 60 Minuten kennenlernen, Ausgangslage klären und nächste Schritte besprechen.',
+  },
+] as const;
 
-const features = [
+const learningPrinciples = [
   {
-    icon: Target,
-    title: 'Personalisierte Lernpläne',
-    description: 'Jeder Schüler erhält einen individuellen Lernplan, abgestimmt auf seine Ziele und Bedürfnisse.'
+    icon: MessageSquareText,
+    title: 'Erklären statt vorsagen',
+    description: 'Gedankengänge werden nachvollziehbar gemacht, bis der Lösungsweg eigenständig sitzt.',
   },
   {
-    icon: GraduationCap,
-    title: 'Peer-to-Peer Mentoring',
-    description: 'Unsere Tutoren sind selbst Schüler oder Studenten und verstehen deine Herausforderungen aus eigener Erfahrung.'
+    icon: Focus,
+    title: 'Am echten Bedarf arbeiten',
+    description: 'Aktueller Schulstoff, konkrete Aufgaben und persönliche Lücken bestimmen die Stunde.',
   },
   {
-    icon: Users,
-    title: '1:1 Betreuung',
-    description: 'Intensive Einzelbetreuung für maximalen Lernerfolg – kein Gruppenunterricht.'
+    icon: Route,
+    title: 'Den nächsten Schritt kennen',
+    description: 'Jede Einheit ordnet ein, was schon verstanden ist und woran als Nächstes gearbeitet wird.',
   },
-  {
-    icon: Brain,
-    title: 'Tiefgehendes Verständnis',
-    description: 'Wir legen Wert darauf, dass Konzepte wirklich verstanden werden – nicht nur auswendig gelernt.'
-  },
-  {
-    icon: Calendar,
-    title: 'Flexible Buchung',
-    description: 'Online-Buchungssystem mit Echtzeit-Verfügbarkeit und einfacher Terminverwaltung.'
-  },
-  {
-    icon: MessageCircle,
-    title: 'Direkte Kommunikation',
-    description: 'Integriertes Messaging-System für schnellen Austausch mit deinem Tutor.'
-  }
-];
+] as const;
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-gradient-to-b from-primary-dark to-secondary-dark">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Warum MSM?
-          </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Mehr als nur Nachhilfe – ein ganzheitliches Lernkonzept
-          </p>
-        </motion.div>
+    <>
+      <section id="ablauf" className="site-section scroll-mt-24 bg-[#0d0d13]" aria-labelledby="ablauf-title">
+        <div className="site-container grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div>
+            <p className="eyebrow">So funktioniert’s</p>
+            <h2 id="ablauf-title" className="section-heading mt-6 text-white">
+              Von der Frage zum passenden Start.
+            </h2>
+            <p className="text-pretty mt-6 max-w-md text-base leading-7 text-[#aaa6b2]">
+              Das Matching schafft eine klare Grundlage. Ihr entscheidet anschließend selbst, welcher Tutor und welches Format passen.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {features.map((feature, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="frosted-glass rounded-2xl p-8 transition-colors duration-300"
-            >
-              <div className="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-4">
-                <feature.icon className="w-7 h-7 text-accent" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-              <p className="text-gray-400">{feature.description}</p>
-            </motion.div>
-          ))}
+          <ol className="border-t border-white/10">
+            {steps.map((step) => (
+              <li key={step.number} className="grid gap-4 border-b border-white/10 py-7 sm:grid-cols-[3rem_1fr_auto] sm:items-start sm:gap-6">
+                <span className="font-mono text-xs font-bold tracking-[0.16em] text-[#9b83ff]">{step.number}</span>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-[#aaa6b2]">{step.description}</p>
+                </div>
+                <step.icon aria-hidden="true" className="hidden h-5 w-5 text-[#77727f] sm:block" />
+              </li>
+            ))}
+          </ol>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section className="site-section section-rule" aria-labelledby="lernwert-title">
+        <div className="site-container">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-end">
+            <div>
+              <p className="eyebrow">Lernwert</p>
+              <h2 id="lernwert-title" className="section-heading mt-6 text-white">
+                Eine Stunde, die weiterführt.
+              </h2>
+            </div>
+            <p className="text-pretty max-w-xl text-base leading-7 text-[#aaa6b2] lg:justify-self-end">
+              1:1 Unterricht schafft Raum für Rückfragen, eigenes Tempo und konzentrierte Übung – ohne eine starre Gruppenagenda.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-px overflow-hidden border border-white/10 bg-white/10 md:grid-cols-3">
+            {learningPrinciples.map((principle) => (
+              <article key={principle.title} className="bg-[#111118] p-7 sm:p-8">
+                <principle.icon aria-hidden="true" className="h-5 w-5 text-[#9b83ff]" />
+                <h3 className="mt-8 text-lg font-bold text-white">{principle.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-[#aaa6b2]">{principle.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

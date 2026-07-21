@@ -1,193 +1,73 @@
-# Elite Tutoring Munich - Setup Guide
+# MSM setup and release guide
 
-## 🎯 Quick Start
+The application uses Supabase for authentication and persistence, Cal.com v2 for scheduling, and Sendbird for parent–tutor chat. There is no mock-success fallback: missing server configuration causes protected operations to fail closed.
 
-### 1. Installation
+## Local setup
+
+Requirements: Node.js 20.9 or newer and npm.
+
 ```bash
 npm install
-```
-
-### 2. Development Server starten
-```bash
+cp .env.example .env.local
 npm run dev
 ```
 
-Öffne [http://localhost:3000](http://localhost:3000) in deinem Browser.
+Open `http://localhost:3000`. Keep `.env.local` out of source control.
 
----
+## Environment contract
 
-## 📝 Nächste Schritte
+Copy the names from `.env.example` and replace every placeholder:
 
-### Phase 1: Website läuft ✅
-- [x] Landing Page mit Hero, Features, Tutoren, Pricing
-- [x] Matching Wizard (5-Schritte-System)
-- [x] Booking System (5 Schritte)
-- [x] Parent Dashboard (UI fertig)
-- [x] Navigation & Footer
-- [x] Responsive Design
-- [x] Frosted Glass Effekte
-- [x] Framer Motion Animationen
+- `NEXT_PUBLIC_SITE_URL`: canonical site origin; use `http://localhost:3000` locally.
+- `NEXT_PUBLIC_SUPABASE_URL`: public Supabase project URL.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: public Supabase anon key.
+- `SUPABASE_SERVICE_ROLE_KEY`: server-only Supabase service-role key.
+- `CALCOM_API_KEY`: server-only Cal.com API key.
+- `CALCOM_EVENT_TYPE_IDS_JSON`: JSON object mapping every canonical tutor slug to a Cal.com event-type ID.
+- `CALCOM_DEFAULT_EVENT_TYPE_ID`: optional fallback only when all tutors deliberately share one event type.
+- `SENDBIRD_APP_ID`: Sendbird application ID. It is returned to authenticated chat clients by the token endpoint.
+- `SENDBIRD_API_TOKEN`: server-only Sendbird Platform API token.
 
-### Phase 2: API Integration (To-Do)
-- [ ] **Supabase Auth** einrichten
-  - Projekt erstellen auf supabase.com
-  - Environment Variables hinzufügen
-  - Auth Hooks implementieren
-  - Login/Signup Pages erstellen
-  
-- [ ] **Cal.com** Integration
-  - Account erstellen
-  - Event Types konfigurieren
-  - API anbinden
-  - Webhooks einrichten
-  
-- [ ] **Sendbird Chat** Integration
-  - App erstellen
-  - SDK einbinden
-  - Chat UI im Dashboard implementieren
-  - Parent-Tutor Channels erstellen
+Do not create `NEXT_PUBLIC_` variants of server secrets. If a credential has ever been committed, rotate it at the provider; editing the current file does not remove it from Git history.
 
-### Phase 3: Zahlungen & E-Mails (Optional)
-- [ ] **Stripe** für Payments
-- [ ] **Resend** für E-Mail-Benachrichtigungen
+## Supabase
 
----
+Apply migrations from `supabase/migrations` in filename order using the Supabase CLI or dashboard SQL editor. Read `supabase/README.md` before applying the foundation migration to an existing database: incompatible legacy tables are preserved for an audited import rather than converted heuristically.
 
-## 🔐 Environment Variables Setup
+After migration:
 
-1. Kopiere `.env.local.example` zu `.env.local`:
+1. Confirm the five canonical tutor rows and four package rows exist.
+2. Create user accounts through Supabase Auth.
+3. Assign tutor accounts by setting `profiles.role = 'tutor'` and the corresponding `profiles.tutor_id` in a trusted admin workflow.
+4. Assign administrators by setting `profiles.role = 'admin'` in a trusted admin workflow.
+5. Never mark a package purchase as payment-verified without evidence from the payment provider.
+
+The repository does not yet include checkout or payment-webhook ingestion. Paid package credits therefore need a separate, trusted provisioning flow before paid booking can be released.
+
+## Cal.com
+
+Create one active, 60-minute event type per tutor (or one deliberately shared event type), configure its host and availability, then put the numeric IDs in `CALCOM_EVENT_TYPE_IDS_JSON`. The application calls Cal.com v2 only from server routes; API keys and provider booking UIDs are never accepted from or returned to the browser.
+
+Verify slot lookup, booking, rescheduling, and cancellation in a staging Cal.com account. A webhook/reconciliation job is still recommended before production so provider/database drift can be detected after partial outages.
+
+## Sendbird
+
+Create a Sendbird application and set the two server environment variables. The server creates opaque user IDs from authenticated Supabase UUIDs and issues short-lived session tokens. Parent channel creation is allowed only after a booking with the selected tutor exists; tutors must reference an assigned booking.
+
+## Release checks
+
 ```bash
-cp .env.local.example .env.local
+npm run check
 ```
 
-2. Fülle die Werte aus (siehe `API_INTEGRATION.md` für Details):
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+This runs lint, generated-route type checking, unit tests, and a production build. Run it with placeholders or staging credentials; the build itself does not call external providers.
 
-# Cal.com
-NEXT_PUBLIC_CALCOM_API_KEY=your_key
-CALCOM_API_KEY=your_key
+Before production, also verify:
 
-# Sendbird
-NEXT_PUBLIC_SENDBIRD_APP_ID=your_app_id
-SENDBIRD_API_TOKEN=your_token
-```
-
----
-
-## 🎨 Design System
-
-### Farben
-- **Primary Dark**: `#081525` - Haupthintergrund
-- **Secondary Dark**: `#102A43` - Cards & Sections
-- **Accent Purple**: `#6E56CF` - CTAs & Highlights
-
-### CSS Utilities
-```css
-.frosted-glass     /* Frosted Glass Effekt */
-.liquid-glass      /* Liquid Glass Effekt */
-.glow-accent       /* Leuchtender Schatten */
-.animate-float     /* Schwebende Animation */
-```
-
-### Komponenten
-- `<Button>` - Mit variants: primary, secondary, outline
-- `<FrostedCard>` - Card mit Glasmorphismus
-- `<TutorCard>` - Tutor-Präsentation
-- `<PricingCard>` - Pricing-Pakete
-
----
-
-## 📁 Wichtige Dateien
-
-### Pages
-- `/` - Landing Page
-- `/matching` - Matching Wizard
-- `/booking` - Booking System
-- `/dashboard` - Parent Dashboard
-
-### Komponenten
-- `src/components/layout/` - Navigation & Footer
-- `src/components/sections/` - Landing Page Sections
-- `src/components/tutors/` - Tutor Components
-- `src/components/pricing/` - Pricing Components
-- `src/components/ui/` - Reusable UI Components
-
-### Daten & Config
-- `src/data/mockData.ts` - Tutoren & Pakete
-- `src/types/index.ts` - TypeScript Interfaces
-- `src/lib/` - Utilities & API Clients
-
----
-
-## 🚀 Deployment
-
-### Vercel (Empfohlen)
-```bash
-# 1. Push zu GitHub
-git add .
-git commit -m "Initial commit"
-git push origin main
-
-# 2. Vercel Dashboard
-# - New Project
-# - Import GitHub Repo
-# - Environment Variables hinzufügen
-# - Deploy
-```
-
-### Eigener Server
-```bash
-npm run build
-npm run start
-```
-
----
-
-## 📚 Dokumentation
-
-- **README.md** - Haupt-Dokumentation
-- **API_INTEGRATION.md** - Detaillierte API-Integration
-- **.github/copilot-instructions.md** - Copilot Context
-
----
-
-## 🐛 Troubleshooting
-
-### Bilder werden nicht angezeigt
-✅ Gelöst: Wir verwenden Unsplash CDN URLs
-
-### Tailwind CSS funktioniert nicht
-```bash
-npm run dev
-# Neustart des Dev-Servers
-```
-
-### TypeScript Errors
-```bash
-npm run build
-# Zeigt alle Compile-Errors
-```
-
----
-
-## 💡 Tipps
-
-1. **Entwicklung**: Nutze React DevTools & Framer Motion DevTools
-2. **Testing**: Teste auf verschiedenen Bildschirmgrößen
-3. **Performance**: Nutze Next.js Image Optimization
-4. **SEO**: Metadata in jedem `page.tsx` definieren
-
----
-
-## 📞 Support
-
-Für Fragen oder Issues:
-- Erstelle ein GitHub Issue
-- Kontaktiere das Development Team
-
----
-
-**Happy Coding! 🎉**
+- the database migration was applied and RLS is enabled;
+- every tutor slug resolves to the intended Cal.com event type;
+- Supabase auth callback URLs match the deployed site origin;
+- Sendbird token and channel flows work for a parent and assigned tutor;
+- provider secrets are available only to server runtimes;
+- cancellation restores exactly one paid credit and repeated cancellation is idempotent at the database boundary;
+- observability alerts cover Cal.com/database synchronization failures.

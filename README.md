@@ -1,236 +1,76 @@
-# 🎓 Elite Tutoring Munich
+# MSM tutoring platform
 
-Eine Premium-Nachhilfe-Plattform für München, die Schüler und Studenten mit überqualifizierten Tutoren verbindet – Olympiade-Sieger, Wettbewerbs-Gewinner und Fach-Experten.
+MSM is a responsive German tutoring marketplace built with Next.js 16, React 19, TypeScript, and Tailwind CSS. It includes tutor discovery and matching, live Cal.com availability and booking, Supabase authentication and dashboards, and authorized one-to-one Sendbird chat.
 
-![Next.js](https://img.shields.io/badge/Next.js-16.0-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-11.0-ff0055)
+## Architecture
 
-## ✨ Features
+- `src/domain/catalog.ts` is the canonical source for public tutor, subject, and package identifiers.
+- Supabase Auth uses request-scoped SSR clients and cookie refresh in `src/proxy.ts`.
+- Protected Next.js route handlers own booking, entitlement, profile, and chat authorization.
+- Cal.com v2 and Sendbird Platform API credentials are server-only.
+- Supabase row-level security limits direct reads; privileged booking and credit mutations are transactional service-role RPCs.
+- Client dashboards consume redacted DTOs rather than querying sensitive tables or provider identifiers directly.
 
-### 🏠 Landing Page
-- **Hero Section** mit animierten Hintergrund-Elementen und Parallax-Effekten
-- **Features Section** mit Icons und Frosted Glass Cards
-- **Tutoren-Galerie** mit 6 Elite-Tutoren inkl. Achievements und Bewertungen
-- **Pricing Section** mit 5 verschiedenen Paketen (Probestunde, Einzelstunde, 5er/10er-Paket, Olympiaden-Vorbereitung)
-- Responsive Design mit modernen UI-Effekten
+The application deliberately has no fake-success or local-storage persistence fallback. Missing provider configuration produces an explicit error.
 
-### 🧭 Matching Wizard (5 Schritte)
-1. **Fächerauswahl** - Mehrfachauswahl aus 10 Fächern
-2. **Ziel** - Olympiade, Notenverbesserung, Begeisterung, etc.
-3. **Lernstil** - Visuell, Auditiv, Praktisch, Lesen/Schreiben
-4. **Zeitrahmen** - Sofort, Bald, Flexibel
-5. **Sprache** - Deutsch, Englisch, Spanisch, Französisch
+## Local development
 
-### 📅 Booking System
-- **Schritt 1:** Fach & Tutor auswählen
-- **Schritt 2:** Service/Paket wählen
-- **Schritt 3:** Datum & Uhrzeit
-- **Schritt 4:** Online oder Vor Ort
-- **Schritt 5:** Kontaktdaten
-- Integration mit Matching-Daten (überspringt Schritte wenn vom Wizard kommend)
-- Probestunde nur für Neukunden
-
-### 📊 Parent Dashboard
-- **Buchungen-Tab**: Übersicht aller Buchungen mit Status (Geplant, Abgeschlossen, Storniert)
-- **Nachrichten-Tab**: Kommunikation mit Tutoren (Sendbird-Ready)
-- **Kalender-Tab**: Zeitliche Übersicht aller Termine (Cal.com-Ready)
-- **Profil-Tab**: Account-Verwaltung mit Supabase Auth
-
-## 🎨 Design System
-
-### Farbpalette
-```css
---primary-dark: #081525    /* Haupthintergrund */
---secondary-dark: #102A43  /* Sekundärer Hintergrund */
---accent-purple: #6E56CF   /* Akzentfarbe für CTAs */
-```
-
-### UI-Effekte
-- **Frosted Glass**: `backdrop-blur` mit Transparenz
-- **Liquid Glass**: Erweiterte Glasmorphismus-Effekte
-- **Hover-to-Enlarge**: Scale-Transform bei Hover
-- **Parallax Scrolling**: Animated Background Elements
-- **Smooth Animations**: Framer Motion für alle Übergänge
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Animations**: Framer Motion
-- **Icons**: lucide-react
-- **Image Handling**: Next/Image mit Unsplash
-
-### Backend & Services (Ready to Integrate)
-- **Authentication**: Supabase Auth
-  - E-Mail/Passwort + Magic Link
-  - Account-Erstellung nach erster Buchung
-  
-- **Booking**: Cal.com API
-  - Event Types für verschiedene Produkte
-  - Tutor-Verfügbarkeiten
-  - Webhooks für Dashboard-Integration
-  
-- **Messaging**: Sendbird Chat API
-  - 1:1 Chat zwischen Eltern und Tutoren
-  - Echtzeit-Benachrichtigungen
-  
-- **Payments**: Stripe (optional)
-  - Sichere Zahlungsabwicklung
-  - Paket- und Einzelbuchungen
-
-## 🚀 Getting Started
-
-### Installation
+Node.js 20.9 or newer is required.
 
 ```bash
-# Repository klonen
-git clone <your-repo-url>
-cd romaverbessert
-
-# Dependencies installieren
 npm install
-
-# Development Server starten
+cp .env.example .env.local
 npm run dev
 ```
 
-Die App läuft auf [http://localhost:3000](http://localhost:3000)
+Open `http://localhost:3000`. The public UI and production build can render with placeholder configuration, but authentication, booking, and chat require real staging services.
 
-### Umgebungsvariablen
+## Configuration
 
-Erstelle eine `.env.local` Datei (siehe `.env.local.example`):
+`.env.example` is the authoritative environment-variable template. Server secrets must never use the `NEXT_PUBLIC_` prefix or be committed.
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+Before exercising protected flows:
 
-# Cal.com
-NEXT_PUBLIC_CALCOM_API_KEY=your_calcom_api_key
-CALCOM_API_KEY=your_calcom_api_key
+1. Apply `supabase/migrations` and provision parent, tutor, or admin profiles.
+2. Configure a live Cal.com event type and availability for each canonical tutor slug.
+3. Configure the Sendbird application and Platform API token.
+4. Add the deployed `/auth/callback` URL to Supabase Auth redirect URLs.
 
-# Sendbird
-NEXT_PUBLIC_SENDBIRD_APP_ID=your_sendbird_app_id
-SENDBIRD_API_TOKEN=your_sendbird_api_token
-```
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for the release checklist and [API_INTEGRATION.md](API_INTEGRATION.md) for route contracts. Existing-database migration notes are in [supabase/README.md](supabase/README.md).
 
-## 📁 Projektstruktur
-
-```
-romaverbessert/
-├── src/
-│   ├── app/
-│   │   ├── page.tsx              # Landing Page
-│   │   ├── layout.tsx            # Root Layout mit Navigation
-│   │   ├── matching/
-│   │   │   └── page.tsx          # Matching Wizard
-│   │   ├── booking/
-│   │   │   └── page.tsx          # Booking System
-│   │   └── dashboard/
-│   │       └── page.tsx          # Parent Dashboard
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Navigation.tsx    # Haupt-Navigation
-│   │   │   └── Footer.tsx        # Footer
-│   │   ├── sections/
-│   │   │   ├── Hero.tsx          # Hero Section
-│   │   │   ├── FeaturesSection.tsx
-│   │   │   ├── TutorsSection.tsx
-│   │   │   └── PricingSection.tsx
-│   │   ├── tutors/
-│   │   │   └── TutorCard.tsx     # Tutor Card Komponente
-│   │   ├── pricing/
-│   │   │   └── PricingCard.tsx   # Pricing Card
-│   │   └── ui/
-│   │       ├── Button.tsx        # Wiederverwendbare Button
-│   │       └── FrostedCard.tsx   # Frosted Glass Card
-│   ├── data/
-│   │   └── mockData.ts           # Mock-Daten für Tutoren & Pakete
-│   ├── lib/
-│   │   ├── supabase.ts           # Supabase Client
-│   │   └── utils.ts              # Utility Functions
-│   └── types/
-│       └── index.ts              # TypeScript Interfaces
-├── .github/
-│   └── copilot-instructions.md   # Copilot Context
-└── .env.local.example            # Umgebungsvariablen Template
-```
-
-## 🔧 API Integration Guide
-
-### Supabase Auth Setup
-1. Projekt erstellen auf [supabase.com](https://supabase.com)
-2. Projekt-URL und Anon Key in `.env.local` einfügen
-3. Authentication aktivieren (E-Mail/Passwort)
-4. Optional: Magic Link für passwortlose Anmeldung
-
-### Cal.com Integration
-1. Account erstellen auf [cal.com](https://cal.com)
-2. API Key generieren
-3. Event Types erstellen:
-   - Probestunde (kostenlos)
-   - Einzelstunde
-   - 5er-Paket
-   - 10er-Paket
-   - Olympiaden-Vorbereitung
-4. Webhooks für Buchungsbestätigungen einrichten
-
-### Sendbird Chat
-1. App erstellen auf [sendbird.com](https://sendbird.com)
-2. App ID und API Token in `.env.local`
-3. Chat UI in Dashboard integrieren
-4. User-to-User Messaging aktivieren
-
-## 🎯 Roadmap
-
-- [x] Landing Page mit Hero, Features, Tutoren, Pricing
-- [x] Matching Wizard (5 Schritte)
-- [x] Booking System (5 Schritte)
-- [x] Parent Dashboard (Buchungen, Nachrichten, Kalender, Profil)
-- [ ] Supabase Auth vollständig integrieren
-- [ ] Cal.com API anbinden
-- [ ] Sendbird Chat implementieren
-- [ ] Stripe Payments integrieren
-- [ ] Tutor-Dashboard erstellen
-- [ ] E-Mail-Benachrichtigungen (z.B. via Resend)
-- [ ] Review-System für Tutoren
-- [ ] Admin-Panel
-
-## 🎨 Design Principles
-
-- **Professional but Approachable**: Hochwertig aber nicht einschüchternd
-- **Quality over Quantity**: Fokus auf wenige, aber exzellente Tutoren
-- **No Emojis in Production**: Icons statt Emojis (außer in UI-Beispielen)
-- **Frosted Glass**: Moderne Glasmorphismus-Effekte
-- **Smooth Animations**: Alle Übergänge mit Framer Motion
-- **Mobile First**: Responsive Design für alle Geräte
-
-## 📝 Scripts
+## Quality checks
 
 ```bash
-# Development
-npm run dev          # Start dev server
-
-# Production
-npm run build        # Build für Production
-npm run start        # Start production server
-
-# Code Quality
-npm run lint         # ESLint prüfen
+npm run check
 ```
 
-## 🤝 Contributing
+The check runs ESLint, Next.js route type generation plus TypeScript, Vitest, and a production build. Focused commands are also available:
 
-Dieses Projekt ist für Elite Tutoring Munich entwickelt. Für Änderungen oder Erweiterungen, bitte ein Issue erstellen.
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
 
-## 📄 License
+## Security model
 
-Proprietary - Alle Rechte vorbehalten © 2025 Elite Tutoring Munich
+- Clients submit stable catalog IDs, never prices, provider booking IDs, user IDs, or Cal.com event-type IDs.
+- Booking creation is limited to authenticated parent profiles and validates trial or paid-credit eligibility both before the provider call and inside a locking database transaction.
+- Cancellation and rescheduling resolve the Cal.com UID from an authorized internal booking UUID.
+- Paid cancellation restores one credit exactly once at the database boundary.
+- Parent chat requires a booking relationship; tutor chat requires the tutor mapping and an assigned booking.
+- Safe redirect handling accepts only local application paths.
 
----
+Rotate any secret that has appeared in Git history. Removing a value from the current tree is not credential revocation and does not rewrite repository history.
 
-**Built with ❤️ in Munich**
+## Known release dependencies
+
+- Paid packages require a payment checkout/webhook provisioning flow. The application will not treat an unverified purchase as credit.
+- Cal.com webhook ingestion or a reconciliation job is recommended to detect provider/database drift after partial outages.
+- Apply and validate the migration against a staging copy of any existing Supabase database before production import.
+- Add production rate limiting, alerting, and provider-failure monitoring at the deployment edge.
+
+## License
+
+Proprietary. All rights reserved.

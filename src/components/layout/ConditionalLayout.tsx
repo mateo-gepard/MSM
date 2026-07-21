@@ -1,24 +1,33 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Navigation } from './Navigation';
-import { Footer } from './Footer';
 
-export function ConditionalLayout({ children }: { children: React.ReactNode }) {
+interface ConditionalLayoutProps {
+  children: React.ReactNode;
+  navigation: React.ReactNode;
+  footer: React.ReactNode;
+}
+
+export function ConditionalLayout({ children, navigation, footer }: ConditionalLayoutProps) {
   const pathname = usePathname();
-  
-  // Hide navigation and footer on tutor dashboard and tutor login pages
-  const isTutorPage = pathname?.startsWith('/tutor-dashboard') || pathname?.startsWith('/tutor-login');
-  
-  if (isTutorPage) {
-    return <div className="min-h-screen bg-primary-dark">{children}</div>;
+  const usesStandaloneLayout =
+    pathname.startsWith('/tutor-dashboard') || pathname.startsWith('/tutor-login');
+
+  if (usesStandaloneLayout) {
+    return (
+      <main id="main-content" className="min-h-screen bg-primary-dark">
+        {children}
+      </main>
+    );
   }
-  
+
   return (
-    <div className="min-h-screen bg-primary-dark">
-      <Navigation />
-      <main className="bg-primary-dark">{children}</main>
-      <Footer />
+    <div className="flex min-h-screen flex-col bg-primary-dark">
+      {navigation}
+      <main id="main-content" className="flex-1 bg-primary-dark">
+        {children}
+      </main>
+      {footer}
     </div>
   );
 }

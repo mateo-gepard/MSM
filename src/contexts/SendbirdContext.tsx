@@ -1,107 +1,161 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { initSendbird, disconnectSendbird } from '@/lib/sendbird';
-import { useAuth } from '@/hooks/useAuth';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import SendbirdChat from '@sendbird/chat';
+import { GroupChannelModule } from '@sendbird/chat/groupChannel';
 
-interface SendbirdContextType {
-  isConnected: boolean;
-  isConnecting: boolean;
-  error: string | null;
+function createChatClient(appId: string) {
+  return SendbirdChat.init({
+    appId,
+    modules: [new GroupChannelModule()],
+  });
 }
 
-const SendbirdContext = createContext<SendbirdContextType | undefined>(undefined);
+export type SendbirdClient = ReturnType<typeof createChatClient>;
+
+type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error';
+
+interface TokenResponse {
+  data: {
+    appId: string;
+    userId: string;
+    token: string;
+    expiresAt: number;
+  };
+}
+
+interface SendbirdContextValue {
+  client: SendbirdClient | null;
+  userId: string | null;
+  status: ConnectionStatus;
+  error: string | null;
+  connect: () => Promise<SendbirdClient>;
+}
+
+const SendbirdContext = createContext<SendbirdContextValue | null>(null);
+
+function apiErrorMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object' || !('error' in payload)) return null;
+  const error = payload.error;
+  if (!error || typeof error !== 'object' || !('message' in error)) return null;
+  return typeof error.message === 'string' ? error.message : null;
+}
+
+async function requestSession(): Promise<TokenResponse['data']> {
+  const response = await fetch('/api/chat/token', {
+    method: 'POST',
+    cache: 'no-store',
+  });
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error('Der Nachrichtenservice antwortet gerade nicht.');
+  }
+
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(payload) || 'Der Nachrichtenservice ist gerade nicht verfügbar.');
+  }
+
+  const session = (payload as Partial<TokenResponse>).data;
+  if (
+    !session ||
+    typeof session.appId !== 'string' ||
+    typeof session.userId !== 'string' ||
+    typeof session.token !== 'string'
+  ) {
+    throw new Error('Die sichere Chat-Sitzung konnte nicht gestartet werden.');
+  }
+
+  return session;
+}
 
 export function SendbirdProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [client, setClient] = useState<SendbirdClient | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [status, setStatus] = useState<ConnectionStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [connectedUserId, setConnectedUserId] = useState<string | null>(null);
+  const clientRef = useRef<SendbirdClient | null>(null);
+  const pendingConnection = useRef<Promise<SendbirdClient> | null>(null);
+  const isMounted = useRef(true);
 
-  useEffect(() => {
-    // Only connect if user is logged in and Sendbird is configured
-    if (!user) {
-      console.log('[SendbirdContext] No user, skipping connection');
-      setIsConnected(false);
-      setConnectedUserId(null);
-      return;
-    }
+  const connect = useCallback(async (): Promise<SendbirdClient> => {
+    if (clientRef.current?.currentUser) return clientRef.current;
+    if (pendingConnection.current) return pendingConnection.current;
 
-    // Don't reconnect if already connected to the same user
-    if (isConnected && connectedUserId === user.id) {
-      console.log('[SendbirdContext] Already connected to this user, skipping...');
-      return;
-    }
+    setStatus('connecting');
+    setError(null);
 
-    // Don't connect if already connecting
-    if (isConnecting) {
-      console.log('[SendbirdContext] Connection in progress, skipping...');
-      return;
-    }
-
-    const appId = process.env.NEXT_PUBLIC_SENDBIRD_APP_ID;
-    console.log('[SendbirdContext] Checking Sendbird App ID:', appId ? `Found: ${appId}` : 'NOT FOUND');
-    
-    if (!appId) {
-      const errorMsg = 'Sendbird App ID not configured. Check NEXT_PUBLIC_SENDBIRD_APP_ID in .env.local';
-      console.error('[SendbirdContext]', errorMsg);
-      setError(errorMsg);
-      return;
-    }
-
-    const connectToSendbird = async () => {
-      console.log('[SendbirdContext] Starting connection for user:', user.id);
-      setIsConnecting(true);
-      setError(null);
+    const connection = (async () => {
+      const session = await requestSession();
+      const nextClient = createChatClient(session.appId);
 
       try {
-        const nickname = user.user_metadata?.full_name || user.email || 'User';
-        console.log('[SendbirdContext] Connecting with userId:', user.id, 'nickname:', nickname);
-        
-        await initSendbird(user.id, nickname);
-        
-        console.log('[SendbirdContext] ✅ Connected successfully!');
-        setIsConnected(true);
-        setConnectedUserId(user.id);
-      } catch (err) {
-        console.error('[SendbirdContext] ❌ Connection failed:', err);
-        setError(err instanceof Error ? err.message : 'Failed to connect to chat service');
-        setIsConnected(false);
-        setConnectedUserId(null);
-      } finally {
-        setIsConnecting(false);
+        await nextClient.connect(session.userId, session.token);
+      } catch {
+        await nextClient.disconnect().catch(() => undefined);
+        throw new Error('Die sichere Verbindung konnte nicht hergestellt werden.');
       }
-    };
 
-    connectToSendbird();
+      if (!isMounted.current) {
+        await nextClient.disconnect().catch(() => undefined);
+        throw new Error('Die Chat-Ansicht wurde geschlossen.');
+      }
 
-    // Only cleanup on unmount, not on every re-render
-    return () => {
-      // Only disconnect if component is actually unmounting
-      // This prevents disconnect on every re-render
-    };
-  }, [user?.id]); // Use user.id instead of user object to prevent unnecessary re-renders
+      clientRef.current = nextClient;
+      setClient(nextClient);
+      setUserId(session.userId);
+      setStatus('connected');
+      return nextClient;
+    })();
 
-  // Separate cleanup effect that only runs on unmount
+    pendingConnection.current = connection;
+
+    try {
+      return await connection;
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Der Nachrichtenservice ist gerade nicht verfügbar.';
+      if (isMounted.current) {
+        setStatus('error');
+        setError(message);
+      }
+      throw caughtError;
+    } finally {
+      pendingConnection.current = null;
+    }
+  }, []);
+
   useEffect(() => {
+    isMounted.current = true;
     return () => {
-      console.log('[SendbirdContext] Component unmounting, disconnecting...');
-      disconnectSendbird();
+      isMounted.current = false;
+      const activeClient = clientRef.current;
+      clientRef.current = null;
+      if (activeClient) void activeClient.disconnect();
     };
   }, []);
 
   return (
-    <SendbirdContext.Provider value={{ isConnected, isConnecting, error }}>
+    <SendbirdContext.Provider value={{ client, userId, status, error, connect }}>
       {children}
     </SendbirdContext.Provider>
   );
 }
 
-export function useSendbird() {
+export function useSendbird(): SendbirdContextValue {
   const context = useContext(SendbirdContext);
-  if (context === undefined) {
-    throw new Error('useSendbird must be used within SendbirdProvider');
-  }
+  if (!context) throw new Error('useSendbird must be used within SendbirdProvider');
   return context;
 }

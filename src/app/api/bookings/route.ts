@@ -1,185 +1,210 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getUserBookings } from '@/lib/supabase';
+import { addYears, isAfter, isBefore } from 'date-fns';
+import { NextResponse } from 'next/server';
+import { createBookingSchema, type BookingResponse } from '@/domain/booking-schemas';
+import type { BookingListItem, BookingListResponse } from '@/domain/dashboard-dtos';
+import {
+  getPackageByDbId,
+  getPackageById,
+  getSubjectById,
+  getTutorByDbId,
+  getTutorBySlug,
+  isSubjectId,
+} from '@/domain/catalog';
+import { ApiError, apiErrorResponse, parseJsonRequest } from '@/lib/api/errors';
+import { requireAuthenticatedUser } from '@/lib/auth/server';
+import { CalcomApiError, cancelCalcomBooking, createCalcomBooking } from '@/lib/calcom/server';
+import { createSupabaseServiceClient } from '@/lib/supabase/server';
 
-const CALCOM_API_BASE = 'https://api.cal.com/v1';
+function entitlementError(message: string): ApiError {
+  if (message.includes('TRIAL_NOT_ALLOWED')) {
+    return new ApiError(403, 'TRIAL_NOT_ALLOWED', 'The trial lesson is available to new customers only.');
+  }
+  if (message.includes('PAYMENT_NOT_VERIFIED') || message.includes('PACKAGE_REQUIRED')) {
+    return new ApiError(402, 'PAYMENT_REQUIRED', 'A verified package purchase is required.');
+  }
+  if (message.includes('NO_CREDITS')) {
+    return new ApiError(409, 'NO_CREDITS', 'This package has no remaining lesson credits.');
+  }
+  return new ApiError(503, 'DATABASE_UNAVAILABLE', 'The booking could not be saved.');
+}
 
-export async function POST(req: NextRequest) {
+export async function GET() {
   try {
-    const body = await req.json();
-    const { eventTypeId, start, responses, metadata, timeZone, language, userId } = body;
+    const user = await requireAuthenticatedUser();
+    const service = createSupabaseServiceClient();
+    const { data: profile, error: profileError } = await service
+      .from('profiles')
+      .select('role,tutor_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profileError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Booking data is temporarily unavailable.');
 
-    // ⚠️ BACKEND VALIDATION: Prevent trial bookings for users with existing booking history
-    if (userId && metadata?.packageId === 'trial') {
-      console.log('🔒 API Route - Validating trial booking eligibility for user:', userId);
-      try {
-        const existingBookings = await getUserBookings(userId);
-        
-        if (existingBookings && existingBookings.length > 0) {
-          console.error('❌ API Route - Trial booking REJECTED: User has', existingBookings.length, 'existing bookings');
-          return NextResponse.json(
-            { 
-              error: 'Die Probestunde ist nur für Neukunden verfügbar. Du hast bereits eine Buchungshistorie.',
-              code: 'TRIAL_NOT_ALLOWED'
-            },
-            { status: 403 }
-          );
-        }
-        
-        console.log('✅ API Route - Trial booking APPROVED: User has no booking history');
-      } catch (error) {
-        console.error('⚠️ API Route - Failed to check booking history:', error);
-        // Continue with booking if validation fails (don't block legitimate bookings)
-      }
+    let query = service
+      .from('bookings')
+      .select(
+        'id,tutor_id,package_id,subject_id,starts_at,duration_minutes,time_zone,location,location_venue,status,contact_name,contact_email,contact_phone,message',
+      )
+      .order('starts_at', { ascending: true });
+
+    if (profile?.role === 'tutor' && profile.tutor_id) {
+      query = query.eq('tutor_id', profile.tutor_id);
+    } else if (profile?.role !== 'admin') {
+      // Parents and pre-migration users only receive their own records.
+      query = query.eq('user_id', user.id);
     }
 
-    // Use server-side environment variable (not NEXT_PUBLIC_)
-    const apiKey = process.env.CALCOM_API_KEY || process.env.NEXT_PUBLIC_CALCOM_API_KEY;
+    const { data: rows, error } = await query;
+    if (error) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Booking data is temporarily unavailable.');
 
-    console.log('=== Cal.com Booking API Debug ===');
-    console.log('API Key exists:', !!apiKey);
-    console.log('API Key prefix:', apiKey?.substring(0, 10) + '...');
-    console.log('Event Type ID:', eventTypeId);
-    console.log('Start time:', start);
-    console.log('TimeZone:', timeZone);
-    console.log('Language:', language);
-    console.log('Responses:', JSON.stringify(responses, null, 2));
-    console.log('Metadata:', JSON.stringify(metadata, null, 2));
-
-    if (!apiKey) {
-      console.error('❌ ERROR: No Cal.com API key found in environment variables');
-      return NextResponse.json(
-        { 
-          error: 'Cal.com API key not configured',
-          hint: 'Add CALCOM_API_KEY to your environment variables' 
+    const bookings = (rows ?? []).flatMap<BookingListItem>((row) => {
+      const tutor = getTutorByDbId(row.tutor_id);
+      const selectedPackage = getPackageByDbId(row.package_id);
+      if (!tutor || !selectedPackage || !isSubjectId(row.subject_id)) return [];
+      const subject = getSubjectById(row.subject_id);
+      return [{
+        id: row.id,
+        tutor: { slug: tutor.slug, name: tutor.name },
+        subject: { id: subject.id, name: subject.name },
+        package: { id: selectedPackage.id, name: selectedPackage.name },
+        startsAt: row.starts_at,
+        durationMinutes: row.duration_minutes,
+        timeZone: row.time_zone,
+        location: row.location,
+        locationVenue: row.location_venue,
+        status: row.status,
+        contact: {
+          name: row.contact_name,
+          email: row.contact_email,
+          phone: row.contact_phone,
+          message: row.message,
         },
-        { status: 500 }
-      );
-    }
-
-    console.log('Creating Cal.com booking via API proxy...');
-    
-    // Cal.com requires API key as query parameter, not in header
-    const url = new URL(`${CALCOM_API_BASE}/bookings`);
-    url.searchParams.append('apiKey', apiKey);
-    
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        eventTypeId,
-        start,
-        responses,
-        metadata,
-        timeZone: timeZone || 'Europe/Berlin',
-        language: language || 'de'
-      })
+      }];
     });
 
-    const responseText = await response.text();
-    console.log('📡 Cal.com API Response Status:', response.status);
-    console.log('📡 Cal.com API Response Body:', responseText);
-
-    if (!response.ok) {
-      console.error('❌ Cal.com API error:', response.status, responseText);
-      
-      let errorDetails = responseText;
-      try {
-        const errorJson = JSON.parse(responseText);
-        errorDetails = JSON.stringify(errorJson, null, 2);
-        
-        // Check for specific error
-        if (errorJson.message === 'no_available_users_found_error') {
-          console.error('🚨 NO AVAILABLE USERS ERROR');
-          console.error('Possible causes:');
-          console.error('1. Event Type has no hosts assigned');
-          console.error('2. No availability set for the selected time');
-          console.error('3. Event Type is inactive');
-          console.error('');
-          console.error('Fix: Go to https://app.cal.com/event-types/' + eventTypeId);
-          console.error('- Assign yourself as a host');
-          console.error('- Set availability hours');
-          console.error('- Make sure Event Type is active');
-        }
-      } catch (e) {
-        // Keep original text if not JSON
-      }
-      
-      return NextResponse.json(
-        { 
-          error: 'Booking creation failed', 
-          details: errorDetails, 
-          status: response.status,
-          hint: responseText.includes('no_available_users_found_error') 
-            ? 'Event Type has no available hosts. Configure hosts and availability in Cal.com.'
-            : undefined
-        },
-        { status: response.status }
-      );
-    }
-
-    const data = JSON.parse(responseText);
-    console.log('Cal.com booking created successfully:', data);
-    
-    return NextResponse.json(data);
+    const response: BookingListResponse = { data: { bookings } };
+    return NextResponse.json(response, { headers: { 'Cache-Control': 'private, no-store, max-age=0' } });
   } catch (error) {
-    console.error('Booking API route error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return apiErrorResponse(error);
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const eventTypeId = searchParams.get('eventTypeId');
-    const startTime = searchParams.get('startTime');
-    const endTime = searchParams.get('endTime');
+    const input = createBookingSchema.parse(await parseJsonRequest(request));
+    const user = await requireAuthenticatedUser();
+    const tutor = getTutorBySlug(input.tutorSlug);
+    const selectedPackage = getPackageById(input.packageId);
+    const startsAt = new Date(input.startsAt);
 
-    const apiKey = process.env.CALCOM_API_KEY || process.env.NEXT_PUBLIC_CALCOM_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Cal.com API key not configured' },
-        { status: 500 }
-      );
+    if (!user.email || user.email.toLowerCase() !== input.contact.email.toLowerCase()) {
+      throw new ApiError(400, 'EMAIL_MISMATCH', 'Use the email address associated with your account.');
+    }
+    if (!tutor.subjectIds.includes(input.subjectId)) {
+      throw new ApiError(400, 'SUBJECT_NOT_OFFERED', 'This tutor does not offer the selected subject.');
+    }
+    if (tutor.onlineOnly && input.location !== 'online') {
+      throw new ApiError(400, 'LOCATION_NOT_OFFERED', 'This tutor offers online lessons only.');
+    }
+    if (isBefore(startsAt, new Date()) || isAfter(startsAt, addYears(new Date(), 1))) {
+      throw new ApiError(400, 'INVALID_START_TIME', 'Choose a future time within the next year.');
     }
 
-    const params = new URLSearchParams({
-      eventTypeId: eventTypeId || '',
-      startTime: startTime || '',
-      endTime: endTime || '',
-      apiKey: apiKey
+    // Ensure persistence is configured before creating an external booking.
+    const service = createSupabaseServiceClient();
+    const { data: profile, error: profileError } = await service
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profileError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Booking authorization is unavailable.');
+    if (profile?.role !== 'parent') {
+      throw new ApiError(403, 'BOOKING_NOT_ALLOWED', 'Only parent accounts can create bookings.');
+    }
+
+    if (input.packageId === 'trial') {
+      const { count, error: historyError } = await service
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (historyError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Booking eligibility is unavailable.');
+      if ((count ?? 0) > 0) throw entitlementError('TRIAL_NOT_ALLOWED');
+    } else {
+      if (!input.packagePurchaseId) throw entitlementError('PACKAGE_REQUIRED');
+      const { data: entitlement, error: entitlementQueryError } = await service
+        .from('package_purchases')
+        .select('id')
+        .eq('id', input.packagePurchaseId)
+        .eq('user_id', user.id)
+        .eq('package_id', selectedPackage.dbId)
+        .eq('payment_status', 'verified')
+        .eq('status', 'active')
+        .gt('remaining_sessions', 0)
+        .maybeSingle();
+      if (entitlementQueryError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Package eligibility is unavailable.');
+      if (!entitlement) throw entitlementError('PAYMENT_NOT_VERIFIED');
+    }
+
+    const calcom = await createCalcomBooking({
+      ...input,
+      contact: { ...input.contact, email: user.email },
     });
 
-    const response = await fetch(
-      `${CALCOM_API_BASE}/availability?${params}`,
+    const { data: bookingId, error: persistenceError } = await service.rpc(
+      'finalize_booking_with_credit',
       {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
+        p_user_id: user.id,
+        p_tutor_id: tutor.dbId,
+        p_package_id: selectedPackage.dbId,
+        p_package_purchase_id: input.packagePurchaseId ?? null,
+        p_subject_id: input.subjectId,
+        p_starts_at: new Date(calcom.startsAt).toISOString(),
+        p_time_zone: input.timeZone,
+        p_location: input.location,
+        p_location_venue: input.locationVenue ?? null,
+        p_contact_name: input.contact.name,
+        p_contact_email: user.email,
+        p_contact_phone: input.contact.phone || null,
+        p_message: input.contact.message || null,
+        p_calcom_booking_uid: calcom.uid,
+        p_calcom_event_type_id: calcom.eventTypeId,
+      },
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Cal.com availability error:', response.status, errorText);
-      return NextResponse.json(
-        { error: 'Failed to fetch availability', details: errorText },
-        { status: response.status }
-      );
+    if (persistenceError || !bookingId) {
+      try {
+        await cancelCalcomBooking(calcom.uid, 'Application persistence failed');
+      } catch (compensationError) {
+        console.error('[bookings.create] compensation_failed', {
+          kind: compensationError instanceof CalcomApiError ? 'calcom' : 'unknown',
+        });
+      }
+      throw entitlementError(persistenceError?.message ?? 'DATABASE_ERROR');
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const response: BookingResponse = {
+      data: {
+        booking: {
+          id: bookingId,
+          tutorSlug: input.tutorSlug,
+          subjectId: input.subjectId,
+          packageId: input.packageId,
+          startsAt: new Date(calcom.startsAt).toISOString(),
+          status: 'scheduled',
+        },
+      },
+    };
+    return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error('Availability API route error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    if (error instanceof CalcomApiError) {
+      const unavailable = error.status === 409 || error.status === 400;
+      return apiErrorResponse(
+        new ApiError(
+          unavailable ? 409 : 502,
+          unavailable ? 'SLOT_UNAVAILABLE' : 'SCHEDULING_PROVIDER_ERROR',
+          unavailable ? 'That time is no longer available.' : 'The scheduling provider is unavailable.',
+        ),
+      );
+    }
+    return apiErrorResponse(error);
   }
 }

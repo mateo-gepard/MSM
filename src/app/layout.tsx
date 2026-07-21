@@ -1,29 +1,77 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
-import { SendbirdProvider } from "@/contexts/SendbirdContext";
+import type { Metadata, Viewport } from 'next';
+import { Manrope, Newsreader } from 'next/font/google';
+import { ConditionalLayout } from '@/components/layout/ConditionalLayout';
+import { Footer } from '@/components/layout/Footer';
+import { Navigation } from '@/components/layout/Navigation';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const manrope = Manrope({
+  variable: '--font-manrope',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const newsreader = Newsreader({
+  variable: '--font-newsreader',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "MSM Munich Scholar Mentors | Premium Nachhilfe von Olympiade-Siegern",
-  description: "MSM Munich Scholar Mentors - Überqualifizierte Schüler und Studenten unterrichten 1:1 mit intensiver Vorbereitung, bilingualen Konzepten und personalisierten Lernplänen in München.",
-  keywords: "Nachhilfe München, Olympiade Sieger, Premium Tutoring, MSM, Munich Scholar Mentors, Elite Tutoring",
-  authors: [{ name: "MSM Munich Scholar Mentors" }],
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  title: {
+    default: 'MSM | 1:1 Nachhilfe online und in München',
+    template: '%s | MSM Munich Scholar Mentors',
+  },
+  description:
+    'Persönliche 1:1 Nachhilfe in Mathematik, Physik, Informatik, Biologie und Spanisch – online oder in München. Kostenlose Probestunde für Neukund:innen.',
+  applicationName: 'MSM Munich Scholar Mentors',
+  keywords: [
+    'Nachhilfe München',
+    'Online Nachhilfe',
+    '1:1 Nachhilfe',
+    'Mathematik Nachhilfe',
+    'Physik Nachhilfe',
+    'Informatik Nachhilfe',
+  ],
+  authors: [{ name: 'MSM Munich Scholar Mentors' }],
+  creator: 'MSM Munich Scholar Mentors',
+  manifest: '/site.webmanifest',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    apple: '/MSM_FAVICON.png',
+  },
   openGraph: {
-    title: "MSM Munich Scholar Mentors",
-    description: "Premium Nachhilfe von Olympiade-Siegern in München",
-    type: "website",
-  }
+    title: 'MSM | 1:1 Nachhilfe online und in München',
+    description:
+      'Persönliche Nachhilfe mit einem passenden Tutor – online oder in München, mit kostenloser Probestunde.',
+    locale: 'de_DE',
+    type: 'website',
+    siteName: 'MSM Munich Scholar Mentors',
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Ein dunkles Notizbuch mit einer feinen violetten Lern- und Wissensgrafik',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MSM | 1:1 Nachhilfe online und in München',
+    description:
+      'Persönliche Nachhilfe mit einem passenden Tutor – online oder in München, mit kostenloser Probestunde.',
+    images: ['/og.png'],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#09090d',
+  colorScheme: 'dark',
 };
 
 export default function RootLayout({
@@ -32,24 +80,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-      <html lang="de" data-scroll-behavior="smooth">
-        <head>
-          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-          <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-          <link rel="apple-touch-icon" sizes="180x180" href="/MSM_FAVICON.png" />
-          <link rel="icon" type="image/png" sizes="192x192" href="/MSM_FAVICON.png" />
-          <link rel="icon" type="image/png" sizes="512x512" href="/MSM_FAVICON.png" />
-          <link rel="manifest" href="/site.webmanifest" />
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-          <meta name="theme-color" content="#081525" />
-        </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <SendbirdProvider>
-          <ConditionalLayout>{children}</ConditionalLayout>
-        </SendbirdProvider>
+    <html
+      lang="de"
+      className={`${manrope.variable} ${newsreader.variable}`}
+      data-scroll-behavior="smooth"
+    >
+      <body>
+        <a className="skip-link" href="#main-content">
+          Zum Inhalt springen
+        </a>
+        <ConditionalLayout navigation={<Navigation />} footer={<Footer />}>
+          {children}
+        </ConditionalLayout>
       </body>
     </html>
   );

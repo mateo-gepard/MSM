@@ -1,98 +1,60 @@
-import { supabase } from './supabase';
+'use client';
+
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { safeInternalRedirect } from '@/lib/security/safe-redirect';
 
 export async function signUp(email: string, password: string, name: string) {
-  // Try to sign in first to check if user already exists
-  const { data: signInData } = await supabase.auth.signInWithPassword({
-    email,
-    password: 'test-check-existence'
-  });
-
-  // If user exists (even with wrong password), the email is taken
-  if (signInData?.user || signInData?.session) {
-    return {
-      data: null,
-      error: { message: 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.' }
-    };
-  }
-
-  // Also check if the sign-in error message indicates the user exists
-  const { error: checkError } = await supabase.auth.signInWithPassword({
-    email,
-    password: 'dummy-check'
-  });
-  
-  if (checkError && !checkError.message.includes('Invalid login credentials') && !checkError.message.includes('Email not confirmed')) {
-    // If error is not about wrong password, user might exist
-    if (checkError.message.toLowerCase().includes('user') || checkError.message.toLowerCase().includes('email')) {
-      return {
-        data: null,
-        error: { message: 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.' }
-      };
-    }
-  }
-
+  const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: { name }
-    }
+    options: { data: { name: name.trim() } },
   });
-  
-  // Supabase may return a user even if they already exist (with emailConfirmation disabled)
-  // Check if the user was created just now vs already existed
-  if (data?.user && !error) {
-    // If identities is empty, user already existed
-    if (data.user.identities && data.user.identities.length === 0) {
-      return {
-        data: null,
-        error: { message: 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.' }
-      };
-    }
+
+  // Supabase deliberately obscures whether a confirmed account exists. An
+  // empty identities array is the supported signal returned for duplicate signup.
+  if (!error && data.user?.identities?.length === 0) {
+    return {
+      data: null,
+      error: { message: 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.' },
+    };
   }
-  
+
   return { data, error };
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-  return { data, error };
+  return getSupabaseBrowserClient().auth.signInWithPassword({ email, password });
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await getSupabaseBrowserClient().auth.signOut();
   return { error };
 }
 
 export async function sendMagicLink(email: string, redirectTo?: string) {
-  const finalRedirect = redirectTo || '/dashboard';
-  const { data, error } = await supabase.auth.signInWithOtp({
+  const next = safeInternalRedirect(redirectTo, '/dashboard');
+  const callback = new URL('/auth/callback', window.location.origin);
+  callback.searchParams.set('next', next);
+
+  return getSupabaseBrowserClient().auth.signInWithOtp({
     email,
-    options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(finalRedirect)}`
-    }
+    options: { emailRedirectTo: callback.toString() },
   });
-  return { data, error };
 }
 
 export async function resetPassword(email: string) {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`
+  return getSupabaseBrowserClient().auth.resetPasswordForEmail(email, {
+    redirectTo: new URL('/reset-password', window.location.origin).toString(),
   });
-  return { data, error };
 }
 
 export async function updatePassword(newPassword: string) {
-  const { data, error } = await supabase.auth.updateUser({
-    password: newPassword
-  });
-  return { data, error };
+  return getSupabaseBrowserClient().auth.updateUser({ password: newPassword });
 }
 
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  const { data, error } = await getSupabaseBrowserClient().auth.getUser();
+  if (error) return null;
+  return data.user;
 }
