@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -18,6 +18,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { AvailabilityPicker } from '@/components/booking/AvailabilityPicker';
+import { LearnerPicker } from '@/components/booking/LearnerPicker';
 import {
   PACKAGE_CATALOG,
   SUBJECT_CATALOG,
@@ -26,8 +27,14 @@ import {
   type SubjectId,
   type TutorSlug,
 } from '@/domain/catalog';
-import type { EntitlementListItem } from '@/domain/dashboard-dtos';
+import type { CreditBalance, CreditBalanceResponse } from '@/domain/credit-dtos';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  apiClientError,
+  ClientVisibleError,
+  clientErrorMessage,
+  germanApiErrorMessage,
+} from '@/lib/api/client-error';
 
 type Location = 'online' | 'in-person';
 type LocationPreference = 'student-home' | 'public-place';
@@ -58,96 +65,74 @@ interface ApiResponse {
   };
   error?: {
     code?: string;
-    message?: string;
   };
 }
 
-interface EntitlementResponse {
-  data?: { entitlements?: EntitlementListItem[] };
-  error?: { message?: string };
+interface CreditResponse extends Partial<CreditBalanceResponse> {
+  error?: { code?: string };
 }
 
-const PRICE_FORMATTER = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-  maximumFractionDigits: 0,
-});
-
-function formatAppointment(isoDate: string) {
+function formatAppointment(isoDate: string, timeZone: string) {
   return new Intl.DateTimeFormat('de-DE', {
-    timeZone: 'Europe/Berlin',
+    timeZone,
     dateStyle: 'full',
     timeStyle: 'short',
   }).format(new Date(isoDate));
 }
 
 function bookingErrorMessage(error: ApiResponse['error']) {
-  switch (error?.code) {
-    case 'PAYMENT_REQUIRED':
-      return 'Für dieses Paket ist ein bezahltes, bestätigtes Guthaben erforderlich.';
-    case 'NO_CREDITS':
-      return 'Dieses Paket hat kein verfügbares Stundenguthaben mehr.';
-    case 'TRIAL_NOT_ALLOWED':
-      return 'Die kostenlose Probestunde ist nur für Neukund:innen verfügbar.';
-    case 'SLOT_UNAVAILABLE':
-      return 'Dieser Termin wurde gerade vergeben. Bitte wähle einen anderen Zeitpunkt.';
-    case 'EMAIL_MISMATCH':
-      return 'Bitte verwende die E-Mail-Adresse deines Accounts.';
-    default:
-      return error?.message || 'Die Buchung konnte nicht abgeschlossen werden.';
-  }
+  return germanApiErrorMessage({ error }, 'Die Buchung konnte nicht abgeschlossen werden.');
 }
 
-function EntitlementPicker({
+function CreditAvailability({
   packageId,
-  value,
-  onChange,
+  onAvailabilityChange,
 }: {
   packageId: Exclude<PackageId, 'trial'>;
-  value: string;
-  onChange: (purchaseId: string) => void;
+  onAvailabilityChange: (available: boolean | null) => void;
 }) {
   const [result, setResult] = useState<{
     status: 'loading' | 'ready' | 'error';
-    entitlements: EntitlementListItem[];
+    credits: CreditBalance[];
     error: string | null;
-  }>({ status: 'loading', entitlements: [], error: null });
+  }>({ status: 'loading', credits: [], error: null });
 
   useEffect(() => {
     const controller = new AbortController();
+    onAvailabilityChange(null);
 
-    fetch('/api/packages', {
+    fetch('/api/credits', {
       signal: controller.signal,
       headers: { Accept: 'application/json' },
     })
       .then(async (response) => {
-        const payload = (await response.json()) as EntitlementResponse;
+        const payload = (await response.json()) as CreditResponse;
         if (!response.ok) {
-          throw new Error(payload.error?.message || 'Guthaben konnten nicht geladen werden.');
+          throw apiClientError(payload, 'Guthaben konnten nicht geladen werden.');
         }
-        return payload.data?.entitlements ?? [];
+        return payload.data?.credits ?? [];
       })
-      .then((entitlements) => {
-        setResult({ status: 'ready', entitlements, error: null });
+      .then((credits) => {
+        setResult({ status: 'ready', credits, error: null });
+        onAvailabilityChange(
+          credits.some((item) => item.packageId === packageId && item.remainingSessions > 0),
+        );
       })
       .catch((fetchError: unknown) => {
         if (fetchError instanceof DOMException && fetchError.name === 'AbortError') return;
         setResult({
           status: 'error',
-          entitlements: [],
-          error:
-            fetchError instanceof Error
-              ? fetchError.message
-              : 'Guthaben konnten nicht geladen werden.',
+          credits: [],
+          error: clientErrorMessage(fetchError, 'Guthaben konnten nicht geladen werden.'),
         });
+        onAvailabilityChange(false);
       });
 
     return () => controller.abort();
-  }, []);
+  }, [onAvailabilityChange, packageId]);
 
-  const eligibleEntitlements = result.entitlements.filter(
-    (item) =>
-      item.package.id === packageId && item.status === 'active' && item.remainingSessions > 0,
+  const eligibleCredits = result.credits.filter(
+    (item) => item.packageId === packageId && item.remainingSessions > 0,
   );
 
   if (result.status === 'loading') {
@@ -166,54 +151,29 @@ function EntitlementPicker({
     );
   }
 
-  if (eligibleEntitlements.length === 0) {
+  if (eligibleCredits.length === 0) {
     return (
       <div className="rounded-xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50">
         <p className="font-semibold">Kein passendes Guthaben vorhanden</p>
         <p className="mt-1 text-amber-50/75">
           Bezahlte Pakete werden erst nach bestätigtem Zahlungseingang freigeschaltet. Es wird hier keine Zahlung simuliert.
         </p>
-        <a className="mt-3 inline-block font-semibold underline underline-offset-4" href="mailto:munichscholarmentors@gmail.com?subject=Stundenguthaben%20kaufen">
-          Paket anfragen
-        </a>
+        <Link className="mt-3 inline-block font-semibold underline underline-offset-4" href="/#preise">
+          Paket sicher kaufen
+        </Link>
       </div>
     );
   }
 
   return (
-    <fieldset>
-      <legend className="text-sm font-semibold text-white">Stundenguthaben auswählen</legend>
-      <p className="mt-1 text-xs leading-5 text-white/45">
-        Eine Einheit wird erst nach erfolgreicher Terminbestätigung abgezogen.
+    <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.06] p-4">
+      <p className="text-sm font-semibold text-emerald-100">Stundenguthaben verfügbar</p>
+      <p className="mt-1 text-xs leading-5 text-white/60">
+        {eligibleCredits.reduce((sum, item) => sum + item.remainingSessions, 0)} Einheiten
+        stehen bereit. Der Server verwendet automatisch das älteste passende Guthaben. Eine Einheit
+        wird erst nach erfolgreicher Terminbestätigung verbraucht.
       </p>
-      <div className="mt-3 space-y-2">
-        {eligibleEntitlements.map((entitlement) => (
-          <label
-            key={entitlement.id}
-            className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 text-sm transition-colors ${
-              value === entitlement.id
-                ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12'
-                : 'border-white/10 bg-black/10 hover:border-white/25'
-            }`}
-          >
-            <span>
-              <span className="block font-semibold text-white">{entitlement.package.name}</span>
-              <span className="mt-1 block text-xs text-white/50">
-                {entitlement.remainingSessions} von {entitlement.totalSessions} Einheiten verfügbar
-              </span>
-            </span>
-            <input
-              type="radio"
-              name="package-purchase"
-              value={entitlement.id}
-              checked={value === entitlement.id}
-              onChange={() => onChange(entitlement.id)}
-              className="size-4 accent-[var(--color-accent)]"
-            />
-          </label>
-        ))}
-      </div>
-    </fieldset>
+    </div>
   );
 }
 
@@ -248,7 +208,7 @@ function Progress({ stage, rescheduling }: { stage: Stage; rescheduling: boolean
               >
                 {complete ? <Check className="size-4" /> : index + 1}
               </span>
-              <span className={`hidden text-sm sm:inline ${active ? 'text-white' : 'text-white/45'}`}>
+              <span className={`hidden text-sm sm:inline ${active ? 'text-white' : 'text-white/60'}`}>
                 {item.label}
               </span>
             </div>
@@ -264,21 +224,33 @@ function Progress({ stage, rescheduling }: { stage: Stage; rescheduling: boolean
 
 export function BookingFlow({ initial }: BookingFlowProps) {
   const { user, loading: authLoading } = useAuth();
+  const initialTutor = TUTOR_CATALOG.find((item) => item.slug === initial.tutorSlug);
   const [stage, setStage] = useState<Stage>(initial.stage ?? (initial.rescheduleId ? 'time' : 'details'));
   const [subjectId, setSubjectId] = useState<SubjectId | ''>(initial.subjectId ?? '');
   const [tutorSlug, setTutorSlug] = useState<TutorSlug | ''>(initial.tutorSlug ?? '');
   const [packageId, setPackageId] = useState<PackageId | ''>(initial.packageId ?? '');
   const [startsAt, setStartsAt] = useState(initial.startsAt ?? '');
-  const [location, setLocation] = useState<Location>(initial.location ?? 'online');
+  const [location, setLocation] = useState<Location>(
+    initialTutor?.onlineOnly ? 'online' : initial.location ?? 'online',
+  );
   const [locationPreference, setLocationPreference] = useState<LocationPreference | ''>(
-    initial.locationVenue ?? '',
+    initialTutor?.onlineOnly ? '' : initial.locationVenue ?? '',
   );
   const [meetingPlace, setMeetingPlace] = useState('');
-  const [packagePurchaseId, setPackagePurchaseId] = useState('');
+  const [hasEligibleCredit, setHasEligibleCredit] = useState<boolean | null>(null);
+  const [learnerId, setLearnerId] = useState('');
   const [contact, setContact] = useState({ name: '', phone: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [syncPending, setSyncPending] = useState(false);
+  const [timeZone, setTimeZone] = useState('Europe/Berlin');
+  const operationRef = useRef<{ fingerprint: string; key: string } | null>(null);
+
+  useEffect(() => {
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (detected) setTimeZone(detected);
+  }, []);
 
   const subject = SUBJECT_CATALOG.find((item) => item.id === subjectId);
   const selectedTutor = TUTOR_CATALOG.find((item) => item.slug === tutorSlug);
@@ -291,7 +263,12 @@ export function BookingFlow({ initial }: BookingFlowProps) {
   }, [subject]);
 
   const detailsComplete = Boolean(
-    subjectId && tutorSlug && packageId && (location === 'online' || locationPreference),
+    subjectId &&
+      tutorSlug &&
+      selectedTutor?.subjectIds.includes(subjectId) &&
+      packageId &&
+      !(selectedTutor?.onlineOnly && location === 'in-person') &&
+      (location === 'online' || locationPreference),
   );
 
   const userName =
@@ -322,12 +299,16 @@ export function BookingFlow({ initial }: BookingFlowProps) {
       setError('Bitte gib einen Namen für die Buchung an.');
       return;
     }
+    if (!rescheduling && !learnerId) {
+      setError('Bitte wähle aus, für wen die Stunde gebucht wird.');
+      return;
+    }
     if (!rescheduling && location === 'in-person' && !meetingPlace.trim()) {
       setError('Bitte gib den vereinbarten Treffpunkt oder die Adresse an.');
       return;
     }
-    if (!rescheduling && packageId !== 'trial' && !packagePurchaseId) {
-      setError('Bitte wähle ein bestätigtes Stundenguthaben aus.');
+    if (!rescheduling && packageId !== 'trial' && hasEligibleCredit !== true) {
+      setError('Für dieses Paket ist noch kein bestätigtes Stundenguthaben verfügbar.');
       return;
     }
 
@@ -339,17 +320,17 @@ export function BookingFlow({ initial }: BookingFlowProps) {
         ? `/api/bookings/${encodeURIComponent(initial.rescheduleId!)}/reschedule`
         : '/api/bookings';
       const method = rescheduling ? 'PATCH' : 'POST';
-      const body = rescheduling
-        ? { startsAt, timeZone: 'Europe/Berlin' }
+      const operation = rescheduling
+        ? { startsAt, timeZone }
         : {
             tutorSlug,
             subjectId,
             packageId,
             startsAt,
-            timeZone: 'Europe/Berlin',
+            timeZone,
             location,
+            learnerId,
             locationVenue: location === 'in-person' ? meetingPlace.trim() : undefined,
-            packagePurchaseId: packageId === 'trial' ? undefined : packagePurchaseId,
             contact: {
               name: contactName.trim(),
               email: contactEmail,
@@ -357,6 +338,11 @@ export function BookingFlow({ initial }: BookingFlowProps) {
               message: contact.message.trim() || undefined,
             },
           };
+      const fingerprint = JSON.stringify(operation);
+      if (operationRef.current?.fingerprint !== fingerprint) {
+        operationRef.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      const body = { ...operation, idempotencyKey: operationRef.current.key };
 
       const response = await fetch(endpoint, {
         method,
@@ -366,17 +352,15 @@ export function BookingFlow({ initial }: BookingFlowProps) {
       const payload = (await response.json()) as ApiResponse;
 
       if (!response.ok) {
-        throw new Error(bookingErrorMessage(payload.error));
+        throw new ClientVisibleError(bookingErrorMessage(payload.error));
       }
 
       setCreatedBookingId(payload.data?.booking?.id ?? initial.rescheduleId ?? null);
+      setSyncPending(response.status === 202);
+      operationRef.current = null;
       setStage('success');
     } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : 'Die Buchung konnte nicht abgeschlossen werden.',
-      );
+      setError(clientErrorMessage(submitError, 'Die Buchung konnte nicht abgeschlossen werden.'));
     } finally {
       setSubmitting(false);
     }
@@ -388,13 +372,21 @@ export function BookingFlow({ initial }: BookingFlowProps) {
         <div className="site-container max-w-2xl">
           <section className="rounded-[2rem] border border-emerald-300/20 bg-emerald-300/[0.07] p-8 text-center sm:p-12">
             <CheckCircle2 className="mx-auto size-12 text-emerald-300" />
-            <p className="eyebrow mt-6">{rescheduling ? 'Termin aktualisiert' : 'Buchung eingegangen'}</p>
+            <p className="eyebrow mt-6">
+              {syncPending ? 'Abgleich läuft' : rescheduling ? 'Termin aktualisiert' : 'Buchung eingegangen'}
+            </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-              {rescheduling ? 'Dein neuer Termin ist bestätigt.' : 'Dein Termin ist reserviert.'}
+              {syncPending
+                ? 'Deine Anfrage wird mit dem Kalender abgeglichen.'
+                : rescheduling
+                  ? 'Dein neuer Termin ist bestätigt.'
+                  : 'Dein Termin ist reserviert.'}
             </h1>
-            {startsAt && <p className="mt-4 text-lg text-white/70">{formatAppointment(startsAt)}</p>}
+            {startsAt && <p className="mt-4 text-lg text-white/70">{formatAppointment(startsAt, timeZone)}</p>}
             <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-white/55">
-              Die Details findest du in deinem Dashboard und in der Bestätigungs-E-Mail.
+              {syncPending
+                ? 'Bitte sende die Anfrage nicht erneut. Der Status wird per Webhook und automatischem Abgleich aktualisiert.'
+                : 'Die Details findest du in deinem Dashboard und in der Bestätigung per E Mail.'}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
@@ -421,12 +413,12 @@ export function BookingFlow({ initial }: BookingFlowProps) {
 
   return (
     <div className="min-h-screen bg-[var(--color-ink)] pb-24 pt-28 text-white sm:pt-36">
-      <div className="site-container max-w-6xl">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-          <div>
+      <div className="site-container min-w-0 max-w-6xl">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+          <div className="min-w-0">
             <div className="mb-8">
               <p className="eyebrow mb-3">{rescheduling ? 'Termin umbuchen' : 'Termin buchen'}</p>
-              <h1 className="text-3xl font-semibold tracking-[-0.04em] sm:text-5xl">
+              <h1 className="break-words text-3xl font-semibold tracking-[-0.04em] sm:text-5xl">
                 {rescheduling ? 'Wähle einen neuen Zeitpunkt.' : 'Vom passenden Mentor zum festen Termin.'}
               </h1>
               <div className="mt-7 max-w-2xl">
@@ -434,7 +426,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
               </div>
             </div>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/20 sm:p-8">
+            <section className="min-w-0 rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/20 sm:p-8">
               {stage === 'details' && (
                 <div className="space-y-9">
                   <fieldset>
@@ -443,7 +435,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                       {SUBJECT_CATALOG.map((item) => (
                         <label
                           key={item.id}
-                          className={`cursor-pointer rounded-xl border px-3 py-3 text-center text-sm font-medium transition-colors ${
+                          className={`choice-card cursor-pointer rounded-xl border px-3 py-3 text-center text-sm font-medium transition-colors ${
                             subjectId === item.id
                               ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12 text-white'
                               : 'border-white/10 text-white/60 hover:border-white/25 hover:text-white'
@@ -455,6 +447,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                             className="sr-only"
                             checked={subjectId === item.id}
                             onChange={() => {
+                              if (subjectId !== item.id) setStartsAt('');
                               setSubjectId(item.id);
                               if (
                                 selectedTutor &&
@@ -483,8 +476,16 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                             key={tutor.slug}
                             type="button"
                             aria-pressed={selected}
-                            onClick={() => setTutorSlug(tutor.slug)}
-                            className={`flex items-center gap-4 rounded-2xl border p-3 text-left transition-colors ${
+                            onClick={() => {
+                              if (tutorSlug !== tutor.slug) setStartsAt('');
+                              setTutorSlug(tutor.slug);
+                              if (tutor.onlineOnly) {
+                                setLocation('online');
+                                setLocationPreference('');
+                                setMeetingPlace('');
+                              }
+                            }}
+                            className={`flex min-w-0 items-center gap-4 rounded-2xl border p-3 text-left transition-colors ${
                               selected
                                 ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12'
                                 : 'border-white/10 bg-black/10 hover:border-white/25'
@@ -501,7 +502,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block font-medium text-white">{tutor.name}</span>
-                              <span className="mt-1 block truncate text-xs text-white/45">
+                              <span className="mt-1 block truncate text-xs text-white/60">
                                 {tutor.languages.join(' · ')}
                               </span>
                             </span>
@@ -528,7 +529,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                         return (
                           <label
                             key={item.id}
-                            className={`cursor-pointer rounded-2xl border p-4 transition-colors ${
+                            className={`choice-card cursor-pointer rounded-2xl border p-4 transition-colors ${
                               selected
                                 ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12'
                                 : 'border-white/10 bg-black/10 hover:border-white/25'
@@ -540,7 +541,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                               checked={selected}
                               onChange={() => {
                                 setPackageId(item.id);
-                                setPackagePurchaseId('');
+                                setHasEligibleCredit(item.id === 'trial' ? true : null);
                               }}
                               className="sr-only"
                             />
@@ -552,11 +553,11 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                                 </span>
                               </span>
                               <span className="font-semibold text-[var(--color-accent-soft)]">
-                                {PRICE_FORMATTER.format(item.priceCents / 100)}
+                                {item.id === 'trial' ? 'Kostenlos' : 'Guthaben'}
                               </span>
                             </span>
                             {item.id === 'trial' && (
-                              <span className="mt-3 block text-xs leading-5 text-white/45">
+                              <span className="mt-3 block text-xs leading-5 text-white/60">
                                 Einmalig für Neukunden; die Berechtigung wird bei der Buchung geprüft.
                               </span>
                             )}
@@ -576,7 +577,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                         return (
                           <label
                             key={value}
-                            className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
+                            className={`choice-card flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
                               location === value
                                 ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12 text-white'
                                 : 'border-white/10 text-white/60 hover:border-white/25'
@@ -612,7 +613,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                         ).map(([value, label]) => (
                           <label
                             key={value}
-                            className={`cursor-pointer rounded-xl border px-3 py-3 text-sm transition-colors ${
+                            className={`choice-card cursor-pointer rounded-xl border px-3 py-3 text-sm transition-colors ${
                               locationPreference === value
                                 ? 'border-white/35 bg-white/[0.06] text-white'
                                 : 'border-white/10 text-white/55 hover:border-white/25'
@@ -635,7 +636,13 @@ export function BookingFlow({ initial }: BookingFlowProps) {
               )}
 
               {stage === 'time' && tutorSlug && (
-                <AvailabilityPicker tutorSlug={tutorSlug} value={startsAt} onChange={setStartsAt} />
+                <AvailabilityPicker
+                  tutorSlug={tutorSlug}
+                  value={startsAt}
+                  timeZone={timeZone}
+                  bookingId={initial.rescheduleId}
+                  onChange={setStartsAt}
+                />
               )}
 
               {stage === 'time' && !tutorSlug && (
@@ -660,7 +667,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                       <LockKeyhole className="mx-auto size-8 text-[var(--color-accent-soft)]" />
                       <h3 className="mt-4 text-xl font-semibold">Einloggen, dann verbindlich buchen</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/55">
-                        Deine Auswahl und der Termin bleiben in der Rückkehr-Adresse erhalten. Kontaktdaten
+                        Deine Auswahl und der Termin bleiben in der Rückkehradresse erhalten. Kontaktdaten
                         werden nicht im Browser gespeichert.
                       </p>
                       <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
@@ -682,16 +689,17 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                     <div className="mt-8 space-y-5">
                       {!rescheduling && (
                         <>
+                          <LearnerPicker value={learnerId} onChange={setLearnerId} />
+
                           {packageId === 'trial' ? (
                             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/60">
                               Die kostenlose Probestunde wird beim Absenden serverseitig auf Neukundenberechtigung geprüft.
                             </div>
                           ) : packageId ? (
-                            <EntitlementPicker
+                            <CreditAvailability
                               key={packageId}
                               packageId={packageId}
-                              value={packagePurchaseId}
-                              onChange={setPackagePurchaseId}
+                              onAvailabilityChange={setHasEligibleCredit}
                             />
                           ) : null}
 
@@ -710,7 +718,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                               />
                             </label>
                             <label className="block">
-                              <span className="text-sm font-medium text-white">Konto-E-Mail</span>
+                              <span className="text-sm font-medium text-white">E Mailadresse des Kontos</span>
                               <input
                                 type="email"
                                 value={contactEmail}
@@ -748,7 +756,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                                   }
                                 />
                                 <span className="mt-2 block text-xs leading-5 text-[var(--ink-subtle)]">
-                                  Diese Angabe wird erst nach dem Login erfasst und nicht in der Rückkehr-Adresse gespeichert.
+                                  Diese Angabe wird erst nach dem Login erfasst und nicht in der Rückkehradresse gespeichert.
                                 </span>
                               </label>
                             )}
@@ -839,8 +847,9 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                     disabled={
                       submitting ||
                       (!rescheduling && !contactName.trim()) ||
+                      (!rescheduling && !learnerId) ||
                       (!rescheduling && location === 'in-person' && !meetingPlace.trim()) ||
-                      (!rescheduling && packageId !== 'trial' && !packagePurchaseId)
+                      (!rescheduling && packageId !== 'trial' && hasEligibleCredit !== true)
                     }
                     className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--color-accent)] px-6 text-sm font-semibold text-white hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:opacity-40"
                   >
@@ -877,7 +886,7 @@ export function BookingFlow({ initial }: BookingFlowProps) {
                 </div>
                 <div>
                   <p className="font-medium">{selectedTutor.name}</p>
-                  <p className="mt-0.5 text-xs text-white/45">{subject?.name ?? 'Fach noch offen'}</p>
+                  <p className="mt-0.5 text-xs text-white/60">{subject?.name ?? 'Fach noch offen'}</p>
                 </div>
               </div>
             ) : (
@@ -886,28 +895,30 @@ export function BookingFlow({ initial }: BookingFlowProps) {
 
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex items-start justify-between gap-4">
-                <dt className="text-white/45">Format</dt>
+                <dt className="text-white/60">Format</dt>
                 <dd className="text-right text-white/75">{selectedPackage?.name ?? 'Noch offen'}</dd>
               </div>
               <div className="flex items-start justify-between gap-4">
-                <dt className="text-white/45">Preis</dt>
+                <dt className="text-white/60">Abrechnung</dt>
                 <dd className="text-right font-medium text-white">
                   {selectedPackage
-                    ? PRICE_FORMATTER.format(selectedPackage.priceCents / 100)
+                    ? selectedPackage.id === 'trial'
+                      ? 'Kostenlose Probestunde'
+                      : '1 Guthabeneinheit'
                     : 'Noch offen'}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-4">
-                <dt className="text-white/45">Ort</dt>
+                <dt className="text-white/60">Ort</dt>
                 <dd className="flex items-center gap-1.5 text-right text-white/75">
                   {location === 'online' ? <Monitor className="size-3.5" /> : <MapPin className="size-3.5" />}
                   {location === 'online' ? 'Online' : 'München'}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-4">
-                <dt className="text-white/45">Termin</dt>
+                <dt className="text-white/60">Termin</dt>
                 <dd className="max-w-44 text-right text-white/75">
-                  {startsAt ? formatAppointment(startsAt) : 'Noch offen'}
+                  {startsAt ? formatAppointment(startsAt, timeZone) : 'Noch offen'}
                 </dd>
               </div>
             </dl>

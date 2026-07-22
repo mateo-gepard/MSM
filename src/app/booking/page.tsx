@@ -3,7 +3,7 @@ import { BookingFlow, type BookingInitialState } from './BookingFlow';
 import { isPackageId, isSubjectId, isTutorSlug } from '@/domain/catalog';
 
 export const metadata: Metadata = {
-  title: 'Termin buchen | MSM',
+  title: 'Termin buchen',
   description:
     'Wähle Mentor, Unterrichtsformat und einen live verfügbaren Termin für dein persönliches Mentoring.',
 };

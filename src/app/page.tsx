@@ -5,6 +5,8 @@ import { Hero } from '@/components/sections/Hero';
 import { PricingSection } from '@/components/sections/PricingSection';
 import { TutorsSection } from '@/components/sections/TutorsSection';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <>

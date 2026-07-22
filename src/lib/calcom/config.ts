@@ -7,6 +7,15 @@ assertServerOnly('Cal.com configuration');
 
 const eventTypeIdSchema = z.coerce.number().int().positive();
 
+const placeholderSecretPatterns = [
+  /^(?:your|replace|generate)(?:[\s_-]|$)/i,
+  /^(?:change[\s_-]?me|changeme|example|placeholder|todo|secret)$/i,
+  /^<[^>]+>$/,
+  /^\$\{[^}]+\}$/,
+];
+
+export const PRODUCTION_SHARED_SECRET_MIN_BYTES = 32;
+
 export type CalcomEventTypeMapping = Partial<Record<TutorSlug, number>>;
 
 export function parseEventTypeMapping(raw: string | null | undefined): CalcomEventTypeMapping {
@@ -63,4 +72,23 @@ export function requireCalcomApiKey(): string {
   const apiKey = process.env.CALCOM_API_KEY?.trim();
   if (!apiKey) throw new ServiceConfigurationError('Cal.com');
   return apiKey;
+}
+
+/**
+ * Release gate for callback and scheduler secrets. Development may use a
+ * shorter non-placeholder value, while production requires 256 bits of input.
+ */
+export function isAcceptableSharedSecret(
+  value: string | null | undefined,
+  production = process.env.NODE_ENV === 'production',
+): value is string {
+  if (!value || value !== value.trim()) return false;
+  if (placeholderSecretPatterns.some((pattern) => pattern.test(value))) return false;
+  return !production || new TextEncoder().encode(value).byteLength >= PRODUCTION_SHARED_SECRET_MIN_BYTES;
+}
+
+export function requireCalcomWebhookSecret(): string {
+  const secret = process.env.CALCOM_WEBHOOK_SECRET;
+  if (!isAcceptableSharedSecret(secret)) throw new ServiceConfigurationError('Cal.com webhook');
+  return secret;
 }

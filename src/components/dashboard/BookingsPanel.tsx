@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   CalendarClock,
@@ -12,26 +12,37 @@ import {
   UserRound,
   XCircle,
 } from 'lucide-react';
-import type { BookingDto, BookingStatus } from './contracts';
+import type { BookingDto } from './contracts';
 import { readApiResponse } from './contracts';
+import { ClientVisibleError, clientErrorMessage } from '@/lib/api/client-error';
 
 type BookingBucket = 'upcoming' | 'past' | 'cancelled';
 
 interface BookingsPanelProps {
   bookings: BookingDto[];
   audience: 'parent' | 'tutor';
-  onBookingCancelled: (bookingId: string) => void;
+  canManageBookings: boolean;
+  onBookingStatusChanged: (
+    bookingId: string,
+    status: 'cancelled' | 'cancellation_pending',
+  ) => void;
 }
 
 const bucketLabels: Record<BookingBucket, string> = {
   upcoming: 'Anstehend',
   past: 'Vergangen',
-  cancelled: 'Storniert',
+  cancelled: 'Beendet',
 };
 
 function getBookingBucket(booking: BookingDto, now: number): BookingBucket {
-  if (booking.status === 'cancelled') return 'cancelled';
-  if (booking.status === 'completed' || new Date(booking.startsAt).getTime() <= now) return 'past';
+  if (booking.status === 'cancelled' || booking.status === 'failed') return 'cancelled';
+  if (booking.status === 'completed') return 'past';
+  if (
+    !['provider_pending', 'cancellation_pending', 'reschedule_pending'].includes(booking.status) &&
+    new Date(booking.startsAt).getTime() <= now
+  ) {
+    return 'past';
+  }
   return 'upcoming';
 }
 
@@ -82,19 +93,36 @@ function rescheduleHref(booking: BookingDto): string {
 }
 
 function displayStatus(booking: BookingDto, bucket: BookingBucket): string {
-  if (bucket === 'cancelled') return 'Storniert';
-  if (bucket === 'past') return booking.status === 'completed' ? 'Abgeschlossen' : 'Vergangen';
-  return 'Bestätigt';
+  if (booking.syncStatus === 'needs_reconciliation') return 'Abgleich erforderlich';
+  if (bucket === 'past' && booking.status !== 'completed') return 'Vergangen';
+  return {
+    provider_pending: 'Kalenderabgleich',
+    pending_confirmation: 'Bestätigung ausstehend',
+    scheduled: 'Bestätigt',
+    completed: 'Abgeschlossen',
+    cancellation_pending: 'Stornierung läuft',
+    reschedule_pending: 'Umbuchung läuft',
+    cancelled: 'Storniert',
+    failed: 'Nicht zustande gekommen',
+  }[booking.status];
 }
 
 function StatusBadge({ booking, bucket }: { booking: BookingDto; bucket: BookingBucket }) {
-  const styles = {
-    upcoming: 'border-[var(--purple)]/35 bg-[var(--purple)]/10 text-[var(--purple-soft)]',
-    past: 'border-emerald-300/20 bg-emerald-300/5 text-emerald-200',
-    cancelled: 'border-red-300/20 bg-red-300/5 text-red-200',
-  }[bucket];
+  const requiresAttention =
+    booking.syncStatus === 'needs_reconciliation' ||
+    ['provider_pending', 'pending_confirmation', 'cancellation_pending', 'reschedule_pending'].includes(
+      booking.status,
+    );
+  const isEnded = booking.status === 'cancelled' || booking.status === 'failed';
+  const styles = isEnded
+    ? 'border-red-300/20 bg-red-300/5 text-red-200'
+    : requiresAttention
+      ? 'border-amber-200/25 bg-amber-200/[0.06] text-amber-100'
+      : bucket === 'past'
+        ? 'border-emerald-300/20 bg-emerald-300/5 text-emerald-200'
+        : 'border-[var(--purple)]/35 bg-[var(--purple)]/10 text-[var(--purple-soft)]';
 
-  const Icon = bucket === 'upcoming' ? Clock3 : bucket === 'past' ? CheckCircle2 : XCircle;
+  const Icon = isEnded ? XCircle : bucket === 'past' ? CheckCircle2 : Clock3;
 
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${styles}`}>
@@ -107,42 +135,59 @@ function StatusBadge({ booking, bucket }: { booking: BookingDto; bucket: Booking
 function CancellationConfirmation({
   booking,
   onClose,
-  onCancelled,
+  onStatusChanged,
 }: {
   booking: BookingDto;
   onClose: () => void;
-  onCancelled: (bookingId: string) => void;
+  onStatusChanged: (
+    bookingId: string,
+    status: 'cancelled' | 'cancellation_pending',
+  ) => void;
 }) {
   const reasonId = useId();
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const operationRef = useRef<{ reason: string; key: string } | null>(null);
 
   const cancelBooking = async () => {
     setIsSubmitting(true);
     setError(null);
 
     try {
+      const normalizedReason = reason.trim();
+      if (operationRef.current?.reason !== normalizedReason) {
+        operationRef.current = { reason: normalizedReason, key: crypto.randomUUID() };
+      }
       const response = await fetch(`/api/bookings/${encodeURIComponent(booking.id)}/cancel`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reason.trim() ? { reason: reason.trim() } : {}),
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          idempotencyKey: operationRef.current.key,
+          ...(normalizedReason ? { reason: normalizedReason } : {}),
+        }),
       });
       const payload = await readApiResponse<{
-        data: { booking: { id: string; status: Extract<BookingStatus, 'cancelled'> } };
+        data: { booking: { id: string; status: 'cancelled' | 'cancellation_pending' } };
       }>(response, 'Der Termin konnte nicht storniert werden.');
 
-      if (payload.data.booking.id !== booking.id || payload.data.booking.status !== 'cancelled') {
-        throw new Error('Die Stornierung wurde nicht bestätigt.');
+      if (payload.data.booking.id !== booking.id) {
+        throw new ClientVisibleError('Die Stornierung wurde nicht bestätigt.');
+      }
+      if (payload.data.booking.status === 'cancellation_pending') {
+        operationRef.current = null;
+        onStatusChanged(booking.id, 'cancellation_pending');
+        onClose();
+        return;
+      }
+      if (payload.data.booking.status !== 'cancelled') {
+        throw new ClientVisibleError('Die Stornierung wurde nicht bestätigt.');
       }
 
-      onCancelled(payload.data.booking.id);
+      operationRef.current = null;
+      onStatusChanged(payload.data.booking.id, 'cancelled');
     } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Der Termin konnte nicht storniert werden.',
-      );
+      setError(clientErrorMessage(caughtError, 'Der Termin konnte nicht storniert werden.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -210,16 +255,30 @@ function BookingCard({
   booking,
   bucket,
   audience,
-  onCancelled,
+  canManageBookings,
+  onStatusChanged,
 }: {
   booking: BookingDto;
   bucket: BookingBucket;
   audience: 'parent' | 'tutor';
-  onCancelled: (bookingId: string) => void;
+  canManageBookings: boolean;
+  onStatusChanged: (
+    bookingId: string,
+    status: 'cancelled' | 'cancellation_pending',
+  ) => void;
 }) {
   const [isConfirmingCancellation, setIsConfirmingCancellation] = useState(false);
   const formatted = formatDateTime(booking);
   const isOnline = booking.location === 'online';
+  const canMutate =
+    canManageBookings &&
+    bucket === 'upcoming' &&
+    (booking.status === 'scheduled' || booking.status === 'pending_confirmation');
+  const canJoin =
+    isOnline &&
+    booking.meetingUrl !== null &&
+    bucket === 'upcoming' &&
+    (booking.status === 'scheduled' || booking.status === 'pending_confirmation');
 
   return (
     <article className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 sm:p-6">
@@ -230,7 +289,9 @@ function BookingCard({
             <StatusBadge booking={booking} bucket={bucket} />
           </div>
           <p className="mt-1 text-sm text-[#b5b1bf]">
-            {audience === 'parent' ? `Mit ${booking.tutor.name}` : `Mit ${booking.contact.name}`}
+            {audience === 'parent'
+              ? `${booking.learner.displayName} mit ${booking.tutor.name}`
+              : `${booking.learner.displayName} · Kontakt ${booking.contact.name}`}
           </p>
         </div>
         <p className="shrink-0 text-sm font-semibold text-[#d7ceff]">{booking.package.name}</p>
@@ -268,6 +329,18 @@ function BookingCard({
         </div>
       </dl>
 
+      {canJoin ? (
+        <a
+          href={booking.meetingUrl!}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
+        >
+          <Monitor aria-hidden="true" className="h-4 w-4" />
+          Online Stunde öffnen
+        </a>
+      ) : null}
+
       {audience === 'tutor' && booking.contact.message ? (
         <div className="mt-4 rounded-xl bg-white/[0.035] p-4 text-sm leading-6 text-[#b5b1bf]">
           <p className="flex items-center gap-2 font-semibold text-[#d8d4df]">
@@ -278,7 +351,7 @@ function BookingCard({
         </div>
       ) : null}
 
-      {bucket === 'upcoming' ? (
+      {canMutate ? (
         <div className="mt-5 flex flex-col gap-2 border-t border-[var(--line)] pt-5 sm:flex-row">
           <Link
             href={rescheduleHref(booking)}
@@ -303,21 +376,29 @@ function BookingCard({
         <CancellationConfirmation
           booking={booking}
           onClose={() => setIsConfirmingCancellation(false)}
-          onCancelled={onCancelled}
+          onStatusChanged={onStatusChanged}
         />
       ) : null}
     </article>
   );
 }
 
-function EmptyBookings({ bucket, audience }: { bucket: BookingBucket; audience: 'parent' | 'tutor' }) {
+function EmptyBookings({
+  bucket,
+  audience,
+  canManageBookings,
+}: {
+  bucket: BookingBucket;
+  audience: 'parent' | 'tutor';
+  canManageBookings: boolean;
+}) {
   const copy = {
     upcoming:
       audience === 'parent'
         ? 'Aktuell sind keine kommenden Stunden geplant.'
         : 'Aktuell sind dir keine kommenden Stunden zugewiesen.',
     past: 'Hier erscheinen vergangene und abgeschlossene Stunden.',
-    cancelled: 'Es gibt keine stornierten Termine.',
+    cancelled: 'Es gibt keine stornierten oder fehlgeschlagenen Termine.',
   }[bucket];
 
   return (
@@ -325,7 +406,7 @@ function EmptyBookings({ bucket, audience }: { bucket: BookingBucket; audience: 
       <CalendarClock aria-hidden="true" className="mx-auto h-8 w-8 text-[var(--purple-bright)]" />
       <h3 className="mt-4 font-bold text-white">Keine Termine in dieser Ansicht</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b5b1bf]">{copy}</p>
-      {bucket === 'upcoming' && audience === 'parent' ? (
+      {bucket === 'upcoming' && audience === 'parent' && canManageBookings ? (
         <Link
           href="/matching"
           className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
@@ -337,9 +418,28 @@ function EmptyBookings({ bucket, audience }: { bucket: BookingBucket; audience: 
   );
 }
 
-export function BookingsPanel({ bookings, audience, onBookingCancelled }: BookingsPanelProps) {
+export function BookingsPanel({
+  bookings,
+  audience,
+  canManageBookings,
+  onBookingStatusChanged,
+}: BookingsPanelProps) {
   const [activeBucket, setActiveBucket] = useState<BookingBucket>('upcoming');
-  const [now] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const updateNow = () => {
+      if (document.visibilityState === 'visible') setNow(Date.now());
+    };
+    const intervalId = window.setInterval(updateNow, 60_000);
+    document.addEventListener('visibilitychange', updateNow);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', updateNow);
+    };
+  }, []);
+
   const grouped = useMemo(() => {
     const result: Record<BookingBucket, BookingDto[]> = {
       upcoming: [],
@@ -364,7 +464,7 @@ export function BookingsPanel({ bookings, audience, onBookingCancelled }: Bookin
             {audience === 'parent' ? 'Deine Nachhilfestunden' : 'Deine zugewiesenen Stunden'}
           </h2>
         </div>
-        {audience === 'parent' ? (
+        {audience === 'parent' && canManageBookings ? (
           <Link
             href="/booking"
             className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
@@ -401,11 +501,16 @@ export function BookingsPanel({ bookings, audience, onBookingCancelled }: Bookin
               booking={booking}
               bucket={activeBucket}
               audience={audience}
-              onCancelled={onBookingCancelled}
+              canManageBookings={canManageBookings}
+              onStatusChanged={onBookingStatusChanged}
             />
           ))
         ) : (
-          <EmptyBookings bucket={activeBucket} audience={audience} />
+          <EmptyBookings
+            bucket={activeBucket}
+            audience={audience}
+            canManageBookings={canManageBookings}
+          />
         )}
       </div>
     </section>

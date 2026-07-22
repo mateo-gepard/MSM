@@ -28,6 +28,7 @@ export const contactSchema = z.object({
 
 export const createBookingSchema = z
   .object({
+    idempotencyKey: z.uuid(),
     tutorSlug: z.enum(TUTOR_SLUGS),
     subjectId: z.enum(SUBJECT_IDS),
     packageId: z.enum(PACKAGE_IDS),
@@ -36,7 +37,7 @@ export const createBookingSchema = z
     location: z.enum(['online', 'in-person']),
     locationVenue: z.string().trim().max(200).optional(),
     contact: contactSchema,
-    packagePurchaseId: z.uuid().optional(),
+    learnerId: z.uuid().optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -60,6 +61,7 @@ export const slotsQuerySchema = z
     start: dateOrDateTimeSchema,
     end: dateOrDateTimeSchema,
     timeZone: timeZoneSchema.default('Europe/Berlin'),
+    bookingId: z.uuid().optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -69,11 +71,15 @@ export const slotsQuerySchema = z
   });
 
 export const cancelBookingSchema = z
-  .object({ reason: z.string().trim().min(1).max(500).optional() })
+  .object({
+    idempotencyKey: z.uuid(),
+    reason: z.string().trim().min(1).max(500).optional(),
+  })
   .strict();
 
 export const rescheduleBookingSchema = z
   .object({
+    idempotencyKey: z.uuid(),
     startsAt: startsAtSchema,
     timeZone: timeZoneSchema.default('Europe/Berlin'),
     reason: z.string().trim().min(1).max(500).optional(),
@@ -95,7 +101,15 @@ export interface BookingResponse {
       subjectId: CreateBookingInput['subjectId'];
       packageId: CreateBookingInput['packageId'];
       startsAt: string;
-      status: 'scheduled' | 'cancelled' | 'completed';
+      status:
+        | 'provider_pending'
+        | 'pending_confirmation'
+        | 'scheduled'
+        | 'cancellation_pending'
+        | 'reschedule_pending'
+        | 'cancelled'
+        | 'completed'
+        | 'failed';
     };
   };
 }
@@ -105,5 +119,5 @@ export interface SlotsResponse {
 }
 
 export interface ApiErrorResponse {
-  error: { code: string; message: string };
+  error: { code: string };
 }

@@ -11,6 +11,7 @@ import {
   type ProfileDto,
   type ProfileResponse,
 } from '@/components/dashboard/contracts';
+import { clientErrorMessage } from '@/lib/api/client-error';
 
 export default function TutorAccessPage() {
   const router = useRouter();
@@ -46,11 +47,7 @@ export default function TutorAccessPage() {
         setProfile(nextProfile);
       } catch (caughtError) {
         if (caughtError instanceof DOMException && caughtError.name === 'AbortError') return;
-        setError(
-          caughtError instanceof Error
-            ? caughtError.message
-            : 'Der Tutor-Zugang konnte nicht geprüft werden.',
-        );
+        setError(clientErrorMessage(caughtError, 'Der Tutorzugang konnte nicht geprüft werden.'));
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
@@ -65,7 +62,7 @@ export default function TutorAccessPage() {
       <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-6" role="status">
         <div className="text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--action)]" />
-          <p className="mt-4 text-sm text-[var(--ink-muted)]">Tutor-Zugang wird geprüft …</p>
+          <p className="mt-4 text-sm text-[var(--ink-muted)]">Tutorzugang wird geprüft …</p>
         </div>
       </div>
     );
@@ -76,9 +73,9 @@ export default function TutorAccessPage() {
       <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-5">
         <div className="w-full max-w-md rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-7 text-center sm:p-8">
           <UserRoundCheck aria-hidden="true" className="mx-auto h-9 w-9 text-[#9b83ff]" />
-          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Tutor-Zugang</h1>
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Tutorzugang</h1>
           <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
-            Melde dich mit deinem persönlichen Tutor-Konto an. Das zugeordnete Dashboard wird danach
+            Melde dich mit deinem persönlichen Tutorkonto an. Das zugeordnete Dashboard wird danach
             automatisch geöffnet.
           </p>
           <Link
@@ -89,7 +86,7 @@ export default function TutorAccessPage() {
             <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </Link>
           <p className="mt-5 text-xs leading-5 text-[var(--ink-subtle)]">
-            Es gibt keine manuelle Tutor-Auswahl. Der Zugriff folgt ausschließlich der serverseitigen
+            Es gibt keine manuelle Auswahl des Tutors. Der Zugriff folgt ausschließlich der serverseitigen
             Kontozuordnung.
           </p>
         </div>
@@ -102,7 +99,7 @@ export default function TutorAccessPage() {
       <div className="flex min-h-screen items-center justify-center bg-[var(--canvas)] p-5">
         <div className="w-full max-w-md rounded-2xl border border-amber-200/20 bg-[var(--surface)] p-7 text-center sm:p-8">
           <ShieldCheck aria-hidden="true" className="mx-auto h-9 w-9 text-amber-200" />
-          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Kein Tutor-Zugriff</h1>
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">Kein Tutorzugriff</h1>
           <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
             {error ||
               (profile?.role === 'tutor'
@@ -128,10 +125,10 @@ export default function TutorAccessPage() {
             <ShieldCheck aria-hidden="true" className="mt-0.5 h-7 w-7 shrink-0 text-[#9b83ff]" />
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9b83ff]">Adminzugriff</p>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight text-white">Tutor-Dashboard öffnen</h1>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-white">Tutordashboard öffnen</h1>
               <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
                 Dein administratives Profil wurde geprüft. Wähle ein Dashboard über seinen stabilen
-                Tutor-Eintrag.
+                Eintrag des Tutors.
               </p>
             </div>
           </div>

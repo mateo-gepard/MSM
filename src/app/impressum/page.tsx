@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Impressum | MSM Munich Scholar Mentors',
-  description: 'Anbieter- und Kontaktangaben von MSM Munich Scholar Mentors.',
+  title: 'Impressum',
+  description: 'Angaben zum Anbieter und Kontakt von MSM Munich Scholar Mentors.',
 };
 
 export default function LegalNoticePage() {
@@ -12,12 +12,12 @@ export default function LegalNoticePage() {
       <header className="border-b border-[var(--line)]">
         <div className="site-container py-16 sm:py-24">
           <p className="eyebrow">Anbieterangaben</p>
-          <h1 className="mt-6 max-w-4xl font-display text-[clamp(3rem,8vw,6.5rem)] font-medium leading-[0.92] tracking-[-0.055em]">
+          <h1 className="mt-6 max-w-4xl break-words font-display text-[clamp(3rem,8vw,6.5rem)] font-medium leading-[0.92] tracking-[-0.055em]">
             Impressum
           </h1>
           <p className="mt-7 max-w-2xl text-base leading-8 text-[var(--ink-muted)] sm:text-lg">
-            Kontakt- und Anbieterinformationen für die technische Vermittlungs- und
-            Buchungsplattform MSM Munich Scholar Mentors.
+            Informationen zum Kontakt und Anbieter der technischen Plattform für Vermittlung und
+            Buchung von MSM Munich Scholar Mentors.
           </p>
         </div>
       </header>
@@ -39,10 +39,10 @@ export default function LegalNoticePage() {
 
             <LegalSection number="02" title="Direkter Kontakt">
               <address className="grid gap-3 not-italic">
-                <ContactRow label="Anbieter-E-Mail" href="mailto:mateo.mamaladze@gmail.com">
+                <ContactRow label="E Mail des Anbieters" href="mailto:mateo.mamaladze@gmail.com">
                   mateo.mamaladze@gmail.com
                 </ContactRow>
-                <ContactRow label="MSM-Kontakt" href="mailto:munichscholarmentors@gmail.com">
+                <ContactRow label="Kontakt zu MSM" href="mailto:munichscholarmentors@gmail.com">
                   munichscholarmentors@gmail.com
                 </ContactRow>
                 <ContactRow label="Telefon" href="tel:+4917652547548">
@@ -58,11 +58,12 @@ export default function LegalNoticePage() {
                 außerdem Preise für Einzelstunden und Stundenpakete.
               </p>
               <p>
-                Ein Online-Zahlungsdienst ist im aktuellen System nicht integriert. Wer bei einer
+                Stripe Checkout ist technisch vorbereitet, neue Zahlungen sind aber bis zur
+                ausdrücklichen rechtlichen und betrieblichen Freigabe gesperrt. Wer bei einer
                 kostenpflichtigen Nachhilfeleistung Vertragspartner ist und in wessen Namen Zahlungen
-                entgegengenommen werden, muss vor dem Produktivstart verbindlich festgelegt werden.
-                Die aktuelle <Link className="text-[var(--purple-soft)] underline decoration-[var(--purple-bright)]/50 underline-offset-4 hover:text-white" href="/agb">AGB-Arbeitsfassung</Link> weist
-                diese offene Frage ausdrücklich aus.
+                entgegengenommen werden, muss vor dieser Freigabe verbindlich festgelegt werden. Die
+                aktuelle <Link className="text-[var(--purple-soft)] underline decoration-[var(--purple-bright)]/50 underline-offset-4 hover:text-white" href="/agb">AGB Arbeitsfassung</Link> weist diese
+                offene Frage ausdrücklich aus.
               </p>
             </LegalSection>
 
@@ -89,16 +90,16 @@ export default function LegalNoticePage() {
               </p>
               <ul className="mt-5 space-y-3">
                 <ReviewItem>
-                  die genaue rechtliche Betreiber- und Vertretungskonstellation, insbesondere im
+                  die genaue rechtliche Konstellation von Betreiber und Vertretung, insbesondere im
                   Hinblick auf den minderjährigen Anbieter;
                 </ReviewItem>
                 <ReviewItem>
-                  eine gegebenenfalls vorhandene Rechtsform, Registereintragung, Register- oder
-                  Wirtschafts-Identifikationsnummer sowie eine gegebenenfalls zuständige
+                  eine gegebenenfalls vorhandene Rechtsform, Registereintragung, Registernummer oder
+                  Wirtschaftsidentifikationsnummer sowie eine gegebenenfalls zuständige
                   Aufsichtsbehörde;
                 </ReviewItem>
                 <ReviewItem>
-                  eine Umsatzsteuer-Identifikationsnummer, aber nur sofern tatsächlich eine solche
+                  eine Umsatzsteueridentifikationsnummer, aber nur sofern tatsächlich eine solche
                   Nummer erteilt wurde;
                 </ReviewItem>
                 <ReviewItem>
@@ -106,14 +107,14 @@ export default function LegalNoticePage() {
                   vorliegen und welche Erklärung der Betreiber hierzu abgeben will;
                 </ReviewItem>
                 <ReviewItem>
-                  ob das Angebot journalistisch-redaktionell gestaltet ist und die oben genannte
+                  ob das Angebot journalistisch und redaktionell gestaltet ist und die oben genannte
                   Verantwortlichenangabe deshalb erforderlich ist.
                 </ReviewItem>
               </ul>
             </LegalSection>
 
             <footer className="mt-14 border-t border-[var(--line)] pt-6 text-sm text-[var(--ink-subtle)]">
-              Technischer Arbeitsstand: 21. Juli 2026 · Rechtliche Prüfung ausstehend
+              Technischer Arbeitsstand: 22. Juli 2026 · Rechtliche Prüfung ausstehend
             </footer>
           </article>
 
@@ -124,8 +125,8 @@ export default function LegalNoticePage() {
                 Betreiberangaben noch nicht rechtlich freigegeben
               </h2>
               <p className="mt-3 text-sm leading-6 text-amber-50/75">
-                Name, Vertretung, Anschrift, E-Mail und Telefon wurden aus der bestehenden Seite
-                übernommen. Fehlende Register-, Steuer- oder Aufsichtsangaben wurden nicht erfunden.
+                Name, Vertretung, Anschrift, E Mail und Telefon wurden aus der bestehenden Seite
+                übernommen. Fehlende Angaben zu Register, Steuern oder Aufsicht wurden nicht erfunden.
               </p>
             </div>
 

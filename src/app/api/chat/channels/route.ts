@@ -1,108 +1,231 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { TUTOR_SLUGS, getTutorBySlug } from '@/domain/catalog';
-import { ApiError, apiErrorResponse, parseJsonRequest } from '@/lib/api/errors';
-import { requireAuthenticatedUser } from '@/lib/auth/server';
 import {
-  createDistinctParentTutorChannel,
-  ensureSendbirdUser,
+  CHAT_AUTHENTICATED_READ_LIMIT_PER_HOUR,
+  CHAT_MESSAGE_MAX_LENGTH,
+  CHAT_PRE_AUTH_READ_LIMIT_PER_HOUR,
+  CHAT_PRE_AUTH_SEND_LIMIT_PER_HOUR,
+  CHAT_SEND_REQUEST_MAX_BYTES,
+  type ChatIdentityContext,
+} from '@/domain/chat';
+import { getTutorByDbId } from '@/domain/catalog';
+import { ApiError, apiErrorResponse, parseJsonRequest } from '@/lib/api/errors';
+import { requireActivePrincipal, requireStaffMfa } from '@/lib/auth/server';
+import { enforceRateLimit } from '@/lib/rate-limit/server';
+import {
+  CHAT_AUTHORIZED_BOOKING_LIFECYCLES,
+  listBookingChatMessages,
+  sendBookingChatMessage,
   SendbirdApiError,
-  toSendbirdUserId,
 } from '@/lib/sendbird/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/server';
 
-const requestSchema = z
-  .object({ tutorSlug: z.enum(TUTOR_SLUGS), bookingId: z.uuid().optional() })
+const conversationSchema = z
+  .object({
+    identityContext: z.enum(['household', 'tutor']),
+    bookingId: z.uuid(),
+  })
   .strict();
+const listSchema = conversationSchema.extend({
+  beforeMessageId: z.string().regex(/^\d{1,20}$/).optional(),
+});
+const sendSchema = conversationSchema.extend({
+  message: z.string().trim().min(1).max(CHAT_MESSAGE_MAX_LENGTH),
+  clientMessageId: z.uuid(),
+});
+
+interface AuthorizedConversation {
+  bookingId: string;
+  side: ChatIdentityContext;
+  parentNickname: string;
+  tutorNickname: string;
+  tutorName: string;
+}
+
+async function authorizeConversation(
+  identityContext: ChatIdentityContext,
+  bookingId: string,
+): Promise<{ conversation: AuthorizedConversation; principalId: string }> {
+  const principal = await requireActivePrincipal();
+  const database = createSupabaseServiceClient();
+
+  if (identityContext === 'tutor') {
+    await requireStaffMfa(principal);
+    if (!principal.roles.includes('tutor') || !principal.tutorId) {
+      throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'An active tutor role is required.');
+    }
+    const { data: booking, error: bookingError } = await database
+      .from('bookings')
+      .select('id,user_id,tutor_id')
+      .eq('id', bookingId)
+      .eq('tutor_id', principal.tutorId)
+      .in('lifecycle_status', [...CHAT_AUTHORIZED_BOOKING_LIFECYCLES])
+      .maybeSingle();
+    if (bookingError) {
+      throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
+    }
+    if (!booking || booking.user_id === principal.user.id) {
+      throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'An active tutoring relationship is required.');
+    }
+    const tutor = getTutorByDbId(booking.tutor_id);
+    if (!tutor) {
+      throw new ApiError(409, 'TUTOR_ACCOUNT_UNAVAILABLE', 'The assigned tutor is unavailable.');
+    }
+    return {
+      principalId: principal.user.id,
+      conversation: {
+        bookingId: booking.id,
+        side: 'tutor',
+        parentNickname: 'MSM Haushalt',
+        tutorNickname: principal.displayName || tutor.name,
+        tutorName: tutor.name,
+      },
+    };
+  }
+
+  if (!principal.roles.includes('parent')) {
+    throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'An active parent role is required.');
+  }
+  if (!principal.householdId || !principal.householdPermissions) {
+    throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'An active household membership is required.');
+  }
+  let bookingQuery = database
+    .from('bookings')
+    .select('id,user_id,tutor_id')
+    .eq('id', bookingId)
+    .eq('household_id', principal.householdId)
+    .in('lifecycle_status', [...CHAT_AUTHORIZED_BOOKING_LIFECYCLES]);
+  if (!principal.householdPermissions.canViewAllBookings) {
+    bookingQuery = bookingQuery.eq('user_id', principal.user.id);
+  }
+  const { data: booking, error: bookingError } = await bookingQuery.maybeSingle();
+  if (bookingError) {
+    throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
+  }
+  if (!booking) {
+    throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'An active tutoring relationship is required.');
+  }
+  const tutor = getTutorByDbId(booking.tutor_id);
+  if (!tutor) {
+    throw new ApiError(409, 'TUTOR_ACCOUNT_UNAVAILABLE', 'The assigned tutor is unavailable.');
+  }
+
+  const { data: tutorRole, error: tutorRoleError } = await database
+    .from('account_roles')
+    .select('user_id')
+    .eq('role', 'tutor')
+    .eq('tutor_id', booking.tutor_id)
+    .is('revoked_at', null)
+    .maybeSingle();
+  if (tutorRoleError) {
+    throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
+  }
+  if (!tutorRole || tutorRole.user_id === principal.user.id) {
+    throw new ApiError(409, 'TUTOR_ACCOUNT_UNAVAILABLE', 'This tutor does not have a chat account yet.');
+  }
+  const { data: tutorProfile, error: tutorProfileError } = await database
+    .from('profiles')
+    .select('display_name,deactivated_at')
+    .eq('id', tutorRole.user_id)
+    .maybeSingle();
+  if (tutorProfileError) {
+    throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
+  }
+  if (!tutorProfile || tutorProfile.deactivated_at) {
+    throw new ApiError(409, 'TUTOR_ACCOUNT_UNAVAILABLE', 'This tutor does not have an active chat account.');
+  }
+
+  return {
+    principalId: principal.user.id,
+    conversation: {
+      bookingId: booking.id,
+      side: 'household',
+      parentNickname: 'MSM Haushalt',
+      tutorNickname: tutorProfile.display_name || tutor.name,
+      tutorName: tutor.name,
+    },
+  };
+}
+
+function chatProviderError(error: unknown) {
+  if (error instanceof SendbirdApiError) {
+    return apiErrorResponse(
+      new ApiError(502, 'CHAT_PROVIDER_ERROR', 'Chat is temporarily unavailable.'),
+    );
+  }
+  return apiErrorResponse(error);
+}
+
+export async function GET(request: Request) {
+  try {
+    await enforceRateLimit({
+      request,
+      scope: 'chat_pre_auth_read',
+      limit: CHAT_PRE_AUTH_READ_LIMIT_PER_HOUR,
+      windowSeconds: 3600,
+    });
+    const url = new URL(request.url);
+    const input = listSchema.parse({
+      identityContext: url.searchParams.get('identityContext'),
+      bookingId: url.searchParams.get('bookingId'),
+      beforeMessageId: url.searchParams.get('beforeMessageId') || undefined,
+    });
+    const { conversation, principalId } = await authorizeConversation(
+      input.identityContext,
+      input.bookingId,
+    );
+    await enforceRateLimit({
+      request,
+      scope: 'chat_read',
+      limit: CHAT_AUTHENTICATED_READ_LIMIT_PER_HOUR,
+      windowSeconds: 3600,
+      subject: principalId,
+    });
+    const result = await listBookingChatMessages({
+      ...conversation,
+      beforeMessageId: input.beforeMessageId,
+    });
+    return NextResponse.json(
+      { data: result },
+      { headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
+    );
+  } catch (error) {
+    return chatProviderError(error);
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    const input = requestSchema.parse(await parseJsonRequest(request));
-    const user = await requireAuthenticatedUser();
-    const tutor = getTutorBySlug(input.tutorSlug);
-    const database = createSupabaseServiceClient();
-
-    const { data: currentProfile, error: currentProfileError } = await database
-      .from('profiles')
-      .select('role,tutor_id,display_name')
-      .eq('id', user.id)
-      .maybeSingle();
-    if (currentProfileError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
-
-    let parentAuthId: string;
-    let tutorAuthId: string;
-    let parentNickname: string;
-    let tutorNickname: string;
-
-    if (currentProfile?.role === 'parent') {
-      const { data: booking, error: bookingError } = await database
-        .from('bookings')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('tutor_id', tutor.dbId)
-        .limit(1)
-        .maybeSingle();
-      if (bookingError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
-      if (!booking) throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'A booking with this tutor is required.');
-
-      const { data: tutorProfile, error: tutorProfileError } = await database
-        .from('profiles')
-        .select('id,display_name')
-        .eq('role', 'tutor')
-        .eq('tutor_id', tutor.dbId)
-        .maybeSingle();
-      if (tutorProfileError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
-      if (!tutorProfile) throw new ApiError(409, 'TUTOR_ACCOUNT_UNAVAILABLE', 'This tutor does not have a chat account yet.');
-
-      parentAuthId = user.id;
-      tutorAuthId = tutorProfile.id;
-      parentNickname = currentProfile.display_name || 'MSM Parent';
-      tutorNickname = tutorProfile.display_name || tutor.name;
-    } else if (currentProfile?.role === 'tutor' && currentProfile.tutor_id === tutor.dbId) {
-      if (!input.bookingId) {
-        throw new ApiError(400, 'BOOKING_ID_REQUIRED', 'Open chat from an assigned booking.');
-      }
-      const { data: booking, error: bookingError } = await database
-        .from('bookings')
-        .select('user_id')
-        .eq('id', input.bookingId)
-        .eq('tutor_id', tutor.dbId)
-        .maybeSingle();
-      if (bookingError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
-      if (!booking) throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'The booking is not assigned to this tutor.');
-
-      const { data: parentProfile, error: parentProfileError } = await database
-        .from('profiles')
-        .select('display_name')
-        .eq('id', booking.user_id)
-        .maybeSingle();
-      if (parentProfileError) throw new ApiError(503, 'DATABASE_UNAVAILABLE', 'Chat authorization is unavailable.');
-
-      parentAuthId = booking.user_id;
-      tutorAuthId = user.id;
-      parentNickname = parentProfile?.display_name || 'MSM Parent';
-      tutorNickname = currentProfile.display_name || tutor.name;
-    } else {
-      throw new ApiError(403, 'CHAT_NOT_ALLOWED', 'You cannot create this chat channel.');
-    }
-
-    const parentUserId = toSendbirdUserId(parentAuthId);
-    const tutorUserId = toSendbirdUserId(tutorAuthId);
-    await Promise.all([
-      ensureSendbirdUser(parentUserId, parentNickname),
-      ensureSendbirdUser(tutorUserId, tutorNickname),
-    ]);
-    const channelUrl = await createDistinctParentTutorChannel({
-      parentUserId,
-      tutorUserId,
-      tutorName: tutor.name,
-      tutorSlug: tutor.slug,
+    await enforceRateLimit({
+      request,
+      scope: 'chat_pre_auth_send',
+      limit: CHAT_PRE_AUTH_SEND_LIMIT_PER_HOUR,
+      windowSeconds: 3600,
     });
-    return NextResponse.json({ data: { channelUrl } });
+    const input = sendSchema.parse(
+      await parseJsonRequest(request, { maxBytes: CHAT_SEND_REQUEST_MAX_BYTES }),
+    );
+    const { conversation, principalId } = await authorizeConversation(
+      input.identityContext,
+      input.bookingId,
+    );
+    await enforceRateLimit({
+      request,
+      scope: 'chat_send',
+      limit: 120,
+      windowSeconds: 3600,
+      subject: principalId,
+    });
+    const message = await sendBookingChatMessage({
+      ...conversation,
+      message: input.message,
+      clientMessageId: input.clientMessageId,
+    });
+    return NextResponse.json(
+      { data: { message } },
+      { headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
+    );
   } catch (error) {
-    if (error instanceof SendbirdApiError) {
-      return apiErrorResponse(new ApiError(502, 'CHAT_PROVIDER_ERROR', 'Chat is temporarily unavailable.'));
-    }
-    return apiErrorResponse(error);
+    return chatProviderError(error);
   }
 }

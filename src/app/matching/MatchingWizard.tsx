@@ -146,7 +146,7 @@ export default function MatchingWizard() {
       <div className="site-container max-w-5xl">
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
-            <p className="eyebrow mb-3">Tutor-Matching</p>
+            <p className="eyebrow mb-3">Tutorsuche</p>
             <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.04em] sm:text-5xl">
               In drei kurzen Schritten zum passenden Mentor.
             </h1>
@@ -174,7 +174,7 @@ export default function MatchingWizard() {
                   return (
                     <label
                       key={item.id}
-                      className={`group flex min-h-28 cursor-pointer flex-col justify-between rounded-2xl border p-4 transition-colors ${
+                      className={`choice-card group flex min-h-28 cursor-pointer flex-col justify-between rounded-2xl border p-4 transition-colors ${
                         selected
                           ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12'
                           : 'border-white/10 bg-black/10 hover:border-white/25 hover:bg-white/[0.04]'
@@ -215,7 +215,7 @@ export default function MatchingWizard() {
                     return (
                       <label
                         key={goal.id}
-                        className={`flex cursor-pointer items-start gap-4 rounded-2xl border p-4 transition-colors ${
+                        className={`choice-card flex cursor-pointer items-start gap-4 rounded-2xl border p-4 transition-colors ${
                           selected
                             ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12'
                             : 'border-white/10 bg-black/10 hover:border-white/25'
@@ -250,7 +250,7 @@ export default function MatchingWizard() {
                     {LANGUAGES.map((language) => (
                       <label
                         key={language}
-                        className={`cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm transition-colors ${
+                        className={`choice-card cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm transition-colors ${
                           preferences.language === language
                             ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12 text-white'
                             : 'border-white/10 text-white/65 hover:border-white/25'
@@ -285,7 +285,7 @@ export default function MatchingWizard() {
                     ).map(([value, label, Icon]) => (
                       <label
                         key={value}
-                        className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
+                        className={`choice-card flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
                           preferences.location === value
                             ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/12 text-white'
                             : 'border-white/10 text-white/65 hover:border-white/25'
@@ -390,7 +390,7 @@ export default function MatchingWizard() {
                     href="mailto:munichscholarmentors@gmail.com"
                     className="mt-5 inline-flex items-center gap-2 font-medium text-[var(--color-accent-soft)]"
                   >
-                    Anfrage per E-Mail senden <ArrowRight className="size-4" />
+                    Anfrage per E Mail senden <ArrowRight className="size-4" />
                   </a>
                 </div>
               )}

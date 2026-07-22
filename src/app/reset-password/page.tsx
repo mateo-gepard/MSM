@@ -41,8 +41,8 @@ export default function ResetPasswordPage() {
         /same password/i.test(message)
           ? 'Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.'
           : /session|token|expired/i.test(message)
-            ? 'Der Reset-Link ist abgelaufen. Bitte fordere einen neuen Link an.'
-            : 'Das Passwort konnte nicht geändert werden. Bitte fordere einen neuen Reset-Link an.',
+            ? 'Der Link zum Zurücksetzen ist abgelaufen. Bitte fordere einen neuen Link an.'
+            : 'Das Passwort konnte nicht geändert werden. Bitte fordere einen neuen Link zum Zurücksetzen an.',
       );
     } finally {
       setLoading(false);
@@ -52,12 +52,12 @@ export default function ResetPasswordPage() {
   return (
     <section className="site-section min-h-[calc(100vh-5rem)] bg-[var(--canvas)] pt-28 sm:pt-36">
       <div className="site-container max-w-lg">
-        <p className="eyebrow">Account-Sicherheit</p>
+        <p className="eyebrow">Accountsicherheit</p>
         <h1 className="mt-5 font-display text-5xl font-medium leading-none tracking-[-0.045em] text-[var(--ink)]">
           Neues Passwort setzen
         </h1>
         <p className="mt-4 leading-7 text-[var(--ink-muted)]">
-          Der Link aus deiner E-Mail bestätigt deine Identität. Lege jetzt ein neues Passwort für deinen MSM Account fest.
+          Der Link aus deiner E Mail bestätigt deine Identität. Lege jetzt ein neues Passwort für deinen MSM Account fest.
         </p>
 
         <FrostedCard className="mt-8 rounded-2xl p-5 sm:p-7">

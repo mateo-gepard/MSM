@@ -1,8 +1,9 @@
 import type { PackageId, SubjectId, TutorSlug } from './catalog';
-import type { BookingStatus, PurchaseStatus, UserRole } from '@/types/database';
+import type { BookingLifecycleStatus, BookingSyncStatus, PurchaseStatus, UserRole } from '@/types/database';
 
 export interface BookingListItem {
   id: string;
+  learner: { id: string; displayName: string };
   tutor: { slug: TutorSlug; name: string };
   subject: { id: SubjectId; name: string };
   package: { id: PackageId; name: string };
@@ -11,7 +12,9 @@ export interface BookingListItem {
   timeZone: string;
   location: 'online' | 'in-person';
   locationVenue: string | null;
-  status: BookingStatus;
+  meetingUrl: string | null;
+  status: BookingLifecycleStatus;
+  syncStatus: BookingSyncStatus;
   contact: {
     name: string;
     email: string;
@@ -43,6 +46,7 @@ export interface ProfileResponse {
   data: {
     profile: {
       role: UserRole;
+      roles: UserRole[];
       tutorSlug: TutorSlug | null;
       displayName: string | null;
     };

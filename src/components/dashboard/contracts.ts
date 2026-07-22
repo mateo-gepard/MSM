@@ -5,19 +5,26 @@ import type {
   EntitlementListResponse,
   ProfileResponse,
 } from '@/domain/dashboard-dtos';
-import type { BookingStatus } from '@/types/database';
+import type { BookingLifecycleStatus } from '@/types/database';
+import type { LearnerListItem } from '@/domain/household-schemas';
+import { apiClientError, ClientVisibleError } from '@/lib/api/client-error';
 
 export type BookingDto = BookingListItem;
 export type BookingsResponse = BookingListResponse;
 export type EntitlementDto = EntitlementListItem;
 export type EntitlementsResponse = EntitlementListResponse;
 export type ProfileDto = ProfileResponse['data']['profile'];
-export type { BookingStatus, ProfileResponse };
+export type { BookingLifecycleStatus, ProfileResponse };
 
-export interface ApiErrorPayload {
-  error: {
-    code: string;
-    message: string;
+export interface DashboardData {
+  profile: ProfileDto;
+  bookings: BookingDto[];
+  entitlements: EntitlementDto[];
+  learners: LearnerListItem[];
+  permissions: {
+    canManageLearners: boolean;
+    canManageBilling: boolean;
+    canBook: boolean;
   };
 }
 
@@ -27,12 +34,11 @@ export async function readApiResponse<T>(response: Response, fallbackMessage: st
   try {
     payload = await response.json();
   } catch {
-    throw new Error(fallbackMessage);
+    throw new ClientVisibleError(fallbackMessage);
   }
 
   if (!response.ok) {
-    const apiError = payload as Partial<ApiErrorPayload>;
-    throw new Error(apiError.error?.message || fallbackMessage);
+    throw apiClientError(payload, fallbackMessage);
   }
 
   return payload as T;

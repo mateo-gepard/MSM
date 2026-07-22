@@ -3,24 +3,20 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { safeInternalRedirect } from '@/lib/security/safe-redirect';
 
-export async function signUp(email: string, password: string, name: string) {
+export async function signUp(email: string, password: string, name: string, redirectTo?: string) {
   const supabase = getSupabaseBrowserClient();
-  const { data, error } = await supabase.auth.signUp({
+  const next = safeInternalRedirect(redirectTo, '/dashboard');
+  const callback = new URL('/auth/callback', window.location.origin);
+  callback.searchParams.set('next', next);
+
+  return supabase.auth.signUp({
     email,
     password,
-    options: { data: { name: name.trim() } },
+    options: {
+      data: { name: name.trim() },
+      emailRedirectTo: callback.toString(),
+    },
   });
-
-  // Supabase deliberately obscures whether a confirmed account exists. An
-  // empty identities array is the supported signal returned for duplicate signup.
-  if (!error && data.user?.identities?.length === 0) {
-    return {
-      data: null,
-      error: { message: 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.' },
-    };
-  }
-
-  return { data, error };
 }
 
 export async function signIn(email: string, password: string) {
@@ -39,7 +35,10 @@ export async function sendMagicLink(email: string, redirectTo?: string) {
 
   return getSupabaseBrowserClient().auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: callback.toString() },
+    options: {
+      emailRedirectTo: callback.toString(),
+      shouldCreateUser: false,
+    },
   });
 }
 

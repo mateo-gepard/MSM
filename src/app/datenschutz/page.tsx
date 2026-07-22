@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Datenschutz | MSM Munich Scholar Mentors',
+  title: 'Datenschutz',
   description: 'Technische Datenschutzinformationen zu Konten, Buchungen und Chat bei MSM.',
 };
 
@@ -17,18 +17,18 @@ const navigation = [
 const processingGroups = [
   {
     title: 'Konto und Anmeldung',
-    data: 'E-Mail-Adresse, Anmeldeinformationen, Sitzungskennungen, optionaler Anzeigename sowie die serverseitig zugewiesene Rolle.',
+    data: 'E Mailadresse, Anmeldeinformationen, Sitzungskennungen, optionaler Anzeigename sowie die serverseitig zugewiesene Rolle.',
     purpose: 'Registrierung, Anmeldung, Sitzungsverwaltung und Zugriffsschutz.',
   },
   {
     title: 'Buchung und Terminverwaltung',
-    data: 'Tutor, Fach, Paket, Startzeit, Zeitzone, Unterrichtsformat, Treffpunkt bei Vor-Ort-Terminen, Name, Konto-E-Mail, optionale Telefonnummer und optionale Nachricht.',
+    data: 'Tutor, Fach, Paket, Startzeit, Zeitzone, Unterrichtsformat, Treffpunkt bei Terminen vor Ort, Name, E Mailadresse des Kontos, optionale Telefonnummer und optionale Nachricht.',
     purpose: 'Verfügbarkeitsabfrage, Terminbuchung, Umbuchung, Stornierung und Anzeige im rollenbasierten Dashboard.',
   },
   {
     title: 'Stundenguthaben',
-    data: 'Paket, Anzahl und Verbrauch von Stunden, Status, außerhalb der Website bestätigter Zahlungsstatus, Referenz und erfasster Betrag.',
-    purpose: 'Prüfung, ob eine kostenpflichtige Buchung durch ein verifiziertes Guthaben gedeckt ist.',
+    data: 'Paket, Anzahl und Verbrauch von Stunden, Bestellstatus, Betrag, Währung sowie technische Stripe Referenzen für Zahlung, Erstattung und Streitfall.',
+    purpose: 'Sichere Zahlungszuordnung und Prüfung, ob eine kostenpflichtige Buchung durch ein verifiziertes Guthaben gedeckt ist.',
   },
   {
     title: 'Nachrichten',
@@ -40,8 +40,8 @@ const processingGroups = [
 const unresolvedItems = [
   'Rechtsgrundlage und, falls Art. 6 Abs. 1 lit. f DSGVO genutzt wird, das konkrete berechtigte Interesse für jeden einzelnen Verarbeitungsvorgang.',
   'Produktiver Hostinganbieter, Serverstandort, Umfang der Zugriffsprotokolle und deren Aufbewahrungsdauer.',
-  'Vertragliche Rollen, Auftragsverarbeitungsvereinbarungen, gewählte Datenregionen und mögliche Drittlandübermittlungen bei Supabase, Cal.com, Sendbird und dem Hostinganbieter.',
-  'Ein verbindliches Lösch- und Aufbewahrungskonzept für Konten, Buchungen, Zahlungsreferenzen, Kalenderdaten, Protokolle und Chatnachrichten.',
+  'Vertragliche Rollen, Auftragsverarbeitungsvereinbarungen, gewählte Datenregionen und mögliche Drittlandübermittlungen bei Supabase, Stripe, Cal.com, Sendbird und dem Hostinganbieter.',
+  'Ein verbindliches Konzept für Löschung und Aufbewahrung von Konten, Buchungen, Zahlungsreferenzen, Kalenderdaten, Protokollen und Chatnachrichten.',
   'Der organisatorische Prozess für Auskunft, Berichtigung, Löschung, Export, Kontoschließung und Datenschutzvorfälle.',
   'Ob und wie Minderjährige die Plattform selbst nutzen dürfen, einschließlich Altersprüfung und Einbindung gesetzlicher Vertreter.',
   'Ob ein Datenschutzbeauftragter bestellt ist oder bestellt werden muss; aus dem Projekt ist keine entsprechende Stelle ersichtlich.',
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
       <header className="border-b border-[var(--line)]">
         <div className="site-container py-16 sm:py-24">
           <p className="eyebrow">Datentransparenz</p>
-          <h1 className="mt-6 max-w-4xl font-display text-[clamp(3rem,8vw,6.5rem)] font-medium leading-[0.92] tracking-[-0.055em]">
+          <h1 className="mt-6 max-w-4xl break-words font-display text-[clamp(2.5rem,8vw,6.5rem)] font-medium leading-[0.92] tracking-[-0.055em]">
             Datenschutzerklärung
           </h1>
           <p className="mt-7 max-w-2xl text-base leading-8 text-[var(--ink-muted)] sm:text-lg">
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-2 text-sm leading-6 text-amber-50/75">
               Rechtsgrundlagen, Aufbewahrungsfristen, Hosting und internationale Datenübermittlungen
-              müssen anhand der tatsächlich gewählten Anbieter-Konten und Verträge vervollständigt
+              müssen anhand der tatsächlich gewählten Konten bei den Anbietern und Verträge vervollständigt
               werden, bevor die Plattform produktiv personenbezogene Daten verarbeitet.
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function PrivacyPage() {
             </address>
             <p>
               Welche Person oder Organisation rechtlich als Verantwortlicher auftritt, muss mit dem
-              tatsächlichen Betreiber- und Vertragsmodell abgeglichen werden. Diese technische
+              tatsächlichen Modell für Betreiber und Verträge abgeglichen werden. Diese technische
               Überarbeitung nimmt diese rechtliche Einordnung nicht vor.
             </p>
           </LegalSection>
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
             </div>
             <p>
               Beim Abruf einer Website übermittelt der Browser außerdem technisch notwendige
-              Verbindungsdaten wie IP-Adresse, Zeitpunkt, angeforderte Ressource und Browserangaben an
+              Verbindungsdaten wie Internetprotokolladresse, Zeitpunkt, angeforderte Ressource und Browserangaben an
               den ausliefernden Server. Ob und wie lange der spätere Hostinganbieter diese Daten
               protokolliert, ist noch zu dokumentieren.
             </p>
@@ -153,28 +153,32 @@ export default function PrivacyPage() {
           <LegalSection id="dienste" number="03" title="Externe Dienste und konkrete Datenflüsse">
             <Service title="Supabase · Konto und Datenbank">
               Supabase erhält Daten für Registrierung und Anmeldung und speichert Profile, Rollen,
-              Buchungen sowie verifizierte Stundenguthaben. Die Sitzung wird über sichere
-              Authentifizierungs-Cookies mit dem Browser verbunden. Administrative Zugangsschlüssel
+              Buchungen, Zahlungsreferenzen sowie verifizierte Stundenguthaben. Die Sitzung wird über sichere
+              Cookies für die Authentifizierung mit dem Browser verbunden. Administrative Zugangsschlüssel
               sind im Anwendungskonzept ausschließlich serverseitig vorgesehen.
             </Service>
             <Service title="Cal.com · Verfügbarkeit und Termin">
-              Für eine Verfügbarkeitsabfrage werden Tutor-Zuordnung, Zeitraum und Zeitzone übermittelt.
-              Bei einer Buchung gehen Startzeit, Name, E-Mail-Adresse, optionale Telefonnummer,
+              Für eine Verfügbarkeitsabfrage werden die Zuordnung zum Tutor, Zeitraum und Zeitzone übermittelt.
+              Bei einer Buchung gehen Startzeit, Name, E Mailadresse, optionale Telefonnummer,
               Zeitzone sowie technische Angaben zu Tutor, Fach, Paket und Unterrichtsformat an
               Cal.com. Bei Umbuchung oder Stornierung kann zusätzlich ein angegebener Grund
               übermittelt werden.
             </Service>
             <Service title="Sendbird · Chat">
-              Für autorisierte Chats werden aus der Konto-ID abgeleitete Nutzerkennungen,
-              Anzeigenamen, Kanalmitgliedschaften, Tutor-Zuordnung und Nachrichteninhalte an Sendbird
-              übermittelt. Der Zugriff erfolgt über zeitlich begrenzte, serverseitig ausgestellte
-              Sitzungstoken.
+              Für autorisierte Chats werden aus der jeweiligen Buchungsbeziehung abgeleitete
+              Nutzerkennungen, Anzeigenamen, Kanalmitgliedschaften, die Zuordnung zum Tutor und
+              Nachrichteninhalte an Sendbird übermittelt. Der Browser erhält keine Zugangsdaten
+              für Sendbird. Lesen und Senden erfolgen ausschließlich über erneut autorisierte
+              Routen des MSM Servers; nur dieser spricht mit der Sendbird Platform API.
             </Service>
-            <Service title="Zahlung · derzeit kein Online-Anbieter">
-              Im aktuellen Code ist kein Zahlungsdienst eingebunden. Die Website erhebt keine Karten-
-              oder Bankdaten. Sie kann lediglich einen außerhalb der Anwendung geprüften
-              Zahlungsstatus, eine Referenz, einen Betrag und daraus resultierendes Stundenguthaben in
-              Supabase speichern.
+            <Service title="Stripe · Zahlungsabwicklung">
+              Stripe Checkout ist technisch eingebunden, bleibt für neue Zahlungen aber bis zur
+              ausdrücklichen Freigabe gesperrt. Nach einer Freigabe wird der Browser auf eine von
+              Stripe bereitgestellte Zahlungsseite weitergeleitet. Dort verarbeitet Stripe unter
+              anderem E Mailadresse, Rechnungsanschrift und Zahlungsdaten. MSM speichert keine
+              vollständigen Karten oder Bankdaten, sondern technische Referenzen zu Kunde, Checkout
+              Sitzung, Zahlung, Erstattung und Streitfall sowie Betrag, Währung und Status. Guthaben wird
+              erst nach einem signierten und serverseitig geprüften Stripe Ereignis freigegeben.
             </Service>
             <p>
               Anschriften, Datenschutzkontakte, Datenregionen und mögliche Unterauftragnehmer dieser
@@ -186,14 +190,14 @@ export default function PrivacyPage() {
           <LegalSection id="cookies" number="04" title="Cookies, lokaler Speicher und Tracking">
             <p>
               Die aktuelle Kernanwendung nutzt Cookies für die Anmeldung und Erneuerung einer
-              Supabase-Sitzung. Die Authentifizierungsdaten werden dabei nicht als führender
-              Buchungszustand im lokalen Browser-Speicher abgelegt.
+              Sitzung bei Supabase. Die Authentifizierungsdaten werden dabei nicht als führender
+              Buchungszustand im lokalen Browserspeicher abgelegt.
             </p>
             <p>
-              Buchungen und Stundenguthaben werden serverseitig gespeichert; der Browser-Speicher ist
-              nicht das führende Buchungssystem. Im geprüften Anwendungscode sind keine Analyse- oder
-              Werbetracker eingebunden. Diese Aussage muss erneut geprüft werden, falls beim Hosting
-              weitere Analyse-, Consent- oder Monitoringdienste aktiviert werden.
+              Buchungen und Stundenguthaben werden serverseitig gespeichert; der Browserspeicher ist
+              nicht das führende Buchungssystem. Im geprüften Anwendungscode sind keine Dienste für
+              Analyse und keine Werbetracker eingebunden. Diese Aussage muss erneut geprüft werden, falls beim Hosting
+              weitere Dienste für Analyse, Einwilligung oder Monitoring aktiviert werden.
             </p>
           </LegalSection>
 
@@ -205,7 +209,7 @@ export default function PrivacyPage() {
               Einwilligung, kann diese für die Zukunft widerrufen werden.
             </p>
             <p>
-              Anfragen können an die oben genannten E-Mail-Adressen gerichtet werden. Zur Vermeidung
+              Anfragen können an die oben genannten E Mailadressen gerichtet werden. Zur Vermeidung
               einer unbefugten Herausgabe kann vor der Bearbeitung eine angemessene Bestätigung der
               Identität erforderlich sein.
             </p>
@@ -218,7 +222,7 @@ export default function PrivacyPage() {
                 rel="noreferrer"
                 target="_blank"
               >
-                Bayerische Landesamt für Datenschutzaufsicht
+                Bayerisches Landesamt für Datenschutzaufsicht
                 <span className="sr-only"> (öffnet in einem neuen Tab)</span>
               </a>{' '}
               zuständig.
@@ -247,7 +251,7 @@ export default function PrivacyPage() {
                 rel="noreferrer"
                 target="_blank"
               >
-                Datenschutz-Grundverordnung
+                Datenschutzgrundverordnung
                 <span className="sr-only"> (öffnet in einem neuen Tab)</span>
               </a>{' '}
               geregelt.
@@ -255,7 +259,7 @@ export default function PrivacyPage() {
           </LegalSection>
 
           <footer className="mt-14 border-t border-[var(--line)] pt-6 text-sm text-[var(--ink-subtle)]">
-            Technischer Arbeitsstand: 21. Juli 2026 · Rechtliche Prüfung ausstehend
+            Technischer Arbeitsstand: 22. Juli 2026 · Rechtliche Prüfung ausstehend
           </footer>
         </article>
       </div>

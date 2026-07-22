@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Allgemeine Geschäftsbedingungen | MSM Munich Scholar Mentors',
-  description: 'Arbeitsstand der Nutzungs- und Buchungsbedingungen von MSM Munich Scholar Mentors.',
+  title: 'Allgemeine Geschäftsbedingungen',
+  description: 'Arbeitsstand der Bedingungen für Nutzung und Buchung bei MSM Munich Scholar Mentors.',
 };
 
 const navigation = [
@@ -19,7 +19,7 @@ const navigation = [
 const openQuestions = [
   'Wer bei kostenpflichtigem Unterricht Vertragspartner des Kunden ist und in wessen Namen Preise ausgewiesen sowie Zahlungen entgegengenommen werden.',
   'Wie Verträge zustande kommen, welche Leistungsbeschreibung gilt und welche Regeln für Minderjährige sowie die Zustimmung gesetzlicher Vertreter vorgesehen sind.',
-  'Ob angezeigte Preise Umsatzsteuer enthalten und welche Rechnungs-, Zahlungs-, Erstattungs- und Paketablaufregeln gelten.',
+  'Ob angezeigte Preise Umsatzsteuer enthalten und welche Regeln für Rechnungen, Zahlungen, Erstattungen und den Ablauf von Paketen gelten.',
   'Welche Fristen, Folgen oder Gebühren bei Stornierungen, Umbuchungen, Nichterscheinen oder technischen Ausfällen gelten.',
   'Welche Verbraucherinformationen, Widerrufsbelehrung, Haftungsregeln und Streitbeilegungsangaben für das konkrete Geschäftsmodell erforderlich sind.',
 ] as const;
@@ -30,7 +30,7 @@ export default function TermsPage() {
       <header className="border-b border-[var(--line)]">
         <div className="site-container py-16 sm:py-24">
           <p className="eyebrow">Rechtliches</p>
-          <h1 className="mt-6 max-w-4xl font-display text-[clamp(3rem,8vw,6.5rem)] font-medium leading-[0.92] tracking-[-0.055em]">
+          <h1 className="mt-6 max-w-4xl break-words font-display text-[clamp(3rem,8vw,6.5rem)] font-medium leading-[0.92] tracking-[-0.055em]">
             Allgemeine Geschäftsbedingungen
           </h1>
           <p className="mt-7 max-w-2xl text-base leading-8 text-[var(--ink-muted)] sm:text-lg">
@@ -79,8 +79,8 @@ export default function TermsPage() {
         <article className="min-w-0 max-w-3xl">
           <LegalSection id="status" number="01" title="Status dieser Fassung">
             <p>
-              Diese Arbeitsfassung beschreibt die technisch verfügbaren Konten-, Buchungs- und
-              Chatfunktionen. Sie legt noch nicht abschließend fest, wer eine Nachhilfeleistung
+              Diese Arbeitsfassung beschreibt die technisch verfügbaren Funktionen für Konten,
+              Buchungen und Chats. Sie legt noch nicht abschließend fest, wer eine Nachhilfeleistung
               schuldet, wer Zahlungen entgegennimmt oder welche Verbraucherbedingungen gelten.
             </p>
             <p>
@@ -97,8 +97,9 @@ export default function TermsPage() {
               zugeordneten Tutor und dem Kunden freigeschaltet werden.
             </p>
             <p>
-              Die Plattform nutzt Supabase für Konten und gespeicherte Anwendungsdaten, Cal.com für
-              Verfügbarkeiten und Termine sowie Sendbird für den Chat. Weitere Einzelheiten stehen in
+              Die Plattform nutzt Supabase für Konten und gespeicherte Anwendungsdaten, Stripe für
+              die technisch vorbereitete Zahlungsabwicklung, Cal.com für Verfügbarkeiten und Termine
+              sowie Sendbird für den Chat. Weitere Einzelheiten stehen in
               der <Link className="text-[var(--purple-soft)] underline decoration-[var(--purple-bright)]/50 underline-offset-4 hover:text-white" href="/datenschutz">Datenschutzerklärung</Link>.
             </p>
           </LegalSection>
@@ -106,7 +107,7 @@ export default function TermsPage() {
           <LegalSection id="konto" number="03" title="Nutzerkonto und Zugriffsrollen">
             <p>
               Für eine Buchung ist ein authentifiziertes Konto erforderlich. Konten werden zunächst
-              als Eltern-/Kundenkonto angelegt. Tutorzugänge werden serverseitig einem konkreten
+              als Konto für Eltern oder Kunden angelegt. Tutorzugänge werden serverseitig einem konkreten
               Tutorprofil zugeordnet; die Auswahl eines Namens im Browser verleiht keine Tutorrolle.
             </p>
             <p>
@@ -121,7 +122,7 @@ export default function TermsPage() {
               Verfügbare Zeiten werden live über Cal.com abgerufen. Vor dem Absenden zeigt die
               Anwendung Tutor, Fach, Paket, Termin, Unterrichtsformat und Kontaktdaten zur Kontrolle
               an. Eine Buchung wird erst dann als erfolgreich angezeigt, wenn der Termin beim
-              Kalenderdienst angelegt und anschließend in der MSM-Datenbank gespeichert wurde.
+              Kalenderdienst angelegt und anschließend in der Datenbank von MSM gespeichert wurde.
             </p>
             <p>
               Angemeldete Nutzer können eigene, noch zukünftige und geplante Termine über ihr
@@ -132,34 +133,40 @@ export default function TermsPage() {
               nicht vereinbart und müssen vor kostenpflichtigen Buchungen ergänzt werden.
             </p>
             <p>
-              Die kostenlose Probestunde ist technisch auf Konten ohne vorherige Buchung beschränkt.
-              Ob daneben weitere Teilnahmebedingungen gelten, muss separat festgelegt werden.
+              Die kostenlose Probestunde ist technisch auf Haushalte ohne vorherige Buchung und ohne
+              bereits bestätigten Paketkauf beschränkt. Ob daneben weitere Teilnahmebedingungen
+              gelten, muss separat festgelegt werden.
             </p>
           </LegalSection>
 
           <LegalSection id="pakete" number="05" title="Pakete, Guthaben und Zahlung">
             <p>
-              Die Website zeigt eine kostenlose Probestunde sowie kostenpflichtige Einzel- und
-              Mehrstundenpakete. Im aktuellen System ist kein Online-Zahlungsdienst eingebunden; es
-              werden weder Karten- noch Bankdaten über die Website erhoben.
+              Die Website zeigt eine kostenlose Probestunde sowie kostenpflichtige Pakete für eine
+              oder mehrere Stunden. Stripe Checkout ist technisch eingebunden. Neue Zahlungen bleiben
+              jedoch gesperrt, solange die rechtliche und betriebliche Freigabe oder das konkret
+              geprüfte Angebot nicht aktiviert ist. Bei einer Freigabe erfolgt die Eingabe von
+              Zahlungsdaten ausschließlich auf der von Stripe bereitgestellten Zahlungsseite; MSM
+              erhält weder vollständige Kartendaten noch vollständige Bankdaten.
             </p>
             <p>
               Eine kostenpflichtige Stunde kann technisch nur mit einem serverseitig als bezahlt
               bestätigten Stundenguthaben gebucht werden. Die Anwendung erzeugt ein solches Guthaben
-              nicht allein aufgrund einer Eingabe im Browser. Wie ein Paket außerhalb der Anwendung
-              gekauft, bestätigt, berechnet oder erstattet wird, ist noch kein vollständig definierter
-              Online-Prozess.
+              weder aufgrund einer Eingabe im Browser noch aufgrund der Rückkehr von der
+              Zahlungsseite. Erst ein signiertes und vollständig geprüftes Stripe Ereignis kann die
+              Bestellung bestätigen und das zugehörige Guthaben genau einmal freigeben. Die
+              rechtlichen Regeln für Vertragsschluss, Rechnung, Ablauf und Erstattung sind in dieser
+              Arbeitsfassung weiterhin nicht festgelegt.
             </p>
           </LegalSection>
 
           <LegalSection id="kommunikation" number="06" title="Kommunikation">
             <p>
               Der Chat ist nur für authentifizierte Nutzer und einen durch eine Buchung autorisierten
-              Tutor-Kunden-Kontakt vorgesehen. Nutzer dürfen keine Zugangsdaten, rechtswidrigen Inhalte
+              Kontakt zwischen Tutor und Kunde vorgesehen. Nutzer dürfen keine Zugangsdaten, rechtswidrigen Inhalte
               oder unnötig sensiblen Informationen über den Chat versenden.
             </p>
             <p>
-              Moderations-, Melde-, Sperr- und Löschprozesse für Nachrichten sind vor einem breiten
+              Prozesse für Moderation, Meldung, Sperrung und Löschung von Nachrichten sind vor einem breiten
               Produktivbetrieb organisatorisch festzulegen. Die aktuelle Fassung verspricht keine
               inhaltliche Vorabkontrolle von Nachrichten.
             </p>
@@ -179,12 +186,12 @@ export default function TermsPage() {
               ))}
             </ul>
             <p className="mt-6">
-              Betreiber- und Kontaktangaben sind im <Link className="text-[var(--purple-soft)] underline decoration-[var(--purple-bright)]/50 underline-offset-4 hover:text-white" href="/impressum">Impressum</Link> aufgeführt.
+              Angaben zum Betreiber und Kontakt sind im <Link className="text-[var(--purple-soft)] underline decoration-[var(--purple-bright)]/50 underline-offset-4 hover:text-white" href="/impressum">Impressum</Link> aufgeführt.
             </p>
           </LegalSection>
 
           <footer className="mt-14 border-t border-[var(--line)] pt-6 text-sm text-[var(--ink-subtle)]">
-            Technischer Arbeitsstand: 21. Juli 2026 · Rechtliche Prüfung ausstehend
+            Technischer Arbeitsstand: 22. Juli 2026 · Rechtliche Prüfung ausstehend
           </footer>
         </article>
       </div>

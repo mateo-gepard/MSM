@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
-import type { Package } from '@/domain/catalog';
+import type { PublicPricingOffer } from '@/lib/commerce/public-offers';
+import { CheckoutButton } from './CheckoutButton';
 
 const euro = new Intl.NumberFormat('de-DE', {
   style: 'currency',
@@ -10,16 +11,13 @@ const euro = new Intl.NumberFormat('de-DE', {
 });
 
 interface PricingCardProps {
-  package: Package;
+  offer: PublicPricingOffer;
 }
 
-export function PricingCard({ package: pkg }: PricingCardProps) {
+export function PricingCard({ offer: pkg }: PricingCardProps) {
   const isTrial = pkg.priceCents === 0;
   const rateCents = pkg.hourlyRateCents ?? pkg.priceCents;
   const visibleFeatures = pkg.features.filter((feature) => !feature.includes('Ersparnis')).slice(0, 4);
-  const actionHref = isTrial
-    ? `/booking?package=${pkg.id}`
-    : `mailto:munichscholarmentors@gmail.com?subject=${encodeURIComponent(`${pkg.name} anfragen`)}`;
 
   return (
     <article
@@ -66,17 +64,24 @@ export function PricingCard({ package: pkg }: PricingCardProps) {
         ))}
       </ul>
 
-      <Link
-        href={actionHref}
-        className={`mt-7 inline-flex min-h-11 items-center justify-between gap-3 rounded-lg px-4 text-sm font-bold transition-colors ${
-          pkg.popular
-            ? 'bg-[#6e56cf] text-white hover:bg-[#745bd1]'
-            : 'border border-[var(--line-strong)] text-[var(--ink)] hover:bg-white/5'
-        }`}
-      >
-        {isTrial ? 'Probestunde wählen' : 'Paket anfragen'}
-        <ArrowRight aria-hidden="true" className="h-4 w-4" />
-      </Link>
+      {isTrial ? (
+        <Link
+          href={`/booking?package=${pkg.id}`}
+          className="mt-7 inline-flex min-h-11 items-center justify-between gap-3 rounded-lg border border-[var(--line-strong)] px-4 text-sm font-bold text-[var(--ink)] transition-colors hover:bg-white/5"
+        >
+          Probestunde wählen
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
+      ) : pkg.checkoutEnabled ? (
+        <CheckoutButton
+          packageId={pkg.id as Exclude<PublicPricingOffer['id'], 'trial'>}
+          emphasized={pkg.popular}
+        />
+      ) : (
+        <p className="mt-7 flex min-h-11 items-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-[var(--ink-muted)]">
+          Sicherer Checkout noch nicht freigeschaltet
+        </p>
+      )}
     </article>
   );
 }

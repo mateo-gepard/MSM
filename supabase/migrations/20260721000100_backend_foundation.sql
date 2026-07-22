@@ -220,7 +220,7 @@ insert into public.tutors (
 (
   '65af49a0-33dc-5a71-9000-000000000001', 'juan-rivera-chopinaud', 'Juan Rivera Chopinaud',
   array['math','physics','spanish'],
-  array['1. Preis Mathematik-Olympiade','IB Student an Top-Schule in England','Mehrsprachig und international erfahren'],
+  array['1. Preis bei der Mathematikolympiade','Schüler an einer englischen Schule mit International Baccalaureate','Mehrsprachig und international erfahren'],
   '/tutors/juan.jpg', 'Erfolgreich in Mathe und Physik, quadrilingual',
   array['Deutsch','Englisch','Spanisch','Französisch'], 'Di, Mi, Sa 17:30-19:00',
   '[{"day":"tuesday","times":["17:30","18:00","18:30"]},{"day":"wednesday","times":["17:30","18:00","18:30"]},{"day":"saturday","times":["17:30","18:00","18:30"]}]',
@@ -229,8 +229,8 @@ insert into public.tutors (
 (
   '65af49a0-33dc-5a71-9000-000000000002', 'mateo-mamaladze', 'Mateo Mamaladze',
   array['physics','cs','math','biology'],
-  array['Erfolgreiche Teilnahme an internationaler Physik-Olympiade','Leitet Robotics-Kurs an seiner Schule','Langjährige Erfahrung mit CAD, 3D-Druck und Programmieren'],
-  '/tutors/Mateo.JPG', 'Hobby-Ingenieur und Physik-Begeisterter', array['Deutsch','Englisch','Georgisch'],
+  array['Erfolgreiche Teilnahme an einer internationalen Physikolympiade','Leitet einen Robotikkurs an seiner Schule','Langjährige Erfahrung mit CAD, 3D Druck und Programmieren'],
+  '/tutors/Mateo.JPG', 'Hobbyingenieur mit Begeisterung für Physik', array['Deutsch','Englisch','Georgisch'],
   'Mo-Fr ab 14 Uhr',
   '[{"day":"monday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]},{"day":"tuesday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]},{"day":"wednesday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]},{"day":"thursday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]},{"day":"friday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]}]',
   'Klassenstufe 12', false
@@ -238,7 +238,7 @@ insert into public.tutors (
 (
   '65af49a0-33dc-5a71-9000-000000000003', 'roman-daugavet', 'Roman Daugavet',
   array['math','physics'],
-  array['1. Preis Bundeswettbewerb Mathematik','Frühstudium in Mathematik','Frühstudium in Luft- und Raumfahrttechnik'],
+  array['1. Preis Bundeswettbewerb Mathematik','Frühstudium in Mathematik','Frühstudium in Luftfahrt und Raumfahrttechnik'],
   '/tutors/Roman.png', 'Leidenschaftlicher Mathematiker und Physiker', array['Deutsch','Russisch'],
   'Mo, Mi, Fr 15-17 Uhr',
   '[{"day":"monday","times":["15:00","15:30","16:00","16:30"]},{"day":"wednesday","times":["15:00","15:30","16:00","16:30"]},{"day":"friday","times":["15:00","15:30","16:00","16:30"]}]',
@@ -247,8 +247,8 @@ insert into public.tutors (
 (
   '65af49a0-33dc-5a71-9000-000000000004', 'len-sobol', 'Len Sobol',
   array['physics','cs','math'],
-  array['Arbeitet seit 3 Jahren als Software Developer','Frühstudium in Luft- und Raumfahrttechnik','Frühstudium in Physik'],
-  '/tutors/Len.JPG', 'Physiker, talentierter Programmierer und Robotik-Experte', array['Deutsch','Englisch'],
+  array['Arbeitet seit 3 Jahren als Software Developer','Frühstudium in Luftfahrt und Raumfahrttechnik','Frühstudium in Physik'],
+  '/tutors/Len.JPG', 'Physiker, talentierter Programmierer und Robotikexperte', array['Deutsch','Englisch'],
   'Mo-Fr ab 14 Uhr',
   '[{"day":"monday","times":["16:30","17:00","17:30","18:00"]},{"day":"wednesday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]},{"day":"thursday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]},{"day":"friday","times":["14:00","14:30","15:00","15:30","16:00","16:30","17:00"]}]',
   'Klassenstufe 13', false
@@ -273,8 +273,8 @@ insert into public.packages (
   id, slug, name, sessions, price_cents, hourly_rate_cents, savings_cents
 ) values
   ('a497cc91-10a1-5ac1-9000-000000000001', 'trial', 'Probestunde', 1, 0, null, null),
-  ('a497cc91-10a1-5ac1-9000-000000000002', 'medium', '10er-Paket', 10, 29000, 2900, 10000),
-  ('a497cc91-10a1-5ac1-9000-000000000003', 'small', '5er-Paket', 5, 17500, 3500, 2000),
+  ('a497cc91-10a1-5ac1-9000-000000000002', 'medium', '10er Paket', 10, 29000, 2900, 10000),
+  ('a497cc91-10a1-5ac1-9000-000000000003', 'small', '5er Paket', 5, 17500, 3500, 2000),
   ('a497cc91-10a1-5ac1-9000-000000000004', 'single', 'Einzelstunde', 1, 3900, null, null)
 on conflict (id) do update set
   slug = excluded.slug, name = excluded.name, sessions = excluded.sessions,

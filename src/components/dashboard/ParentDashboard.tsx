@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -9,158 +9,105 @@ import {
   LogOut,
   MessageCircle,
   PackageCheck,
-  RefreshCw,
   ShieldCheck,
+  UserRoundCheck,
   UsersRound,
 } from 'lucide-react';
 import { signOut } from '@/lib/auth';
-import { useAuth } from '@/hooks/useAuth';
+import { isChatAuthorizedBookingLifecycle } from '@/domain/chat';
 import { MessagesWorkspace } from '@/components/chat/MessagesWorkspace';
 import type { ChatConversation } from '@/components/chat/ChatPanel';
 import { BookingsPanel, countUpcomingBookings } from './BookingsPanel';
 import { PackagesPanel } from './PackagesPanel';
-import {
-  readApiResponse,
-  type BookingDto,
-  type BookingsResponse,
-  type EntitlementDto,
-  type EntitlementsResponse,
-  type ProfileDto,
-  type ProfileResponse,
-} from './contracts';
+import { LearnersPanel } from './LearnersPanel';
+import { type BookingDto, type DashboardData } from './contracts';
 
-type DashboardSection = 'bookings' | 'packages' | 'messages';
-
-interface DashboardData {
-  profile: ProfileDto;
-  bookings: BookingDto[];
-  entitlements: EntitlementDto[];
-}
+type DashboardSection = 'bookings' | 'learners' | 'packages' | 'messages';
 
 const dashboardSections = [
   { id: 'bookings', label: 'Termine', icon: CalendarDays },
+  { id: 'learners', label: 'Lernende', icon: UserRoundCheck },
   { id: 'packages', label: 'Guthaben', icon: PackageCheck },
   { id: 'messages', label: 'Nachrichten', icon: MessageCircle },
 ] as const;
 
+const transitionalBookingStatuses = new Set<BookingDto['status']>([
+  'provider_pending',
+  'pending_confirmation',
+  'cancellation_pending',
+  'reschedule_pending',
+]);
+
 function buildParentConversations(bookings: BookingDto[]): ChatConversation[] {
-  const tutors = new Map<BookingDto['tutor']['slug'], { name: string; subjects: Set<string> }>();
-
-  for (const booking of bookings) {
-    const current = tutors.get(booking.tutor.slug) ?? {
-      name: booking.tutor.name,
-      subjects: new Set<string>(),
-    };
-    current.subjects.add(booking.subject.name);
-    tutors.set(booking.tutor.slug, current);
-  }
-
-  return [...tutors.entries()]
-    .map(([tutorSlug, tutor]) => ({
-      key: tutorSlug,
-      title: tutor.name,
-      description: [...tutor.subjects].join(' · '),
-      tutorSlug,
-    }))
+  return [...bookings]
+    .filter((booking) => isChatAuthorizedBookingLifecycle(booking.status))
+    .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
+    .map((booking) => {
+      const lessonDate = new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'medium',
+        timeZone: booking.timeZone,
+      }).format(new Date(booking.startsAt));
+      return {
+        key: booking.id,
+        title: booking.tutor.name,
+        description: `${booking.subject.name} · ${booking.learner.displayName} · ${lessonDate}`,
+        tutorSlug: booking.tutor.slug,
+        bookingId: booking.id,
+      };
+    })
     .sort((left, right) => left.title.localeCompare(right.title, 'de'));
 }
 
-function DashboardLoading({ label = 'Dashboard wird geladen …' }: { label?: string }) {
-  return (
-    <div className="site-container flex min-h-[65vh] items-center justify-center py-16" role="status">
-      <div className="text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--action)]" />
-        <p className="mt-4 text-sm text-[var(--ink-muted)]">{label}</p>
-      </div>
-    </div>
-  );
-}
-
-export function ParentDashboard() {
+export function ParentDashboard({ initialData }: { initialData: DashboardData }) {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
   const [activeSection, setActiveSection] = useState<DashboardSection>('bookings');
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [localData, setLocalData] = useState(() => ({
+    source: initialData,
+    value: initialData,
+  }));
+  const data = localData.source === initialData ? localData.value : initialData;
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [currentTime] = useState(() => Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const visibleSections = dashboardSections.filter(
+    (section) => section.id !== 'packages' || data.permissions.canManageBilling,
+  );
+
+  const refreshDashboard = useCallback(() => {
+    setCurrentTime(Date.now());
+    router.refresh();
+  }, [router]);
+
+  const updateData = (update: (current: DashboardData) => DashboardData) => {
+    setLocalData((current) => {
+      const latestData = current.source === initialData ? current.value : initialData;
+      return { source: initialData, value: update(latestData) };
+    });
+  };
+
+  const hasTransitionalBooking = data.bookings.some((booking) =>
+    transitionalBookingStatuses.has(booking.status),
+  );
 
   useEffect(() => {
-    if (!authLoading && !user) router.replace('/login?redirect=/dashboard');
-  }, [authLoading, router, user]);
-
-  useEffect(() => {
-    if (authLoading || !user) return;
-    const controller = new AbortController();
-
-    const loadDashboard = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-
-      try {
-        const profileResponse = await fetch('/api/profile', {
-          cache: 'no-store',
-          signal: controller.signal,
-        });
-        if (profileResponse.status === 401) {
-          router.replace('/login?redirect=/dashboard');
-          return;
-        }
-        const profilePayload = await readApiResponse<ProfileResponse>(
-          profileResponse,
-          'Dein Profil konnte nicht geladen werden.',
-        );
-        const profile = profilePayload.data.profile;
-
-        if (profile.role === 'tutor') {
-          if (profile.tutorSlug) router.replace(`/tutor-dashboard/${profile.tutorSlug}`);
-          else throw new Error('Deinem Tutor-Account ist noch kein Profil zugeordnet.');
-          return;
-        }
-        if (profile.role === 'admin') {
-          router.replace('/tutor-login');
-          return;
-        }
-
-        const [bookingsResponse, packagesResponse] = await Promise.all([
-          fetch('/api/bookings', { cache: 'no-store', signal: controller.signal }),
-          fetch('/api/packages', { cache: 'no-store', signal: controller.signal }),
-        ]);
-        const [bookingsPayload, packagesPayload] = await Promise.all([
-          readApiResponse<BookingsResponse>(bookingsResponse, 'Deine Termine konnten nicht geladen werden.'),
-          readApiResponse<EntitlementsResponse>(
-            packagesResponse,
-            'Dein verifiziertes Guthaben konnte nicht geladen werden.',
-          ),
-        ]);
-
-        setData({
-          profile,
-          bookings: bookingsPayload.data.bookings,
-          entitlements: packagesPayload.data.entitlements,
-        });
-      } catch (caughtError) {
-        if (caughtError instanceof DOMException && caughtError.name === 'AbortError') return;
-        setLoadError(
-          caughtError instanceof Error
-            ? caughtError.message
-            : 'Das Dashboard konnte nicht geladen werden.',
-        );
-      } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
-      }
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshDashboard();
     };
+    const intervalId = window.setInterval(
+      refreshWhenVisible,
+      hasTransitionalBooking ? 12_000 : 60_000,
+    );
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
-    void loadDashboard();
-    return () => controller.abort();
-  }, [authLoading, reloadKey, router, user]);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [hasTransitionalBooking, refreshDashboard]);
 
   const conversations = useMemo(
-    () => (data ? buildParentConversations(data.bookings) : []),
-    [data],
+    () => buildParentConversations(data.bookings),
+    [data.bookings],
   );
 
   const handleSignOut = async () => {
@@ -176,36 +123,39 @@ export function ParentDashboard() {
     router.refresh();
   };
 
-  if (authLoading || (!user && !loadError)) return <DashboardLoading label="Anmeldung wird geprüft …" />;
+  const handleBookingStatusChanged = (
+    bookingId: string,
+    status: 'cancelled' | 'cancellation_pending',
+  ) => {
+    updateData((current) => ({
+      ...current,
+      bookings: current.bookings.map((booking) =>
+        booking.id === bookingId ? { ...booking, status } : booking,
+      ),
+    }));
+    refreshDashboard();
+  };
 
-  if (isLoading) return <DashboardLoading />;
-
-  if (loadError || !data) {
-    return (
-      <div className="site-container py-16 sm:py-24">
-        <div className="mx-auto max-w-xl rounded-2xl border border-amber-200/20 bg-[var(--surface)] p-7 text-center">
-          <RefreshCw aria-hidden="true" className="mx-auto h-8 w-8 text-amber-200" />
-          <h1 className="mt-4 text-xl font-bold text-white">Dashboard nicht verfügbar</h1>
-          <p className="mt-2 text-sm leading-6 text-[#b5b1bf]">
-            {loadError || 'Bitte versuche es erneut.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => setReloadKey((current) => current + 1)}
-            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--action)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--action-hover)]"
-          >
-            Erneut laden
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleLearnersChange = (learners: DashboardData['learners']) => {
+    const learnersById = new Map(learners.map((learner) => [learner.id, learner]));
+    updateData((current) => ({
+      ...current,
+      learners,
+      bookings: current.bookings.map((booking) => {
+        const learner = learnersById.get(booking.learner.id);
+        return learner
+          ? { ...booking, learner: { ...booking.learner, displayName: learner.displayName } }
+          : booking;
+      }),
+    }));
+    refreshDashboard();
+  };
 
   const upcomingCount = countUpcomingBookings(data.bookings, currentTime);
   const remainingSessions = data.entitlements
     .filter((entitlement) => entitlement.status === 'active')
     .reduce((total, entitlement) => total + entitlement.remainingSessions, 0);
-  const tutorCount = new Set(data.bookings.map((booking) => booking.tutor.slug)).size;
+  const learnerCount = data.learners.filter((learner) => learner.isActive).length;
   const firstName = data.profile.displayName?.trim().split(/\s+/)[0];
 
   return (
@@ -242,27 +192,30 @@ export function ParentDashboard() {
           </div>
         </header>
 
-        <section className="grid gap-3 py-6 sm:grid-cols-3" aria-label="Übersicht">
+        <section
+          className={`grid gap-3 py-6 ${data.permissions.canManageBilling ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
+          aria-label="Übersicht"
+        >
           <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
             <CalendarDays aria-hidden="true" className="h-5 w-5 text-[#9b83ff]" />
             <p className="mt-4 text-2xl font-bold tabular-nums text-white">{upcomingCount}</p>
             <p className="mt-1 text-sm text-[var(--ink-subtle)]">Anstehende Termine</p>
           </div>
-          <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+          {data.permissions.canManageBilling ? <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
             <BookOpenCheck aria-hidden="true" className="h-5 w-5 text-[#9b83ff]" />
             <p className="mt-4 text-2xl font-bold tabular-nums text-white">{remainingSessions}</p>
             <p className="mt-1 text-sm text-[var(--ink-subtle)]">Verifizierte Stunden übrig</p>
-          </div>
+          </div> : null}
           <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
             <UsersRound aria-hidden="true" className="h-5 w-5 text-[#9b83ff]" />
-            <p className="mt-4 text-2xl font-bold tabular-nums text-white">{tutorCount}</p>
-            <p className="mt-1 text-sm text-[var(--ink-subtle)]">Tutor-Kontakte</p>
+            <p className="mt-4 text-2xl font-bold tabular-nums text-white">{learnerCount}</p>
+            <p className="mt-1 text-sm text-[var(--ink-subtle)]">Aktive Lernende</p>
           </div>
         </section>
 
         <nav className="mb-8 overflow-x-auto" aria-label="Dashboardbereiche">
           <div className="inline-flex min-w-full gap-1 rounded-xl border border-[var(--line)] bg-[var(--canvas-soft)] p-1 sm:min-w-0">
-            {dashboardSections.map((section) => {
+            {visibleSections.map((section) => {
               const Icon = section.icon;
               return (
                 <button
@@ -284,22 +237,22 @@ export function ParentDashboard() {
           <BookingsPanel
             bookings={data.bookings}
             audience="parent"
-            onBookingCancelled={(bookingId) =>
-              setData((current) =>
-                current
-                  ? {
-                      ...current,
-                      bookings: current.bookings.map((booking) =>
-                        booking.id === bookingId ? { ...booking, status: 'cancelled' } : booking,
-                      ),
-                    }
-                  : current,
-              )
-            }
+            canManageBookings={data.permissions.canBook}
+            onBookingStatusChanged={handleBookingStatusChanged}
           />
         ) : null}
 
-        {activeSection === 'packages' ? <PackagesPanel entitlements={data.entitlements} /> : null}
+        {activeSection === 'packages' && data.permissions.canManageBilling ? (
+          <PackagesPanel entitlements={data.entitlements} />
+        ) : null}
+
+        {activeSection === 'learners' ? (
+          <LearnersPanel
+            learners={data.learners}
+            canManage={data.permissions.canManageLearners}
+            onLearnersChange={handleLearnersChange}
+          />
+        ) : null}
 
         {activeSection === 'messages' ? (
           <section aria-labelledby="messages-heading">
@@ -312,6 +265,7 @@ export function ParentDashboard() {
             </p>
             <MessagesWorkspace
               conversations={conversations}
+              identityContext="household"
               emptyTitle="Noch keine Unterhaltung verfügbar"
               emptyDescription="Sobald du eine Stunde gebucht hast, kannst du deinen Tutor hier sicher kontaktieren."
             />

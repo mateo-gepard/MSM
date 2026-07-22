@@ -43,7 +43,7 @@ export const metadata: Metadata = {
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: 'Ein dunkles Notizbuch mit einer feinen violetten Lern- und Wissensgrafik',
+        alt: 'Ein dunkles Notizbuch mit einer feinen violetten Grafik zu Lernen und Wissen',
       },
     ],
   },

@@ -5,6 +5,7 @@ import { addDays, format, isBefore, startOfDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, Loader2 } from 'lucide-react';
 import type { TutorSlug } from '@/domain/catalog';
+import { apiClientError, clientErrorMessage } from '@/lib/api/client-error';
 
 interface Slot {
   start: string;
@@ -12,20 +13,20 @@ interface Slot {
 
 interface SlotsResponse {
   data?: { slots?: Slot[] };
-  error?: { code?: string; message?: string };
+  error?: { code?: string };
 }
 
 interface AvailabilityPickerProps {
   tutorSlug: TutorSlug;
   value: string;
+  timeZone: string;
+  bookingId?: string;
   onChange: (startsAt: string) => void;
 }
 
-const BERLIN_TIME_ZONE = 'Europe/Berlin';
-
-function dateKey(isoDate: string) {
+function dateKey(isoDate: string, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BERLIN_TIME_ZONE,
+    timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -35,15 +36,15 @@ function dateKey(isoDate: string) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function formatSlotTime(isoDate: string) {
+function formatSlotTime(isoDate: string, timeZone: string) {
   return new Intl.DateTimeFormat('de-DE', {
-    timeZone: BERLIN_TIME_ZONE,
+    timeZone,
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(isoDate));
 }
 
-export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityPickerProps) {
+export function AvailabilityPicker({ tutorSlug, value, timeZone, bookingId, onChange }: AvailabilityPickerProps) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [rangeStart, setRangeStart] = useState(today);
   const [slotResult, setSlotResult] = useState<{
@@ -56,7 +57,7 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
     () => Array.from({ length: 7 }, (_, index) => addDays(rangeStart, index)),
     [rangeStart],
   );
-  const requestKey = `${tutorSlug}:${format(rangeStart, 'yyyy-MM-dd')}`;
+  const requestKey = `${tutorSlug}:${format(rangeStart, 'yyyy-MM-dd')}:${timeZone}:${bookingId ?? ''}`;
   const loading = slotResult.requestKey !== requestKey;
   const error = loading ? null : slotResult.error;
 
@@ -66,8 +67,9 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
       tutorSlug,
       start: format(rangeStart, 'yyyy-MM-dd'),
       end: format(addDays(rangeStart, 6), 'yyyy-MM-dd'),
-      timeZone: BERLIN_TIME_ZONE,
+      timeZone,
     });
+    if (bookingId) params.set('bookingId', bookingId);
 
     fetch(`/api/slots?${params.toString()}`, {
       signal: controller.signal,
@@ -76,7 +78,7 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
       .then(async (response) => {
         const payload = (await response.json()) as SlotsResponse;
         if (!response.ok) {
-          throw new Error(payload.error?.message || 'Termine konnten nicht geladen werden.');
+          throw apiClientError(payload, 'Termine konnten nicht geladen werden.');
         }
         return payload.data?.slots ?? [];
       })
@@ -88,27 +90,24 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
         setSlotResult({
           requestKey,
           slots: [],
-          error:
-            fetchError instanceof Error
-              ? fetchError.message
-              : 'Termine konnten nicht geladen werden.',
+          error: clientErrorMessage(fetchError, 'Termine konnten nicht geladen werden.'),
         });
       });
 
     return () => controller.abort();
-  }, [rangeStart, requestKey, tutorSlug]);
+  }, [bookingId, rangeStart, requestKey, timeZone, tutorSlug]);
 
   const groupedSlots = useMemo(() => {
     const groups = new Map<string, Slot[]>();
     if (slotResult.requestKey !== requestKey) return groups;
 
     slotResult.slots.forEach((slot) => {
-      const key = dateKey(slot.start);
+      const key = dateKey(slot.start, timeZone);
       groups.set(key, [...(groups.get(key) ?? []), slot]);
     });
     groups.forEach((items) => items.sort((a, b) => a.start.localeCompare(b.start)));
     return groups;
-  }, [requestKey, slotResult]);
+  }, [requestKey, slotResult, timeZone]);
 
   const canGoBack = isBefore(today, rangeStart);
 
@@ -118,10 +117,10 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
         <div>
           <p className="flex items-center gap-2 text-sm font-medium text-white">
             <CalendarDays className="size-4 text-[var(--color-accent-soft)]" />
-            Live-Verfügbarkeit
+            Aktuelle Verfügbarkeit
           </p>
           <p className="mt-1 text-sm text-white/55">
-            Alle Zeiten werden in der Zeitzone Europe/Berlin angezeigt.
+            Alle Zeiten werden in deiner Zeitzone {timeZone} angezeigt.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -164,7 +163,7 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
               className="mt-3 inline-block font-medium underline underline-offset-4"
               href="mailto:munichscholarmentors@gmail.com"
             >
-              Termin per E-Mail anfragen
+              Termin per E Mail anfragen
             </a>
           </div>
         ) : (
@@ -180,7 +179,7 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
                   aria-label={format(day, 'EEEE, d. MMMM', { locale: de })}
                 >
                   <div className="border-b border-white/10 pb-2 text-center">
-                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-white/45">
+                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-white/60">
                       {format(day, 'EEE', { locale: de })}
                     </p>
                     <p className="mt-0.5 text-sm font-semibold text-white">{format(day, 'd. MMM', { locale: de })}</p>
@@ -201,7 +200,7 @@ export function AvailabilityPicker({ tutorSlug, value, onChange }: AvailabilityP
                                 : 'border-white/10 bg-white/[0.035] text-white/75 hover:border-white/30 hover:text-white'
                             }`}
                           >
-                            {formatSlotTime(slot.start)}
+                            {formatSlotTime(slot.start, timeZone)}
                           </button>
                         );
                       })

@@ -22,7 +22,7 @@ const MODE_COPY: Record<AuthMode, { title: string; description: string }> = {
   },
   magic: {
     title: 'Ohne Passwort anmelden',
-    description: 'Wir senden dir einen einmalig nutzbaren Anmeldelink per E-Mail.',
+    description: 'Wir senden dir einen einmalig nutzbaren Anmeldelink per E Mail.',
   },
   reset: {
     title: 'Passwort zurücksetzen',
@@ -38,19 +38,16 @@ function friendlyAuthError(error: unknown) {
       : '';
 
   if (/invalid login credentials/i.test(message)) {
-    return 'E-Mail oder Passwort ist nicht korrekt.';
+    return 'E Mailadresse oder Passwort ist nicht korrekt.';
   }
   if (/email not confirmed/i.test(message)) {
-    return 'Bitte bestätige zuerst deine E-Mail-Adresse.';
+    return 'Bitte bestätige zuerst deine E Mailadresse.';
   }
   if (/rate limit|too many requests/i.test(message)) {
     return 'Zu viele Versuche. Bitte warte kurz und versuche es erneut.';
   }
   if (/password should be at least|weak password/i.test(message)) {
     return 'Bitte verwende ein stärkeres Passwort mit mindestens 8 Zeichen.';
-  }
-  if (/already.*account|account.*existiert bereits/i.test(message)) {
-    return 'Ein Account mit dieser E-Mail-Adresse existiert bereits. Bitte melde dich stattdessen an.';
   }
   return 'Das hat leider nicht funktioniert. Bitte versuche es erneut.';
 }
@@ -116,7 +113,7 @@ function LoginContent() {
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await runAuth(async () => {
-      const result = await signUp(email.trim(), password, name);
+      const result = await signUp(email.trim(), password, name, redirectUrl);
       if (result.error) throw result.error;
 
       if (result.data?.session) {
@@ -124,7 +121,7 @@ function LoginContent() {
         return;
       }
 
-      setSuccess('Fast geschafft: Bitte bestätige deine E-Mail-Adresse über den Link in deinem Postfach.');
+      setSuccess('Fast geschafft: Bitte bestätige deine E Mailadresse über den Link in deinem Postfach.');
     });
   }
 
@@ -142,7 +139,7 @@ function LoginContent() {
     await runAuth(async () => {
       const result = await resetPassword(email.trim());
       if (result.error) throw result.error;
-      setSuccess('Wenn ein Account zu dieser Adresse gehört, findest du gleich einen Reset-Link im Postfach.');
+      setSuccess('Wenn ein Account zu dieser Adresse gehört, findest du gleich einen Link zum Zurücksetzen im Postfach.');
     });
   }
 
@@ -150,10 +147,10 @@ function LoginContent() {
 
   return (
     <section className="site-section min-h-[calc(100vh-5rem)] bg-[var(--canvas)] pt-28 sm:pt-36">
-      <div className="site-container grid max-w-5xl gap-10 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-center">
-        <div className="max-w-xl">
+      <div className="site-container grid min-w-0 max-w-5xl gap-10 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-center">
+        <div className="min-w-0 max-w-xl">
           <p className="eyebrow">Dein MSM Account</p>
-          <h1 className="mt-5 font-display text-5xl font-medium leading-[0.98] tracking-[-0.045em] text-[var(--ink)] sm:text-6xl">
+          <h1 className="mt-5 break-words font-display text-4xl font-medium leading-[0.98] tracking-[-0.045em] text-[var(--ink)] sm:text-6xl">
             Lernen organisieren, ohne Organisationschaos.
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-[var(--ink-muted)]">
@@ -161,7 +158,7 @@ function LoginContent() {
           </p>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <div className="mb-6">
             <h2 className="font-display text-4xl font-medium tracking-[-0.035em] text-[var(--ink)]">
               {copy.title}
@@ -173,7 +170,7 @@ function LoginContent() {
             {(loginRequired || callbackFailed) && (
               <div className="mb-5 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-raised)] p-4 text-sm leading-6 text-[var(--ink-muted)]" role="status">
                 {loginRequired
-                  ? 'Bitte melde dich an, um die Buchung sicher abzuschließen. Deine Tutor-, Fach- und Paketauswahl bleibt im Link erhalten.'
+                  ? 'Bitte melde dich an, um die Buchung sicher abzuschließen. Deine Auswahl von Tutor, Fach und Paket bleibt im Link erhalten.'
                   : 'Der Anmeldelink konnte nicht bestätigt werden. Fordere bitte einen neuen Link an oder nutze dein Passwort.'}
               </div>
             )}
@@ -237,7 +234,7 @@ function LoginContent() {
               <form className="space-y-5" onSubmit={handlePasswordReset}>
                 <EmailField email={email} onChange={setEmail} autoComplete="email" />
                 <Button className="w-full" type="submit" size="lg" disabled={loading}>
-                  {loading ? 'Link wird gesendet …' : 'Reset-Link senden'}
+                  {loading ? 'Link wird gesendet …' : 'Link zum Zurücksetzen senden'}
                   {!loading && <KeyRound aria-hidden="true" className="size-4" />}
                 </Button>
               </form>
@@ -287,7 +284,7 @@ function EmailField({
 }) {
   return (
     <label className="block" htmlFor="email">
-      <span className="mb-2 block text-sm font-semibold text-[var(--ink)]">E-Mail-Adresse</span>
+      <span className="mb-2 block text-sm font-semibold text-[var(--ink)]">E Mailadresse</span>
       <span className="relative block">
         <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[var(--ink-subtle)]" />
         <input id="email" className={inputClassName} name="email" type="email" inputMode="email" autoComplete={autoComplete} required value={email} onChange={(event) => onChange(event.target.value)} />

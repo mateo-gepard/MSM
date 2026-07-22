@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,8 +14,10 @@ import {
 } from 'lucide-react';
 import type { TutorSlug } from '@/domain/catalog';
 import { getTutorBySlug } from '@/domain/catalog';
+import { isChatAuthorizedBookingLifecycle } from '@/domain/chat';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
+import { ClientVisibleError, clientErrorMessage } from '@/lib/api/client-error';
 import { MessagesWorkspace } from '@/components/chat/MessagesWorkspace';
 import type { ChatConversation } from '@/components/chat/ChatPanel';
 import { BookingsPanel, countUpcomingBookings } from '@/components/dashboard/BookingsPanel';
@@ -34,38 +36,30 @@ interface TutorDashboardData {
   bookings: BookingDto[];
 }
 
+const transitionalBookingStatuses = new Set<BookingDto['status']>([
+  'provider_pending',
+  'pending_confirmation',
+  'cancellation_pending',
+  'reschedule_pending',
+]);
+
 function buildTutorConversations(bookings: BookingDto[], tutorSlug: TutorSlug): ChatConversation[] {
-  const conversationsByEmail = new Map<
-    string,
-    { bookingId: string; parentName: string; subjects: Set<string>; startsAt: string }
-  >();
-
-  for (const booking of [...bookings].sort(
-    (left, right) => new Date(right.startsAt).getTime() - new Date(left.startsAt).getTime(),
-  )) {
-    const current = conversationsByEmail.get(booking.contact.email);
-    if (current) {
-      current.subjects.add(booking.subject.name);
-      continue;
-    }
-
-    conversationsByEmail.set(booking.contact.email, {
-      bookingId: booking.id,
-      parentName: booking.contact.name,
-      subjects: new Set([booking.subject.name]),
-      startsAt: booking.startsAt,
-    });
-  }
-
-  return [...conversationsByEmail.values()]
+  return [...bookings]
+    .filter((booking) => isChatAuthorizedBookingLifecycle(booking.status))
     .sort((left, right) => new Date(right.startsAt).getTime() - new Date(left.startsAt).getTime())
-    .map((conversation) => ({
-      key: conversation.bookingId,
-      title: conversation.parentName,
-      description: [...conversation.subjects].join(' · '),
-      tutorSlug,
-      bookingId: conversation.bookingId,
-    }));
+    .map((booking) => {
+      const lessonDate = new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'medium',
+        timeZone: booking.timeZone,
+      }).format(new Date(booking.startsAt));
+      return {
+        key: booking.id,
+        title: booking.contact.name,
+        description: `${booking.subject.name} · ${booking.learner.displayName} · ${lessonDate}`,
+        tutorSlug,
+        bookingId: booking.id,
+      };
+    });
 }
 
 function TutorLoading() {
@@ -90,7 +84,13 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
-  const [currentTime] = useState(() => Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const hasLoadedDataRef = useRef(false);
+
+  const refreshTutorData = useCallback(() => {
+    setCurrentTime(Date.now());
+    setReloadKey((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -103,7 +103,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
     const controller = new AbortController();
 
     const loadTutorDashboard = async () => {
-      setIsLoading(true);
+      setIsLoading(!hasLoadedDataRef.current);
       setLoadError(null);
 
       try {
@@ -122,23 +122,27 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
         const profile = profilePayload.data.profile;
 
         if (profile.role === 'parent') {
-          throw new Error('Dieses Konto hat keinen Zugriff auf Tutor-Dashboards.');
+          throw new ClientVisibleError('Dieses Konto hat keinen Zugriff auf Tutordashboards.');
         }
         if (profile.role === 'tutor' && profile.tutorSlug !== tutorSlug) {
           if (profile.tutorSlug) router.replace(`/tutor-dashboard/${profile.tutorSlug}`);
-          else throw new Error('Deinem Tutor-Account ist noch kein Tutorprofil zugeordnet.');
+          else throw new ClientVisibleError('Deinem Tutorkonto ist noch kein Tutorprofil zugeordnet.');
           return;
         }
 
-        const bookingsResponse = await fetch('/api/bookings', {
-          cache: 'no-store',
-          signal: controller.signal,
-        });
+        const bookingsResponse = await fetch(
+          `/api/bookings?tutorSlug=${encodeURIComponent(tutorSlug)}`,
+          {
+            cache: 'no-store',
+            signal: controller.signal,
+          },
+        );
         const bookingsPayload = await readApiResponse<BookingsResponse>(
           bookingsResponse,
           'Die zugewiesenen Termine konnten nicht geladen werden.',
         );
 
+        hasLoadedDataRef.current = true;
         setData({
           profile,
           bookings: bookingsPayload.data.bookings.filter(
@@ -147,11 +151,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
         });
       } catch (caughtError) {
         if (caughtError instanceof DOMException && caughtError.name === 'AbortError') return;
-        setLoadError(
-          caughtError instanceof Error
-            ? caughtError.message
-            : 'Das Tutor-Dashboard konnte nicht geladen werden.',
-        );
+        setLoadError(clientErrorMessage(caughtError, 'Das Tutordashboard konnte nicht geladen werden.'));
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
@@ -160,6 +160,27 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
     void loadTutorDashboard();
     return () => controller.abort();
   }, [authLoading, reloadKey, router, tutorSlug, user]);
+
+  const hasTransitionalBooking =
+    data?.bookings.some((booking) => transitionalBookingStatuses.has(booking.status)) ?? false;
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshTutorData();
+    };
+    const intervalId = window.setInterval(
+      refreshWhenVisible,
+      hasTransitionalBooking ? 12_000 : 60_000,
+    );
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [authLoading, hasTransitionalBooking, refreshTutorData, user]);
 
   const conversations = useMemo(
     () => (data ? buildTutorConversations(data.bookings, tutorSlug) : []),
@@ -188,7 +209,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
           <ShieldCheck aria-hidden="true" className="mx-auto h-8 w-8 text-amber-200" />
           <h1 className="mt-4 text-xl font-bold text-white">Zugriff nicht möglich</h1>
           <p className="mt-2 text-sm leading-6 text-[#b5b1bf]">
-            {loadError || 'Bitte melde dich mit einem berechtigten Tutor-Konto an.'}
+            {loadError || 'Bitte melde dich mit einem berechtigten Tutorkonto an.'}
           </p>
           <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
             <Link
@@ -213,6 +234,8 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
 
   const upcomingCount = countUpcomingBookings(data.bookings, currentTime);
   const isAdmin = data.profile.role === 'admin';
+  const canUseTutorChat =
+    data.profile.roles.includes('tutor') && data.profile.tutorSlug === tutorSlug;
 
   return (
     <div className="min-h-screen bg-[var(--canvas)]">
@@ -231,12 +254,12 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
                 <h1 className="text-xl font-bold text-white">{tutor.name}</h1>
                 {isAdmin ? (
                   <span className="rounded-full border border-[var(--purple)]/30 bg-[var(--purple)]/10 px-2 py-0.5 text-xs font-bold text-[var(--purple-soft)]">
-                    Admin-Ansicht
+                    Ansicht für Admins
                   </span>
                 ) : null}
               </div>
               <p className="mt-1 text-sm text-[var(--ink-subtle)]">
-                Tutor-Dashboard mit{' '}
+                Tutordashboard mit{' '}
                 {upcomingCount === 1 ? 'einem kommenden Termin' : `${upcomingCount} kommenden Terminen`}
               </p>
             </div>
@@ -261,7 +284,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
       </header>
 
       <div className="site-container py-8 sm:py-12">
-        <nav aria-label="Tutor-Dashboardbereiche" className="mb-8">
+        <nav aria-label="Bereiche des Tutordashboards" className="mb-8">
           <div className="inline-flex w-full gap-1 rounded-xl border border-[var(--line)] bg-[var(--canvas-soft)] p-1 sm:w-auto">
             <button
               type="button"
@@ -272,15 +295,17 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
               <CalendarClock aria-hidden="true" className="h-4 w-4" />
               Termine
             </button>
-            <button
-              type="button"
-              aria-current={activeSection === 'messages' ? 'page' : undefined}
-              onClick={() => setActiveSection('messages')}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold text-[var(--ink-muted)] hover:text-white aria-[current=page]:bg-[var(--surface-raised)] aria-[current=page]:text-white sm:flex-none"
-            >
-              <MessageCircle aria-hidden="true" className="h-4 w-4" />
-              Nachrichten
-            </button>
+            {canUseTutorChat ? (
+              <button
+                type="button"
+                aria-current={activeSection === 'messages' ? 'page' : undefined}
+                onClick={() => setActiveSection('messages')}
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold text-[var(--ink-muted)] hover:text-white aria-[current=page]:bg-[var(--surface-raised)] aria-[current=page]:text-white sm:flex-none"
+              >
+                <MessageCircle aria-hidden="true" className="h-4 w-4" />
+                Nachrichten
+              </button>
+            ) : null}
           </div>
         </nav>
 
@@ -289,18 +314,20 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
             <BookingsPanel
               bookings={data.bookings}
               audience="tutor"
-              onBookingCancelled={(bookingId) =>
+              canManageBookings
+              onBookingStatusChanged={(bookingId, status) => {
                 setData((current) =>
                   current
                     ? {
                         ...current,
                         bookings: current.bookings.map((booking) =>
-                          booking.id === bookingId ? { ...booking, status: 'cancelled' } : booking,
+                          booking.id === bookingId ? { ...booking, status } : booking,
                         ),
                       }
                     : current,
-                )
-              }
+                );
+                refreshTutorData();
+              }}
             />
             <aside className="mt-8 flex gap-4 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 sm:p-6">
               <CalendarCog aria-hidden="true" className="mt-0.5 h-6 w-6 shrink-0 text-[#9b83ff]" />
@@ -315,7 +342,7 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
           </>
         ) : null}
 
-        {activeSection === 'messages' ? (
+        {activeSection === 'messages' && canUseTutorChat ? (
           <section aria-labelledby="tutor-messages-heading">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9b83ff]">Direkter Kontakt</p>
             <h2 id="tutor-messages-heading" className="mt-2 text-2xl font-bold tracking-tight text-white">
@@ -324,21 +351,12 @@ export function TutorDashboard({ tutorSlug }: { tutorSlug: TutorSlug }) {
             <p className="mb-6 mt-2 max-w-2xl text-sm leading-6 text-[#b5b1bf]">
               Jede Unterhaltung wird über eine zugewiesene Buchung sicher freigegeben.
             </p>
-            {isAdmin ? (
-              <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-8 text-center">
-                <ShieldCheck aria-hidden="true" className="mx-auto h-8 w-8 text-[var(--purple-bright)]" />
-                <h3 className="mt-4 font-bold text-white">Nachrichten in der Admin-Ansicht deaktiviert</h3>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#b5b1bf]">
-                  Administrator:innen können keine Unterhaltung im Namen eines Tutors öffnen.
-                </p>
-              </div>
-            ) : (
-              <MessagesWorkspace
-                conversations={conversations}
-                emptyTitle="Noch keine Unterhaltung verfügbar"
-                emptyDescription="Sobald dir eine Buchung zugewiesen ist, erscheint der sichere Kontakt hier."
-              />
-            )}
+            <MessagesWorkspace
+              conversations={conversations}
+              identityContext="tutor"
+              emptyTitle="Noch keine Unterhaltung verfügbar"
+              emptyDescription="Sobald dir eine Buchung zugewiesen ist, erscheint der sichere Kontakt hier."
+            />
           </section>
         ) : null}
       </div>
