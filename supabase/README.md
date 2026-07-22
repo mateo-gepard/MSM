@@ -6,8 +6,9 @@ Current order:
 
 1. `20260721000100_backend_foundation.sql` creates the canonical tutor, package, profile, purchase, and booking foundation and seeds the stable catalog rows.
 2. `20260721000200_msm_households_payments_ledger.sql` adds household RBAC, learners, additive account roles, immutable offers, Stripe orders/inboxes, append-only credit accounting, local-first booking operations, provider reconciliation, and stricter constraints.
+3. `20260722000100_supabase_booking_chat.sql` replaces the external messaging store with append-only booking messages, private Realtime topic authorization, and minimized database broadcasts.
 
-Both migrations are transactional. A validation exception rolls back that migration; investigate the named invariant instead of bypassing it or editing an already-applied migration.
+All migrations are transactional. A validation exception rolls back that migration; investigate the named invariant instead of bypassing it or editing an already-applied migration.
 
 ## Before an existing-database migration
 
@@ -44,9 +45,16 @@ Before deploying application code, verify at minimum:
 - no payment was made verified merely to make a balance appear;
 - `credit_accounts.available_balance` equals the sum of its append-only ledger entries, and verified legacy purchase projections reconcile to their grants;
 - bookings have the expected learner, provider UID, lifecycle/sync state, and no prohibited tutor overlap;
+- booking messages are service-write-only, immutable, scoped to a live booking, and private Realtime topics reject unrelated or insufficiently authenticated users;
 - RLS/browser grants expose only the intended household/read models while provider inboxes, payment internals, contact data, mutations, and ledger internals remain service-role concerns.
 
 Retain a reconciliation artifact containing the before/after counts, ambiguous rows, evidence used, adjustments approved, and operator/reviewer identities.
+
+## Booking chat
+
+`booking_messages` is the durable history source. Authenticated browser roles have no table-write permission; Vercel Functions re-authorize the booking and insert with the Supabase service role. `(sender_user_id, client_message_id)` is unique, so a safe retry returns the original row only when its booking, side, and body match. Update and delete triggers keep the history append-only until a separately reviewed retention or redaction workflow exists.
+
+The insert trigger sends a private `message_created` event through `realtime.send`. Its payload excludes the booking ID and internal user ID; the booking UUID is used only as the private topic. `booking_chat_broadcast_receive` calls `can_receive_booking_chat_topic` when a client joins and mirrors the live household, tutor, profile, lifecycle, and AAL2 authorization rules. Disable public channel access in Supabase Realtime Settings before testing chat.
 
 ## Immutable Stripe offers
 
@@ -76,10 +84,10 @@ Do not mutate grants or ledger history to repair a balance. Use a reviewed, idem
 
 Use this release order:
 
-1. Back up and rehearse both migrations plus legacy reconciliation in staging.
+1. Back up and rehearse all migrations plus legacy reconciliation in staging.
 2. Apply migrations to staging in filename order with all sales controls off, then complete the household, role, learner, payment, credit, booking, RLS, and MFA audit.
-3. Deploy the application to staging with test Stripe/Cal.com webhook secrets and `CRON_SECRET`; register both signed callbacks and the authenticated reconciliation schedule. The checked-in Hobby schedule runs daily; use Vercel Pro or an equivalent scheduler when the reviewed production SLO requires hourly repair.
-4. Publish disabled test-mode Stripe offers, compare them with Stripe, then test successful/async/failed/expired Checkout, duplicate events, refunds/disputes, booking reservation/confirmation/release, webhook replay/order, and reconciliation.
+3. Deploy the application to staging with test Stripe/Cal.com webhook secrets and `CRON_SECRET`; register both signed callbacks and the authenticated reconciliation schedule. Disable Supabase Realtime public access and verify private booking-topic authorization. The checked-in Hobby schedule runs daily; use Vercel Pro or an equivalent scheduler when the reviewed production SLO requires hourly repair.
+4. Publish disabled test-mode Stripe offers, compare them with Stripe, then test successful/async/failed/expired Checkout, duplicate events, refunds/disputes, booking reservation/confirmation/release, webhook replay/order, reconciliation, and chat isolation/idempotency.
 5. Take a fresh production backup, apply the same migrations during a reviewed write window, and complete the backfill audit before deploying dependent application code.
 6. Deploy production with live signed callbacks and an authenticated reconciliation schedule that meets the reviewed operational SLO while all new-sales controls remain off. Publish and verify the live offer versions with their pointers still disabled.
 7. Record legal/tax/refund approval, set `PAYMENTS_LEGAL_APPROVED=true`, set the operational `PAYMENTS_ENABLED=true`, and enable only the reviewed live offer pointers.

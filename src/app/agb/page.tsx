@@ -99,7 +99,8 @@ export default function TermsPage() {
             <p>
               Die Plattform nutzt Supabase für Konten und gespeicherte Anwendungsdaten, Stripe für
               die technisch vorbereitete Zahlungsabwicklung, Cal.com für Verfügbarkeiten und Termine
-              sowie Sendbird für den Chat. Weitere Einzelheiten stehen in
+              sowie Vercel für Hosting und geschützte API Routen. Der buchungsbezogene Chat wird in
+              Supabase gespeichert und in Echtzeit übertragen. Weitere Einzelheiten stehen in
               der <Link className="text-[var(--purple-soft)] underline decoration-[var(--purple-bright)]/50 underline-offset-4 hover:text-white" href="/datenschutz">Datenschutzerklärung</Link>.
             </p>
           </LegalSection>

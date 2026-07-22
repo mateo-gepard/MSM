@@ -22,11 +22,9 @@ vi.mock('@/lib/supabase/server', () => ({
   createSupabaseServiceClient: mocks.createSupabaseServiceClient,
 }));
 
-vi.mock('@/lib/sendbird/server', () => ({
-  CHAT_AUTHORIZED_BOOKING_LIFECYCLES: ['confirmed'],
+vi.mock('@/lib/chat/server', () => ({
   listBookingChatMessages: mocks.listBookingChatMessages,
   sendBookingChatMessage: mocks.sendBookingChatMessage,
-  SendbirdApiError: class SendbirdApiError extends Error {},
 }));
 
 import { ApiError } from '@/lib/api/errors';

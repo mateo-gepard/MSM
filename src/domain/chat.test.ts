@@ -6,6 +6,7 @@ import {
   EMPTY_CHAT_DRAFT,
   mergeOlderChatPage,
   mergePolledChatPage,
+  parseChatBroadcastMessage,
   updateChatDraft,
   type ChatMessageDto,
 } from './chat';
@@ -45,7 +46,7 @@ describe('chat polling budget and pagination continuity', () => {
     const scheduledReadsPerHour =
       Math.ceil(3_600_000 / CHAT_POLL_INTERVAL_MS) * CHAT_EXPECTED_CONCURRENT_TABS;
 
-    expect(scheduledReadsPerHour).toBe(480);
+    expect(scheduledReadsPerHour).toBe(120);
     expect(CHAT_AUTHENTICATED_READ_LIMIT_PER_HOUR - scheduledReadsPerHour).toBeGreaterThanOrEqual(
       120,
     );
@@ -88,5 +89,38 @@ describe('chat polling budget and pagination continuity', () => {
     expect(bridged.messages.map(({ id }) => id)).toEqual(
       Array.from({ length: 102 }, (_, index) => String(index + 1)),
     );
+  });
+});
+
+describe('chat realtime payload validation', () => {
+  it('maps the stored sender side relative to the current participant', () => {
+    const payload = {
+      message: {
+        id: '42',
+        text: 'Bis morgen!',
+        createdAt: 1_784_707_200_000,
+        senderContext: 'tutor',
+      },
+    };
+
+    expect(parseChatBroadcastMessage(payload, 'tutor')?.sender).toBe('self');
+    expect(parseChatBroadcastMessage(payload, 'household')?.sender).toBe('other');
+  });
+
+  it('rejects malformed or oversized realtime data', () => {
+    expect(parseChatBroadcastMessage({ message: { id: 'not-an-id' } }, 'household')).toBeNull();
+    expect(
+      parseChatBroadcastMessage(
+        {
+          message: {
+            id: '1',
+            text: 'x'.repeat(2_001),
+            createdAt: Date.now(),
+            senderContext: 'household',
+          },
+        },
+        'household',
+      ),
+    ).toBeNull();
   });
 });

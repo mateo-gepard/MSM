@@ -2,7 +2,8 @@ import type { BookingLifecycleStatus } from '@/types/database';
 
 export type ChatIdentityContext = 'household' | 'tutor';
 export const CHAT_MESSAGE_MAX_LENGTH = 2_000;
-export const CHAT_POLL_INTERVAL_MS = 15_000;
+export const CHAT_POLL_INTERVAL_MS = 60_000;
+export const CHAT_REALTIME_REAUTHORIZE_INTERVAL_MS = 5 * 60_000;
 export const CHAT_EXPECTED_CONCURRENT_TABS = 2;
 export const CHAT_AUTHENTICATED_READ_LIMIT_PER_HOUR = 600;
 export const CHAT_PRE_AUTH_READ_LIMIT_PER_HOUR = 2_400;
@@ -21,6 +22,34 @@ export interface ChatMessagePage {
   olderCursor: string | null;
 }
 
+export function parseChatBroadcastMessage(
+  value: unknown,
+  identityContext: ChatIdentityContext,
+): ChatMessageDto | null {
+  if (!value || typeof value !== 'object' || !('message' in value)) return null;
+  const message = value.message;
+  if (!message || typeof message !== 'object') return null;
+  const candidate = message as Record<string, unknown>;
+  if (
+    typeof candidate.id !== 'string' ||
+    !/^\d{1,20}$/.test(candidate.id) ||
+    typeof candidate.text !== 'string' ||
+    candidate.text.trim().length < 1 ||
+    candidate.text.length > CHAT_MESSAGE_MAX_LENGTH ||
+    typeof candidate.createdAt !== 'number' ||
+    !Number.isSafeInteger(candidate.createdAt) ||
+    (candidate.senderContext !== 'household' && candidate.senderContext !== 'tutor')
+  ) {
+    return null;
+  }
+  return {
+    id: candidate.id,
+    text: candidate.text,
+    createdAt: candidate.createdAt,
+    sender: candidate.senderContext === identityContext ? 'self' : 'other',
+  };
+}
+
 export type ChatHistoryState = ChatMessagePage;
 
 export function mergeChatMessages(
@@ -36,7 +65,7 @@ export function mergeChatMessages(
 
 /**
  * A visible-page refresh normally overlaps the newest messages already held by
- * the client. If it does not, more than one provider page may have accumulated
+ * the client. If it does not, more than one message page may have accumulated
  * while the page was hidden. In that case the refresh cursor becomes the load-
  * older cursor so the intervening pages remain reachable.
  */

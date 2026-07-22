@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import {
   CHAT_AUTHENTICATED_READ_LIMIT_PER_HOUR,
+  CHAT_AUTHORIZED_BOOKING_LIFECYCLES,
   CHAT_MESSAGE_MAX_LENGTH,
   CHAT_PRE_AUTH_READ_LIMIT_PER_HOUR,
   CHAT_PRE_AUTH_SEND_LIMIT_PER_HOUR,
@@ -11,14 +12,15 @@ import {
 import { getTutorByDbId } from '@/domain/catalog';
 import { ApiError, apiErrorResponse, parseJsonRequest } from '@/lib/api/errors';
 import { requireActivePrincipal, requireStaffMfa } from '@/lib/auth/server';
-import { enforceRateLimit } from '@/lib/rate-limit/server';
 import {
-  CHAT_AUTHORIZED_BOOKING_LIFECYCLES,
   listBookingChatMessages,
   sendBookingChatMessage,
-  SendbirdApiError,
-} from '@/lib/sendbird/server';
+} from '@/lib/chat/server';
+import { enforceRateLimit } from '@/lib/rate-limit/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/server';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const conversationSchema = z
   .object({
@@ -37,9 +39,6 @@ const sendSchema = conversationSchema.extend({
 interface AuthorizedConversation {
   bookingId: string;
   side: ChatIdentityContext;
-  parentNickname: string;
-  tutorNickname: string;
-  tutorName: string;
 }
 
 async function authorizeConversation(
@@ -76,9 +75,6 @@ async function authorizeConversation(
       conversation: {
         bookingId: booking.id,
         side: 'tutor',
-        parentNickname: 'MSM Haushalt',
-        tutorNickname: principal.displayName || tutor.name,
-        tutorName: tutor.name,
       },
     };
   }
@@ -125,7 +121,7 @@ async function authorizeConversation(
   }
   const { data: tutorProfile, error: tutorProfileError } = await database
     .from('profiles')
-    .select('display_name,deactivated_at')
+    .select('deactivated_at')
     .eq('id', tutorRole.user_id)
     .maybeSingle();
   if (tutorProfileError) {
@@ -140,20 +136,8 @@ async function authorizeConversation(
     conversation: {
       bookingId: booking.id,
       side: 'household',
-      parentNickname: 'MSM Haushalt',
-      tutorNickname: tutorProfile.display_name || tutor.name,
-      tutorName: tutor.name,
     },
   };
-}
-
-function chatProviderError(error: unknown) {
-  if (error instanceof SendbirdApiError) {
-    return apiErrorResponse(
-      new ApiError(502, 'CHAT_PROVIDER_ERROR', 'Chat is temporarily unavailable.'),
-    );
-  }
-  return apiErrorResponse(error);
 }
 
 export async function GET(request: Request) {
@@ -183,6 +167,7 @@ export async function GET(request: Request) {
     });
     const result = await listBookingChatMessages({
       ...conversation,
+      principalId,
       beforeMessageId: input.beforeMessageId,
     });
     return NextResponse.json(
@@ -190,7 +175,7 @@ export async function GET(request: Request) {
       { headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
     );
   } catch (error) {
-    return chatProviderError(error);
+    return apiErrorResponse(error);
   }
 }
 
@@ -218,6 +203,7 @@ export async function POST(request: Request) {
     });
     const message = await sendBookingChatMessage({
       ...conversation,
+      principalId,
       message: input.message,
       clientMessageId: input.clientMessageId,
     });
@@ -226,6 +212,6 @@ export async function POST(request: Request) {
       { headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
     );
   } catch (error) {
-    return chatProviderError(error);
+    return apiErrorResponse(error);
   }
 }

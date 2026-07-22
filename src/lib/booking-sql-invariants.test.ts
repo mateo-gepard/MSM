@@ -124,15 +124,37 @@ describe('booking SQL reliability invariants', () => {
       create role authenticated;
       create role service_role;
       create schema auth;
+      create schema realtime;
       create table auth.users (
         id uuid primary key,
         email text,
         raw_user_meta_data jsonb not null default '{}'::jsonb
       );
       create function auth.uid() returns uuid
-        language sql stable as 'select null::uuid';
+        language sql stable
+        as 'select nullif(current_setting(''request.jwt.claim.sub'', true), '''')::uuid';
       create function auth.jwt() returns jsonb
-        language sql stable as 'select jsonb_build_object(''aal'', ''aal2'')';
+        language sql stable
+        as 'select jsonb_build_object(
+          ''aal'', coalesce(nullif(current_setting(''request.jwt.claim.aal'', true), ''''), ''aal2'')
+        )';
+      create table realtime.messages (extension text);
+      create table realtime.sent_messages (
+        payload jsonb not null,
+        event_name text not null,
+        topic text not null,
+        is_private boolean not null
+      );
+      create function realtime.topic() returns text
+        language sql stable as 'select null::text';
+      create function realtime.send(
+        payload jsonb, event_name text, topic text, is_private boolean
+      ) returns void
+        language plpgsql
+        as 'begin
+          insert into realtime.sent_messages(payload, event_name, topic, is_private)
+          values (payload, event_name, topic, is_private);
+        end';
       -- PGlite does not bundle pgcrypto. This compile-only substitute preserves
       -- the byte length needed by code paths unrelated to these booking tests.
       create function public.digest(value text, algorithm text) returns bytea
@@ -143,6 +165,7 @@ describe('booking SQL reliability invariants', () => {
     for (const relativePath of [
       '../../supabase/migrations/20260721000100_backend_foundation.sql',
       '../../supabase/migrations/20260721000200_msm_households_payments_ledger.sql',
+      '../../supabase/migrations/20260722000100_supabase_booking_chat.sql',
     ]) {
       const migrationUrl = new URL(relativePath, import.meta.url);
       const migration = (await readFile(migrationUrl, 'utf8')).replace(
@@ -346,5 +369,154 @@ describe('booking SQL reliability invariants', () => {
         ],
       ),
     ).rejects.toThrow();
+  }, 30_000);
+
+  it('stores chat once, broadcasts only the minimized payload, and keeps history immutable', async () => {
+    const principal = await createHouseholdUser(9);
+    const tutorUserId = '10000000-0000-4000-8000-000000000010';
+    await database.query(
+      `insert into auth.users (id, email, raw_user_meta_data)
+       values ($1::uuid, 'tutor-chat@example.test', '{"name":"Tutor Chat"}'::jsonb)`,
+      [tutorUserId],
+    );
+    await database.query(
+      `insert into public.account_roles (user_id, role, tutor_id, reason)
+       values ($1::uuid, 'tutor', $2::uuid, 'Chat integration test')`,
+      [tutorUserId, TUTOR_ID],
+    );
+    const startsAt = '2099-04-01T10:00:00Z';
+    const reservation = await reserve(
+      principal,
+      startsAt,
+      '90000000-0000-4000-8000-000000000001',
+    );
+    await confirm(reservation, startsAt, 'cal-booking-chat');
+
+    const messageId = await value<number>(
+      `insert into public.booking_messages (
+         booking_id, sender_user_id, sender_context, client_message_id, body
+       ) values ($1::uuid, $2::uuid, 'household', $3::uuid, 'Bis morgen!')
+       returning id as value`,
+      [
+        reservation.booking_id,
+        principal.userId,
+        '90000000-0000-4000-8000-000000000002',
+      ],
+    );
+
+    const broadcast = await database.query<{
+      payload: { message: Record<string, unknown> };
+      event_name: string;
+      topic: string;
+      is_private: boolean;
+    }>(
+      `select payload, event_name, topic, is_private
+       from realtime.sent_messages
+       order by ctid desc
+       limit 1`,
+    );
+    expect(broadcast.rows[0]).toMatchObject({
+      event_name: 'message_created',
+      topic: `booking:${reservation.booking_id}`,
+      is_private: true,
+      payload: {
+        message: {
+          id: String(messageId),
+          text: 'Bis morgen!',
+          senderContext: 'household',
+        },
+      },
+    });
+    expect(broadcast.rows[0].payload.message.createdAt).toEqual(expect.any(Number));
+    expect(broadcast.rows[0].payload.message).not.toHaveProperty('sender_user_id');
+    expect(broadcast.rows[0].payload.message).not.toHaveProperty('booking_id');
+
+    await database.query(`select set_config('request.jwt.claim.sub', $1::text, false)`, [
+      principal.userId,
+    ]);
+    expect(
+      await value<boolean>(
+        `select public.can_receive_booking_chat_topic($1::text) as value`,
+        [`booking:${reservation.booking_id}`],
+      ),
+    ).toBe(true);
+    await database.query(`select set_config('request.jwt.claim.sub', $1::text, false)`, [
+      tutorUserId,
+    ]);
+    await database.query(`select set_config('request.jwt.claim.aal', 'aal1', false)`);
+    expect(
+      await value<boolean>(
+        `select public.can_receive_booking_chat_topic($1::text) as value`,
+        [`booking:${reservation.booking_id}`],
+      ),
+    ).toBe(false);
+    await database.query(`select set_config('request.jwt.claim.aal', 'aal2', false)`);
+    expect(
+      await value<boolean>(
+        `select public.can_receive_booking_chat_topic($1::text) as value`,
+        [`booking:${reservation.booking_id}`],
+      ),
+    ).toBe(true);
+
+    const unrelated = await createHouseholdUser(11);
+    await database.query(`select set_config('request.jwt.claim.sub', $1::text, false)`, [
+      unrelated.userId,
+    ]);
+    expect(
+      await value<boolean>(
+        `select public.can_receive_booking_chat_topic($1::text) as value`,
+        [`booking:${reservation.booking_id}`],
+      ),
+    ).toBe(false);
+
+    await expect(
+      database.query(
+        `insert into public.booking_messages (
+           booking_id, sender_user_id, sender_context, client_message_id, body
+         ) values ($1::uuid, $2::uuid, 'household', $3::uuid, 'Doppelt')`,
+        [
+          reservation.booking_id,
+          principal.userId,
+          '90000000-0000-4000-8000-000000000002',
+        ],
+      ),
+    ).rejects.toThrow(/booking_messages_sender_idempotency|unique/i);
+    await expect(
+      database.query(
+        `update public.booking_messages set body = 'Geändert' where id = $1::bigint`,
+        [messageId],
+      ),
+    ).rejects.toThrow(/append-only|immutable/i);
+    await expect(
+      database.query(`delete from public.booking_messages where id = $1::bigint`, [messageId]),
+    ).rejects.toThrow(/append-only|immutable/i);
+
+    await database.query(
+      `update public.bookings
+       set lifecycle_status = 'completed', status = 'completed'
+       where id = $1::uuid`,
+      [reservation.booking_id],
+    );
+    await database.query(`select set_config('request.jwt.claim.sub', $1::text, false)`, [
+      principal.userId,
+    ]);
+    expect(
+      await value<boolean>(
+        `select public.can_receive_booking_chat_topic($1::text) as value`,
+        [`booking:${reservation.booking_id}`],
+      ),
+    ).toBe(false);
+    await expect(
+      database.query(
+        `insert into public.booking_messages (
+           booking_id, sender_user_id, sender_context, client_message_id, body
+         ) values ($1::uuid, $2::uuid, 'household', $3::uuid, 'Zu spät')`,
+        [
+          reservation.booking_id,
+          principal.userId,
+          '90000000-0000-4000-8000-000000000003',
+        ],
+      ),
+    ).rejects.toThrow(/CHAT_NOT_ALLOWED/);
   }, 30_000);
 });

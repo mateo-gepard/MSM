@@ -29,7 +29,7 @@ const germanApiErrors: Readonly<Record<string, string>> = {
   LOCATION_NOT_OFFERED: 'Der gewählte Tutor bietet dieses Unterrichtsformat nicht an.',
   CHAT_NOT_ALLOWED: 'Diese Unterhaltung ist für deinen Account nicht freigegeben.',
   TUTOR_ACCOUNT_UNAVAILABLE: 'Das Chatkonto dieses Tutors ist derzeit nicht verfügbar.',
-  CHAT_PROVIDER_ERROR: 'Der Nachrichtenservice ist vorübergehend nicht verfügbar.',
+  CHAT_IDEMPOTENCY_REUSED: 'Diese Nachricht kann nicht mit derselben Kennung geändert werden.',
 };
 
 export class ClientVisibleError extends Error {

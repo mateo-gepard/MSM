@@ -540,6 +540,28 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['bookings']['Insert']>;
         Relationships: [];
       };
+      booking_messages: {
+        Row: {
+          id: number;
+          booking_id: string;
+          sender_user_id: string;
+          sender_context: 'household' | 'tutor';
+          client_message_id: string;
+          body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          booking_id: string;
+          sender_user_id: string;
+          sender_context: 'household' | 'tutor';
+          client_message_id: string;
+          body: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
       booking_operations: {
         Row: {
           id: string;
@@ -1019,6 +1041,10 @@ export interface Database {
       };
       has_household_permission: {
         Args: { p_household_id: string; p_permission: string };
+        Returns: boolean;
+      };
+      can_receive_booking_chat_topic: {
+        Args: { p_topic: string };
         Returns: boolean;
       };
       ingest_stripe_event: {

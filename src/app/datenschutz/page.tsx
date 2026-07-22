@@ -32,15 +32,15 @@ const processingGroups = [
   },
   {
     title: 'Nachrichten',
-    data: 'Pseudonymisierte technische Nutzerkennung, Anzeigename, Kanalzuordnung, Nachrichteninhalte und zugehörige Metadaten.',
+    data: 'Buchungszuordnung, Absenderkonto, Absenderseite, Nachrichteninhalt, Zeitpunkt und technische Wiederholungskennung.',
     purpose: 'Direkter Chat zwischen einem Kunden und dem Tutor, der einer Buchung zugeordnet ist.',
   },
 ] as const;
 
 const unresolvedItems = [
   'Rechtsgrundlage und, falls Art. 6 Abs. 1 lit. f DSGVO genutzt wird, das konkrete berechtigte Interesse für jeden einzelnen Verarbeitungsvorgang.',
-  'Produktiver Hostinganbieter, Serverstandort, Umfang der Zugriffsprotokolle und deren Aufbewahrungsdauer.',
-  'Vertragliche Rollen, Auftragsverarbeitungsvereinbarungen, gewählte Datenregionen und mögliche Drittlandübermittlungen bei Supabase, Stripe, Cal.com, Sendbird und dem Hostinganbieter.',
+  'Produktive Vercel und Supabase Datenregionen, Umfang der Zugriffsprotokolle und deren Aufbewahrungsdauer.',
+  'Vertragliche Rollen, Auftragsverarbeitungsvereinbarungen, gewählte Datenregionen und mögliche Drittlandübermittlungen bei Vercel, Supabase, Stripe und Cal.com.',
   'Ein verbindliches Konzept für Löschung und Aufbewahrung von Konten, Buchungen, Zahlungsreferenzen, Kalenderdaten, Protokollen und Chatnachrichten.',
   'Der organisatorische Prozess für Auskunft, Berichtigung, Löschung, Export, Kontoschließung und Datenschutzvorfälle.',
   'Ob und wie Minderjährige die Plattform selbst nutzen dürfen, einschließlich Altersprüfung und Einbindung gesetzlicher Vertreter.',
@@ -145,15 +145,23 @@ export default function PrivacyPage() {
             <p>
               Beim Abruf einer Website übermittelt der Browser außerdem technisch notwendige
               Verbindungsdaten wie Internetprotokolladresse, Zeitpunkt, angeforderte Ressource und Browserangaben an
-              den ausliefernden Server. Ob und wie lange der spätere Hostinganbieter diese Daten
-              protokolliert, ist noch zu dokumentieren.
+              den ausliefernden Server. Ob und wie lange Vercel und die angebundenen Dienste diese Daten
+              protokollieren, ist anhand der produktiven Kontoeinstellungen noch zu dokumentieren.
             </p>
           </LegalSection>
 
           <LegalSection id="dienste" number="03" title="Externe Dienste und konkrete Datenflüsse">
-            <Service title="Supabase · Konto und Datenbank">
+            <Service title="Vercel · Hosting und API Ausführung">
+              Vercel liefert die Website aus und führt die geschützten API Routen, Webhooks und den
+              geplanten Reparaturjob aus. Dabei können technisch notwendige Verbindungsdaten,
+              Funktionsaufrufe und Betriebsprotokolle verarbeitet werden. Provider Geheimnisse liegen
+              ausschließlich in serverseitigen, umgebungsbezogenen Einstellungen.
+            </Service>
+            <Service title="Supabase · Konto, Datenbank und Chat">
               Supabase erhält Daten für Registrierung und Anmeldung und speichert Profile, Rollen,
-              Buchungen, Zahlungsreferenzen sowie verifizierte Stundenguthaben. Die Sitzung wird über sichere
+              Buchungen, Zahlungsreferenzen, verifizierte Stundenguthaben und buchungsbezogene
+              Chatnachrichten. Private Realtime Kanäle übertragen neue Nachrichten an aktuell
+              berechtigte Gesprächsteilnehmer. Die Sitzung wird über sichere
               Cookies für die Authentifizierung mit dem Browser verbunden. Administrative Zugangsschlüssel
               sind im Anwendungskonzept ausschließlich serverseitig vorgesehen.
             </Service>
@@ -163,13 +171,6 @@ export default function PrivacyPage() {
               Zeitzone sowie technische Angaben zu Tutor, Fach, Paket und Unterrichtsformat an
               Cal.com. Bei Umbuchung oder Stornierung kann zusätzlich ein angegebener Grund
               übermittelt werden.
-            </Service>
-            <Service title="Sendbird · Chat">
-              Für autorisierte Chats werden aus der jeweiligen Buchungsbeziehung abgeleitete
-              Nutzerkennungen, Anzeigenamen, Kanalmitgliedschaften, die Zuordnung zum Tutor und
-              Nachrichteninhalte an Sendbird übermittelt. Der Browser erhält keine Zugangsdaten
-              für Sendbird. Lesen und Senden erfolgen ausschließlich über erneut autorisierte
-              Routen des MSM Servers; nur dieser spricht mit der Sendbird Platform API.
             </Service>
             <Service title="Stripe · Zahlungsabwicklung">
               Stripe Checkout ist technisch eingebunden, bleibt für neue Zahlungen aber bis zur

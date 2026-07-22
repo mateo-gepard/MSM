@@ -1,6 +1,6 @@
 # MSM setup and release guide
 
-The application uses Supabase for identity and persistence, Stripe Checkout for one-time package payments, Cal.com v2 for scheduling, and Sendbird for household–tutor chat. Household permissions, payment facts, credit accounting, and booking lifecycle state remain authoritative in MSM. Provider callbacks are signature-verified inputs, not authorization decisions.
+The application uses Vercel Functions as its server API, Supabase for identity, persistence, and private Realtime chat, Stripe Checkout for one-time package payments, and Cal.com v2 for scheduling. Household permissions, payment facts, credit accounting, and booking lifecycle state remain authoritative in MSM. Provider callbacks are signature-verified inputs, not authorization decisions.
 
 There is no mock-success fallback. New sales are fail-closed until both payment activation flags are explicitly enabled, a Stripe-backed immutable offer is published, and its checkout pointer is enabled. Signed Stripe webhook fulfillment and financial reconciliation stay active independently of those new-sales controls.
 
@@ -34,15 +34,25 @@ Copy the names from `.env.example` and replace every placeholder:
 - `CALCOM_EVENT_TYPE_IDS_JSON`: JSON object mapping every canonical tutor slug to a Cal.com event-type ID.
 - `CALCOM_DEFAULT_EVENT_TYPE_ID`: optional fallback only when every tutor deliberately shares one event type.
 - `CALCOM_WEBHOOK_SECRET`: secret configured on the Cal.com webhook subscription. Production requires at least 32 UTF-8 bytes and rejects template placeholders.
-- `SENDBIRD_APP_ID`: server-only Sendbird application ID used to address the Platform API. It is never returned to browsers.
-- `SENDBIRD_API_TOKEN`: server-only Sendbird Platform API token.
-- `SENDBIRD_CHANNEL_CONTRACT_SECRET`: at least 32 random characters, unique per environment and stable for the lifetime of its deterministic channels. It seals the creation-time channel contract and must never be sent to browsers. Rotation requires controlled channel recreation and retained-history migration.
-- `SENDBIRD_TOKEN_AUTH_REQUIRED`: operator attestation for Sendbird's provider-side token gate. Keep `false` until the Dashboard is verified, then set exactly `true`; chat fails closed otherwise.
-- `SENDBIRD_RESTRICTED_ACL_REQUIRED`: operator attestation that Sendbird SDK discovery, metadata, and channel creation permissions are disabled and every MSM channel blocks SDK joins. Keep `false` until the checklist below is verified; chat fails closed otherwise.
 - `REQUIRE_STAFF_MFA`: keep `true` in staging and production to require AAL2 for tutor/admin operations. Production enforces AAL2 even if this is accidentally set to `false`.
 - `CRON_SECRET`: random server-only secret sent as `Authorization: Bearer <CRON_SECRET>` to the booking-reconciliation route. Production requires at least 32 UTF-8 bytes and rejects template placeholders.
 
 Never create `NEXT_PUBLIC_` variants of server secrets. Use different secrets for test, preview, and production environments. If a credential has appeared in source control or logs, rotate it at the provider; editing the current file is not revocation.
+
+## Vercel API and integration setup
+
+Every `src/app/api/**/route.ts` handler deploys as a Vercel Function on the application origin. Browsers call only these MSM endpoints for privileged reads and mutations. Stripe, Cal.com, the Supabase service role, webhook signing secrets, `RATE_LIMIT_SECRET`, and `CRON_SECRET` remain server-only Vercel Environment Variables. Use separate Development, Preview, and Production values; Preview must never point at live Stripe credentials or an unreviewed production database.
+
+The Vercel Marketplace can connect the existing Supabase and Stripe resources and synchronize generated credentials into the project. Connect the existing resources rather than provisioning replacements after data exists. Marketplace connection does not configure application-specific webhook secrets, Cal.com event mappings, payment gates, or the `CRON_SECRET`; set those explicitly. After changing any environment variable, redeploy before testing it. For local development, link the correct project deliberately and run `vercel env pull .env.local`; this file is ignored by Git and must never be committed.
+
+Use one canonical HTTPS origin for `NEXT_PUBLIC_SITE_URL` and register its exact Vercel routes with the providers:
+
+- Stripe: `/api/webhooks/stripe`
+- Cal.com: `/api/webhooks/calcom`
+- Supabase Auth: `/auth/callback`
+- Vercel Cron: `/api/cron/reconcile-bookings`
+
+The Vercel project must use a Node.js version accepted by `package.json`. Database and provider routes use the default Node.js runtime; do not move them to Edge without revalidating cryptography, request-body verification, and provider SDK compatibility.
 
 ## Supabase, households, and roles
 
@@ -173,21 +183,15 @@ For ambiguous cancel or reschedule calls, repeated active snapshots that prove t
 
 The public Stripe and Cal.com webhook endpoints authenticate with their provider signatures, not `CRON_SECRET`. Do not point the scheduler at webhook endpoints or synthesize provider events. Alert on non-2xx cron runs and persistent `needs_reconciliation`, pending, unresolved, provider-error, or RPC-error counts.
 
-## Sendbird
+## Supabase booking chat
 
-Create a Sendbird application and set its server environment variables. Chat is server mediated: browsers call only MSM's authenticated routes and never receive a Sendbird application ID, user ID, token, channel URL, or Chat SDK bundle. As legacy defense before enabling chat, open **Sendbird Dashboard → Settings → Application → Security → Access token permission setting** and require an authentication token for every SDK connection. After verifying the provider setting in the correct application and environment, set `SENDBIRD_TOKEN_AUTH_REQUIRED=true`.
+Apply `20260722000100_supabase_booking_chat.sql` after the two existing migrations. It creates append-only `booking_messages`, keeps all writes behind the authenticated Vercel API, and emits a minimized private Supabase Realtime broadcast after each committed insert. The broadcast includes only message ID, text, timestamp, and sender side. Internal user IDs, contact data, and booking/provider identifiers are not part of its payload.
 
-In **Sendbird Dashboard → Settings → Application → Security → Access control list**, turn off all four SDK permissions named **Allow retrieving user list**, **Allow updating user metadata**, **Allow creating open channels**, and **Allow creating group channels**. New MSM channels also set `block_sdk_user_channel_join=true`. Because Sendbird's documented channel read does not return that creation flag, MSM writes an application-and-channel-bound HMAC contract in the same atomic create request and requires it on every later read. Never add the seal to an old channel through an update: unsealed channels must remain fail closed and be recreated through the approved history migration. Test that a legacy SDK client cannot enumerate users, create a channel, join another channel, or invite an unrelated booking identity. Only after this exact application and environment pass the check should `SENDBIRD_RESTRICTED_ACL_REQUIRED=true` be set.
+In **Supabase Dashboard → Realtime Settings**, disable public channel access. Clients subscribe only to `booking:<booking-uuid>` with `private: true`. The `booking_chat_broadcast_receive` policy authorizes the topic against the live booking, active household membership or assigned tutor role, active profiles, and tutor AAL2. Clients receive no database write permission and cannot publish broadcasts. History reads and sends still pass through `/api/chat/channels`, which repeats authorization and database-backed rate limiting on every request.
 
-Both environment flags are operator attestations; the application cannot inspect the remote Dashboard configuration. The server refuses every Sendbird Platform API operation unless both are exactly `true`, so release review must verify the provider state before changing them.
+Realtime is an acceleration path rather than the source of truth. The visible page reconciles through the Vercel history API every 60 seconds and refreshes the private Realtime authorization connection every five minutes. This recovers missed broadcasts and bounds stale application-role authorization. Message retries retain one client UUID; the unique sender/idempotency constraint returns the original row only when booking, side, and body are identical.
 
-The server derives a separate opaque identity for each side of each exact booking and a deterministic channel URL for that booking. It creates a strict, private, non-ephemeral, non-distinct channel with exactly those two joined members, no operators, and blocked SDK joins. Before every message list or send, the server rechecks the live booking and repairs membership by removing unexpected users, joining missing expected users, and re-reading the exact result. A member with `can_view_all_bookings=false` is limited to bookings they created; tutor-side calls require AAL2. Only `MESG` text up to 2,000 characters is accepted. Reads poll only while the page is visible, and both reads and sends are database rate limited.
-
-Before upgrading an existing Sendbird application, list legacy global users named `msm_<auth-user-uuid>` and revoke all their session tokens with Sendbird's `DELETE /v3/users/{user_id}/token` Platform API. The previous implementation could issue the provider's seven-day default token. Do not release until legacy tokens are revoked (or their full prior lifetime has elapsed), tokenless connections are disabled, and ACLs are restricted.
-
-The deterministic channel URL is a storage boundary change. Inventory each legacy generated or distinct booking channel, map it to the exact internal booking, and migrate any history that must be retained into the corresponding deterministic channel through an approved Sendbird migration procedure. Verify message order, sender mapping, retention, and legal deletion requirements in staging. Keep chat disabled during the cutover; do not silently abandon or delete legacy history, and do not treat deletion as token revocation.
-
-Test booking isolation, restricted household members, 15-second visible-page polling, older pagination after long hidden intervals, idempotent send retries, terminal or revoked authorization, deterministic channel/history migration, exact membership and operator repair, legacy-token revocation, and staff MFA in staging.
+Before production, test cross-household denial, restricted household members, tutor AAL1 denial and AAL2 success, terminal booking denial, private-channel subscription rejection, reconnect/replay recovery, older pagination, concurrent idempotent retries, and rate limits. Define message retention, export, legal hold, moderation, and deletion procedures before broad use. If legacy provider chat history exists, inventory and migrate it through a separately reviewed import that preserves booking, sender side, timestamp, order, and audit evidence; do not silently abandon or delete history.
 
 ## Release checks
 
@@ -210,5 +214,6 @@ Before production, also verify:
 - Stripe and Cal.com signatures reject altered payloads and webhook replays remain idempotent;
 - payment, refund, dispute, automatic oldest-eligible credit selection, booking, cancellation, and credit-ledger invariants reconcile under concurrency and retries;
 - scheduled reconciliation is authenticated and alerts on exhausted/ambiguous work;
+- Supabase Realtime public access is disabled and private booking topics reject unrelated, revoked, terminal, and tutor-AAL1 sessions;
 - database-backed rate limits reject excess slot, checkout, booking, and chat traffic and fail closed when unavailable;
 - structured error monitoring, provider latency/error alerts, and an operator runbook are in place.

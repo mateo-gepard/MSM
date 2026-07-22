@@ -5,11 +5,13 @@ import { AlertCircle, LoaderCircle, MessageCircle, RefreshCw, Send } from 'lucid
 import type { TutorSlug } from '@/domain/catalog';
 import {
   CHAT_POLL_INTERVAL_MS,
+  CHAT_REALTIME_REAUTHORIZE_INTERVAL_MS,
   CHAT_MESSAGE_MAX_LENGTH,
   EMPTY_CHAT_DRAFT,
   mergeChatMessages,
   mergeOlderChatPage,
   mergePolledChatPage,
+  parseChatBroadcastMessage,
   type ChatIdentityContext,
   type ChatHistoryState,
   type ChatMessageDto,
@@ -20,6 +22,7 @@ import {
   ClientVisibleError,
   clientErrorMessage,
 } from '@/lib/api/client-error';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export interface ChatConversation {
   key: string;
@@ -190,6 +193,9 @@ export function ChatPanel({
     let active = true;
     let refreshInFlight = false;
     let controller: AbortController | null = null;
+    let connectionGeneration = 0;
+    let realtimeChannel: ReturnType<ReturnType<typeof getSupabaseBrowserClient>['channel']> | null =
+      null;
 
     const refresh = async () => {
       if (!active || refreshInFlight || document.visibilityState !== 'visible') return;
@@ -213,13 +219,55 @@ export function ChatPanel({
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') void refresh();
     };
+    const connectRealtime = async () => {
+      const generation = ++connectionGeneration;
+      try {
+        const supabase = getSupabaseBrowserClient();
+        await supabase.realtime.setAuth();
+        if (!active || generation !== connectionGeneration) return;
+        const channel = supabase
+          .channel(`booking:${bookingId}`, { config: { private: true } })
+          .on('broadcast', { event: 'message_created' }, (event) => {
+            const message = parseChatBroadcastMessage(event.payload, identityContext);
+            if (!active || !message) return;
+            setHistory((current) => ({
+              ...current,
+              messages: mergeChatMessages(current.messages, [message]),
+            }));
+          })
+          .subscribe((subscriptionStatus) => {
+            if (subscriptionStatus === 'SUBSCRIBED') void refresh();
+          });
+        realtimeChannel = channel;
+      } catch {
+        // The visible-page reconciliation below keeps chat usable if Realtime
+        // is temporarily unavailable or not enabled in a staging project.
+      }
+    };
+    const reconnectRealtime = async () => {
+      connectionGeneration += 1;
+      const channel = realtimeChannel;
+      realtimeChannel = null;
+      if (channel) await getSupabaseBrowserClient().removeChannel(channel);
+      if (active) await connectRealtime();
+    };
+
+    void connectRealtime();
     const intervalId = window.setInterval(() => void refresh(), CHAT_POLL_INTERVAL_MS);
+    const reconnectId = window.setInterval(() => {
+      void reconnectRealtime();
+    }, CHAT_REALTIME_REAUTHORIZE_INTERVAL_MS);
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       active = false;
+      connectionGeneration += 1;
       controller?.abort();
       window.clearInterval(intervalId);
+      window.clearInterval(reconnectId);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (realtimeChannel) {
+        void getSupabaseBrowserClient().removeChannel(realtimeChannel);
+      }
     };
   }, [bookingId, identityContext, status]);
 

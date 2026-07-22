@@ -17,7 +17,7 @@ in application error bodies; these responses are private and non-cacheable.
 
 Stripe and Cal.com webhooks, plus the internal cron route, use provider/operations response envelopes instead. Protected responses set private no-store caching where applicable.
 
-Provider credentials, the Supabase service-role key, Stripe Product/Price IDs, Cal.com booking UIDs and event-type IDs, database user IDs, and the Sendbird API token are never accepted as browser input. Internal booking and learner UUIDs are accepted only on routes that re-authorize them against the active principal.
+Provider credentials, the Supabase service-role key, Stripe Product/Price IDs, Cal.com booking UIDs and event-type IDs, and database user IDs are never accepted as browser input. Internal booking and learner UUIDs are accepted only on routes that re-authorize them against the active principal.
 
 ## Identity, household permissions, and MFA
 
@@ -238,15 +238,15 @@ Signed webhooks are the primary synchronization path; the scheduled job is a rep
 
 Returns the active account's primary role, complete role list, display name, and mapped tutor slug where applicable.
 
-Chat is server mediated and text only. There is no token route and the browser never receives a Sendbird application ID, user ID, session token, API token, or channel URL. The server derives both opaque booking-side identities and the deterministic channel URL internally. Each provider read or send is preceded by fresh authorization of that exact live booking and exact side. `can_view_all_bookings=false` limits a household member to bookings they created; tutor callers require AAL2, and administrator status alone never authorizes chat.
+Chat is text only and persisted in append-only Supabase `booking_messages`. There is no separate chat-provider token route. Every history read and message write goes through a Vercel Function and is preceded by fresh authorization of the exact live booking and side. `can_view_all_bookings=false` limits a household member to bookings they created; tutor callers require AAL2, and administrator status alone never authorizes chat.
 
-The deterministic provider channel is strict, private, non-ephemeral, non-distinct, has no operators, blocks SDK joins, and must contain exactly the two joined booking identities. The server unregisters all operators, removes unexpected members, joins missing expected members, and re-fetches before proceeding. It filters provider history to `MESG` from only those senders and exposes only minimized message DTOs.
+After a committed insert, a database trigger emits a private `message_created` broadcast on `booking:<booking-uuid>`. Realtime Authorization checks the live booking, active household membership or assigned tutor role, tutor AAL2, and active counterpart before allowing the subscription. The broadcast payload contains only the minimized message ID, text, timestamp, and sender side; it contains no internal user ID or booking/provider data. Clients have no direct message-table write permission and no broadcast-send policy.
 
-Provider token authentication and restricted SDK access remain external legacy-defense prerequisites. The app fails closed unless both `SENDBIRD_TOKEN_AUTH_REQUIRED=true` and `SENDBIRD_RESTRICTED_ACL_REQUIRED=true`. Each deterministic channel must also carry the valid creation-time contract sealed by `SENDBIRD_CHANNEL_CONTRACT_SECRET`; an old or modified channel without that seal is rejected. Before upgrading, revoke legacy global-user tokens and migrate retained history from old generated channels into newly created deterministic channels; see `SETUP_GUIDE.md`.
+Realtime is not history authority. The visible page reconciles the newest database page through the Vercel API every 60 seconds, immediately after a successful subscription, and when returning to visibility. The private channel is recreated every five minutes so application-role changes are re-evaluated rather than relying on a long-lived authorization cache.
 
 ## Abuse protection
 
-The slot, checkout, booking-create, booking-mutation, and chat routes use a database-backed fixed-window limiter. Authenticated limits are keyed by the user UUID; public slot traffic is keyed by the trusted deployment network address. Chat additionally applies a coarse network gate before query/body parsing and authorization, then a principal gate after authorization. Its 15-second visible-page polling budget supports two continuously visible tabs with headroom for manual history loads. Send bodies are byte-bounded before JSON parsing. Identities are HMACed with `RATE_LIMIT_SECRET` before storage, and protected requests fail closed if the limiter is unavailable.
+The slot, checkout, booking-create, booking-mutation, and chat routes use a database-backed fixed-window limiter. Authenticated limits are keyed by the user UUID; public slot traffic is keyed by the trusted deployment network address. Chat additionally applies a coarse network gate before query/body parsing and authorization, then a principal gate after authorization. Private Realtime handles normal delivery; the 60-second visible-page reconciliation budget supports two continuously visible tabs with substantial headroom for reconnects and manual history loads. Send bodies are byte-bounded before JSON parsing. Identities are HMACed with `RATE_LIMIT_SECRET` before storage, and protected requests fail closed if the limiter is unavailable.
 
 `GET /api/chat/channels?identityContext=household&bookingId=<uuid>[&beforeMessageId=<id>]`
 
@@ -274,14 +274,14 @@ Returns the latest 50 authorized text messages, or the 50 messages before `befor
 }
 ```
 
-`message` is trimmed, text only, and limited to 2,000 characters. The client retains `clientMessageId` for retries of an unchanged draft; the server forwards it as Sendbird `dedup_id`, so an ambiguous transport retry does not create another provider message. The ID resets only after confirmed success or when the draft changes. Tutor requests use `identityContext=tutor`, require AAL2, and must match the booking's assigned tutor. Both methods re-authorize the live booking and apply database-backed per-user limits.
+`message` is trimmed, text only, and limited to 2,000 characters. The client retains `clientMessageId` for retries of an unchanged draft. The database uniqueness constraint returns the existing message only when sender, booking, side, and body are identical, so an ambiguous transport retry cannot create a duplicate or silently change content. The ID resets only after confirmed success or when the draft changes. Tutor requests use `identityContext=tutor`, require AAL2, and must match the booking's assigned tutor. Both methods re-authorize the live booking and apply database-backed per-user limits.
 
 ## Server integration locations
 
 - Supabase clients and configuration: `src/lib/supabase`
+- Supabase booking chat persistence and API data access: `supabase/migrations/20260722000100_supabase_booking_chat.sql`, `src/lib/chat/server.ts`
 - Stripe Checkout and fulfillment: `src/lib/stripe`, `src/lib/commerce`
 - Cal.com API, HMAC verification, and reconciliation: `src/lib/calcom`
-- Sendbird Platform API: `src/lib/sendbird/server.ts`
 - Request schemas: `src/domain/*-schemas.ts`
 - Public dashboard/credit DTOs: `src/domain/dashboard-dtos.ts`, `src/domain/credit-dtos.ts`
 
