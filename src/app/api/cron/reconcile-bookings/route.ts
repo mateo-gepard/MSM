@@ -24,8 +24,10 @@ export const maxDuration = 120;
 
 const NO_STORE_HEADERS = { 'Cache-Control': 'private, no-store, max-age=0' };
 
-// `0 * * * *` requires a Vercel plan that supports hourly Cron Jobs (Pro at
-// time of implementation). Webhooks remain the primary synchronization path.
+// `vercel.json` uses a Hobby-compatible daily safety-net schedule. Signed
+// webhooks remain the primary synchronization path. Production environments
+// with a tighter repair SLO can invoke this authenticated route hourly from a
+// Vercel Pro cron or an equivalent external scheduler.
 export async function GET(request: Request) {
   if (!isCronRequestAuthorized(request.headers.get('authorization'), process.env.CRON_SECRET)) {
     return new NextResponse(null, { status: 401, headers: NO_STORE_HEADERS });

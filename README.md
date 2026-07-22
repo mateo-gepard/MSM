@@ -9,7 +9,7 @@ MSM is a responsive German tutoring marketplace built with Next.js 16, React 19,
 - Household membership permissions govern learner management, booking, billing, and household-wide booking visibility.
 - Protected Next.js route handlers own checkout, booking, entitlement, household, profile, and chat authorization.
 - Stripe Checkout creates one-time payment sessions; signed Stripe webhooks are the only path that fulfills purchases and grants credits.
-- Cal.com v2 creates scheduling operations, while HMAC-signed Cal.com webhooks and an authenticated hourly repair job reconcile provider lifecycle changes.
+- Cal.com v2 creates scheduling operations, while HMAC-signed Cal.com webhooks and an authenticated scheduled repair job reconcile provider lifecycle changes.
 - Supabase row-level security limits direct reads; privileged payment, booking, and append-only credit-ledger mutations are transactional service-role RPCs.
 - Tutor and administrator operations require Supabase AAL2 multi-factor authentication in production.
 - Client dashboards consume redacted DTOs rather than querying sensitive tables or provider identifiers directly.
@@ -39,7 +39,7 @@ Before exercising protected flows:
 3. Configure a Cal.com event type per tutor and the signed `/api/webhooks/calcom` endpoint.
 4. Configure Stripe test-mode credentials, signed `/api/webhooks/stripe`, and immutable offer versions using `supabase/stripe_offer_setup.example.sql`. Do not enable checkout yet.
 5. Configure the Sendbird application, Platform API token, and a unique stable channel-contract secret.
-6. Add the deployed `/auth/callback` URL to Supabase Auth redirect URLs and configure the authenticated hourly `/api/cron/reconcile-bookings` job with `CRON_SECRET`.
+6. Add the deployed `/auth/callback` URL to Supabase Auth redirect URLs and configure the authenticated `/api/cron/reconcile-bookings` job with `CRON_SECRET`. The checked-in schedule is Hobby-compatible and runs daily; use Vercel Pro or an equivalent scheduler for hourly production repair when the operational SLO requires it.
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for the release checklist and [API_INTEGRATION.md](API_INTEGRATION.md) for route contracts. Existing-database migration notes are in [supabase/README.md](supabase/README.md).
 
@@ -66,7 +66,7 @@ npm run build
 - Paid booking never accepts a purchase/grant ID: the database reserves the earliest-expiring, then oldest eligible household credit before the Cal.com call. Provider confirmation consumes it; deterministic failure releases it; ambiguous results remain queued for reconciliation.
 - Creation, cancellation, and rescheduling use atomically claimed idempotent operations. A queued operation can be resumed safely; a possibly dispatched provider call is never repeated blindly.
 - Eligible paid cancellation restores one credit exactly once through an append-only ledger entry.
-- HMAC-signed Cal.com events and the hourly repair loop reconcile booking lifecycle and provider drift without granting payment authority to Cal.com. Every run reserves capacity for upcoming-booking audits even under a sustained pending backlog. A UID-less ambiguous create is recovered only by an exact internal booking UUID match around the actual provider-attempt time; two complete, spaced negative searches are required before its reservation is released. Missing mutation UIDs are searched by internal ID and replacement lineage, and incompatible active/absent/cancelled evidence is never combined. Absence or unchanged same-UID presence evidence for a staged external cancellation is durably tied to the signed event that caused the pending state and requires two consistent observations.
+- HMAC-signed Cal.com events and the scheduled repair loop reconcile booking lifecycle and provider drift without granting payment authority to Cal.com. Every run reserves capacity for upcoming-booking audits even under a sustained pending backlog. A UID-less ambiguous create is recovered only by an exact internal booking UUID match around the actual provider-attempt time; two complete, spaced negative searches are required before its reservation is released. Missing mutation UIDs are searched by internal ID and replacement lineage, and incompatible active/absent/cancelled evidence is never combined. Absence or unchanged same-UID presence evidence for a staged external cancellation is durably tied to the signed event that caused the pending state and requires two consistent observations.
 - Sensitive mutations and provider-backed reads use privacy-preserving, database-backed rate limits keyed by an HMAC identity.
 - Production staff MFA requires AAL2 for tutor/admin dashboards, booking access, and chat operations.
 - Chat is server mediated and text only. The browser receives no Sendbird application ID, user ID, token, or channel URL. Every message read and send re-authorizes one exact live booking; tutors require AAL2, and completed, cancelled, and failed bookings do not qualify.
