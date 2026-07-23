@@ -1,9 +1,19 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { addDays, format, isBefore, startOfDay } from 'date-fns';
+import { addDays, format, isBefore, isSameDay, startOfDay } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, Loader2 } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Clock,
+  Loader2,
+  Sun,
+  Sunrise,
+  Sunset,
+} from 'lucide-react';
 import type { TutorSlug } from '@/domain/catalog';
 import { apiClientError, clientErrorMessage } from '@/lib/api/client-error';
 
@@ -24,6 +34,14 @@ interface AvailabilityPickerProps {
   onChange: (startsAt: string) => void;
 }
 
+type PeriodId = 'morning' | 'afternoon' | 'evening';
+
+const PERIODS: { id: PeriodId; label: string; icon: typeof Sunrise }[] = [
+  { id: 'morning', label: 'Vormittag', icon: Sunrise },
+  { id: 'afternoon', label: 'Nachmittag', icon: Sun },
+  { id: 'evening', label: 'Abend', icon: Sunset },
+];
+
 function dateKey(isoDate: string, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -34,6 +52,23 @@ function dateKey(isoDate: string, timeZone: string) {
 
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+function slotHour(isoDate: string, timeZone: string) {
+  const value = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    hour12: false,
+  }).format(new Date(isoDate));
+  const hour = Number.parseInt(value, 10);
+  return Number.isNaN(hour) ? 0 : hour % 24;
+}
+
+function periodOf(isoDate: string, timeZone: string): PeriodId {
+  const hour = slotHour(isoDate, timeZone);
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  return 'evening';
 }
 
 function formatSlotTime(isoDate: string, timeZone: string) {
@@ -47,6 +82,7 @@ function formatSlotTime(isoDate: string, timeZone: string) {
 export function AvailabilityPicker({ tutorSlug, value, timeZone, bookingId, onChange }: AvailabilityPickerProps) {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [rangeStart, setRangeStart] = useState(today);
+  const [pickedDayKey, setPickedDayKey] = useState<string | null>(null);
   const [slotResult, setSlotResult] = useState<{
     requestKey: string;
     slots: Slot[];
@@ -109,6 +145,45 @@ export function AvailabilityPicker({ tutorSlug, value, timeZone, bookingId, onCh
     return groups;
   }, [requestKey, slotResult, timeZone]);
 
+  // Derive the effective selected day during render (no effect / no state sync):
+  // prefer an explicit user pick, then the day of the currently chosen slot,
+  // then the first available day in the visible week. Stale picks from another
+  // week self-correct because they hold no slots in the current range.
+  const selectedDayKey = useMemo(() => {
+    const hasSlots = (key: string | null) => !!key && (groupedSlots.get(key)?.length ?? 0) > 0;
+    if (hasSlots(pickedDayKey)) return pickedDayKey;
+    const valueDayKey = value ? dateKey(value, timeZone) : null;
+    if (hasSlots(valueDayKey)) return valueDayKey;
+    return (
+      days
+        .map((day) => format(day, 'yyyy-MM-dd'))
+        .find((key) => (groupedSlots.get(key)?.length ?? 0) > 0) ?? null
+    );
+  }, [pickedDayKey, groupedSlots, days, value, timeZone]);
+
+  const selectedDay = useMemo(() => {
+    if (!selectedDayKey) return null;
+    return days.find((day) => format(day, 'yyyy-MM-dd') === selectedDayKey) ?? null;
+  }, [days, selectedDayKey]);
+
+  const selectedSlots = useMemo(
+    () => (selectedDayKey ? (groupedSlots.get(selectedDayKey) ?? []) : []),
+    [selectedDayKey, groupedSlots],
+  );
+  const periodBuckets = useMemo(() => {
+    const buckets: Record<PeriodId, Slot[]> = { morning: [], afternoon: [], evening: [] };
+    selectedSlots.forEach((slot) => buckets[periodOf(slot.start, timeZone)].push(slot));
+    return buckets;
+  }, [selectedSlots, timeZone]);
+
+  const totalWeekSlots = useMemo(() => {
+    let total = 0;
+    days.forEach((day) => {
+      total += groupedSlots.get(format(day, 'yyyy-MM-dd'))?.length ?? 0;
+    });
+    return total;
+  }, [days, groupedSlots]);
+
   const canGoBack = isBefore(today, rangeStart);
 
   return (
@@ -117,10 +192,10 @@ export function AvailabilityPicker({ tutorSlug, value, timeZone, bookingId, onCh
         <div>
           <p className="flex items-center gap-2 text-sm font-medium text-white">
             <CalendarDays className="size-4 text-[var(--color-accent-soft)]" />
-            Aktuelle Verfügbarkeit
+            Wähle deinen Termin
           </p>
           <p className="mt-1 text-sm text-white/55">
-            Alle Zeiten werden in deiner Zeitzone {timeZone} angezeigt.
+            Zeiten in deiner Zeitzone {timeZone}.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -166,51 +241,120 @@ export function AvailabilityPicker({ tutorSlug, value, timeZone, bookingId, onCh
               Termin per E Mail anfragen
             </a>
           </div>
+        ) : totalWeekSlots === 0 ? (
+          <div className="flex min-h-52 flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/10 p-6 text-center">
+            <Clock className="size-5 text-white/40" />
+            <p className="text-sm font-medium text-white/80">In dieser Woche sind keine Termine frei.</p>
+            <p className="text-sm text-white/50">
+              Wähle mit <ArrowRight className="inline size-3.5 align-[-2px]" /> eine spätere Woche
+              oder frage per{' '}
+              <a className="underline underline-offset-4" href="mailto:munichscholarmentors@gmail.com">
+                E Mail
+              </a>{' '}
+              an.
+            </p>
+          </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
-            {days.map((day) => {
-              const key = format(day, 'yyyy-MM-dd');
-              const daySlots = groupedSlots.get(key) ?? [];
+          <div className="space-y-5">
+            {/* Step 1 — pick a day */}
+            <div
+              className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1"
+              role="tablist"
+              aria-label="Tag auswählen"
+            >
+              {days.map((day) => {
+                const key = format(day, 'yyyy-MM-dd');
+                const count = groupedSlots.get(key)?.length ?? 0;
+                const disabled = count === 0;
+                const active = key === selectedDayKey;
+                const isToday = isSameDay(day, today);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    disabled={disabled}
+                    onClick={() => setPickedDayKey(key)}
+                    className={`flex min-w-[4.5rem] shrink-0 snap-start flex-col items-center gap-1 rounded-2xl border px-3 py-3 transition-colors ${
+                      active
+                        ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-white'
+                        : disabled
+                          ? 'cursor-not-allowed border-white/5 bg-transparent text-white/25'
+                          : 'border-white/10 bg-white/[0.035] text-white/75 hover:border-white/30 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-[0.7rem] font-medium uppercase tracking-[0.12em]">
+                      {isToday ? 'Heute' : format(day, 'EEE', { locale: de })}
+                    </span>
+                    <span className="text-lg font-semibold leading-none">{format(day, 'd')}</span>
+                    <span className="text-[0.7rem] leading-none text-current/70">
+                      {format(day, 'MMM', { locale: de })}
+                    </span>
+                    <span
+                      className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
+                        disabled
+                          ? 'bg-transparent'
+                          : active
+                            ? 'bg-[var(--color-accent)]'
+                            : 'bg-[var(--color-accent-soft)]/70'
+                      }`}
+                      aria-hidden
+                    />
+                  </button>
+                );
+              })}
+            </div>
 
-              return (
-                <section
-                  key={key}
-                  className="min-h-40 rounded-2xl border border-white/10 bg-black/10 p-3"
-                  aria-label={format(day, 'EEEE, d. MMMM', { locale: de })}
-                >
-                  <div className="border-b border-white/10 pb-2 text-center">
-                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-white/60">
-                      {format(day, 'EEE', { locale: de })}
-                    </p>
-                    <p className="mt-0.5 text-sm font-semibold text-white">{format(day, 'd. MMM', { locale: de })}</p>
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {daySlots.length > 0 ? (
-                      daySlots.map((slot) => {
-                        const selected = value === slot.start;
-                        return (
-                          <button
-                            key={slot.start}
-                            type="button"
-                            aria-pressed={selected}
-                            onClick={() => onChange(slot.start)}
-                            className={`w-full rounded-lg border px-2 py-2 text-sm font-medium transition-colors ${
-                              selected
-                                ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
-                                : 'border-white/10 bg-white/[0.035] text-white/75 hover:border-white/30 hover:text-white'
-                            }`}
-                          >
-                            {formatSlotTime(slot.start, timeZone)}
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <p className="py-3 text-center text-xs text-[var(--ink-subtle)]">Keine Termine</p>
-                    )}
-                  </div>
-                </section>
-              );
-            })}
+            {/* Step 2 — pick a time on the selected day */}
+            {selectedDay ? (
+              <div className="rounded-2xl border border-white/10 bg-black/10 p-4 sm:p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-sm font-semibold text-white">
+                    {format(selectedDay, 'EEEE, d. MMMM', { locale: de })}
+                  </p>
+                  <p className="text-xs text-white/50">
+                    {selectedSlots.length} {selectedSlots.length === 1 ? 'freie Zeit' : 'freie Zeiten'}
+                  </p>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  {PERIODS.map((period) => {
+                    const slots = periodBuckets[period.id];
+                    if (slots.length === 0) return null;
+                    const Icon = period.icon;
+                    return (
+                      <div key={period.id}>
+                        <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.12em] text-white/45">
+                          <Icon className="size-3.5" />
+                          {period.label}
+                        </p>
+                        <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                          {slots.map((slot) => {
+                            const selected = value === slot.start;
+                            return (
+                              <button
+                                key={slot.start}
+                                type="button"
+                                aria-pressed={selected}
+                                onClick={() => onChange(slot.start)}
+                                className={`rounded-xl border px-2 py-2.5 text-sm font-medium tabular-nums transition-colors ${
+                                  selected
+                                    ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-[0_0_0_1px_var(--color-accent)]'
+                                    : 'border-white/10 bg-white/[0.035] text-white/80 hover:border-[var(--color-accent-soft)]/60 hover:text-white'
+                                }`}
+                              >
+                                {formatSlotTime(slot.start, timeZone)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
