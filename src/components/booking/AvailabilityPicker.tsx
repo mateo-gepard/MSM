@@ -145,44 +145,31 @@ export function AvailabilityPicker({ tutorSlug, value, timeZone, bookingId, onCh
     return groups;
   }, [requestKey, slotResult, timeZone]);
 
-  // Derive the effective selected day during render (no effect / no state sync):
-  // prefer an explicit user pick, then the day of the currently chosen slot,
-  // then the first available day in the visible week. Stale picks from another
-  // week self-correct because they hold no slots in the current range.
-  const selectedDayKey = useMemo(() => {
-    const hasSlots = (key: string | null) => !!key && (groupedSlots.get(key)?.length ?? 0) > 0;
-    if (hasSlots(pickedDayKey)) return pickedDayKey;
-    const valueDayKey = value ? dateKey(value, timeZone) : null;
-    if (hasSlots(valueDayKey)) return valueDayKey;
-    return (
-      days
-        .map((day) => format(day, 'yyyy-MM-dd'))
-        .find((key) => (groupedSlots.get(key)?.length ?? 0) > 0) ?? null
-    );
-  }, [pickedDayKey, groupedSlots, days, value, timeZone]);
+  // Everything below is derived inline during render (plain values, no useMemo
+  // callbacks). This mirrors the original component's proven pattern of using
+  // `timeZone` directly in render/JSX scope and avoids compiler-memoized
+  // closures that can mis-scope the prop.
+  const dayCells = days.map((day) => {
+    const key = format(day, 'yyyy-MM-dd');
+    return { day, key, count: groupedSlots.get(key)?.length ?? 0 };
+  });
+  const totalWeekSlots = dayCells.reduce((sum, cell) => sum + cell.count, 0);
 
-  const selectedDay = useMemo(() => {
-    if (!selectedDayKey) return null;
-    return days.find((day) => format(day, 'yyyy-MM-dd') === selectedDayKey) ?? null;
-  }, [days, selectedDayKey]);
-
-  const selectedSlots = useMemo(
-    () => (selectedDayKey ? (groupedSlots.get(selectedDayKey) ?? []) : []),
-    [selectedDayKey, groupedSlots],
-  );
-  const periodBuckets = useMemo(() => {
-    const buckets: Record<PeriodId, Slot[]> = { morning: [], afternoon: [], evening: [] };
-    selectedSlots.forEach((slot) => buckets[periodOf(slot.start, timeZone)].push(slot));
-    return buckets;
-  }, [selectedSlots, timeZone]);
-
-  const totalWeekSlots = useMemo(() => {
-    let total = 0;
-    days.forEach((day) => {
-      total += groupedSlots.get(format(day, 'yyyy-MM-dd'))?.length ?? 0;
-    });
-    return total;
-  }, [days, groupedSlots]);
+  // Effective selected day: an explicit pick, else the chosen slot's day, else
+  // the first available day. Stale picks from another week self-correct because
+  // they hold no slots in the current range.
+  const hasSlotsForKey = (key: string | null) =>
+    !!key && (groupedSlots.get(key)?.length ?? 0) > 0;
+  const valueDayKey = value ? dateKey(value, timeZone) : null;
+  const selectedDayKey = hasSlotsForKey(pickedDayKey)
+    ? pickedDayKey
+    : hasSlotsForKey(valueDayKey)
+      ? valueDayKey
+      : (dayCells.find((cell) => cell.count > 0)?.key ?? null);
+  const selectedDay = selectedDayKey
+    ? (dayCells.find((cell) => cell.key === selectedDayKey)?.day ?? null)
+    : null;
+  const selectedSlots = selectedDayKey ? (groupedSlots.get(selectedDayKey) ?? []) : [];
 
   const canGoBack = isBefore(today, rangeStart);
 
@@ -320,7 +307,9 @@ export function AvailabilityPicker({ tutorSlug, value, timeZone, bookingId, onCh
 
                 <div className="mt-4 space-y-4">
                   {PERIODS.map((period) => {
-                    const slots = periodBuckets[period.id];
+                    const slots = selectedSlots.filter(
+                      (slot) => periodOf(slot.start, timeZone) === period.id,
+                    );
                     if (slots.length === 0) return null;
                     const Icon = period.icon;
                     return (
