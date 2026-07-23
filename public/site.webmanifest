@@ -1,7 +1,7 @@
 {
   "name": "MSM Munich Scholar Mentors",
   "short_name": "MSM",
-  "description": "Premium Nachhilfe von Olympiade-Siegern",
+  "description": "Persönliche Nachhilfe im Einzelunterricht, online und in München",
   "icons": [
     {
       "src": "/MSM_FAVICON.png",
@@ -14,8 +14,8 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#081525",
-  "background_color": "#081525",
+  "theme_color": "#191620",
+  "background_color": "#191620",
   "display": "standalone",
   "start_url": "/"
 }

@@ -1,11 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --primary-dark: #081525;
-  --secondary-dark: #102A43;
-  --accent-purple: #6E56CF;
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --ink: #fdfbff;
+  --ink-muted: #d0cad7;
+  --ink-subtle: #aaa3b5;
+  --canvas: #191620;
+  --canvas-soft: #211c2b;
+  --surface: #292333;
+  --surface-raised: #332b40;
+  --surface-accent: #302641;
+  --line: #4a4057;
+  --line-strong: #63546f;
+  --purple: #8067e8;
+  --purple-bright: #b5a2ff;
+  --purple-soft: #e3dcff;
+  --action: #6e56cf;
+  --action-hover: #745bd1;
+  --success: #a4d8b7;
+
+  /* Shared aliases for the booking and matching product surfaces. */
+  --color-ink: var(--canvas);
+  --color-accent: var(--action);
+  --color-accent-soft: var(--purple-soft);
+  --color-accent-strong: var(--action-hover);
+
+  /* Compatibility aliases used by the signed-in product. */
+  --primary-dark: var(--canvas);
+  --secondary-dark: var(--surface);
+  --accent-purple: var(--action);
+  --background: var(--canvas);
+  --foreground: var(--ink);
 }
 
 @theme inline {
@@ -14,80 +39,172 @@
   --color-accent-purple: var(--accent-purple);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  
-  /* Custom colors */
-  --color-primary: #081525;
-  --color-secondary: #102A43;
-  --color-accent: #6E56CF;
+  --color-primary: var(--canvas);
+  --color-secondary: var(--surface);
+  --color-accent: var(--purple);
+  --font-sans: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  --font-display: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+fieldset {
+  min-inline-size: 0;
 }
 
 html {
-  background: var(--primary-dark);
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
+  min-height: 100%;
+  background: var(--canvas);
   scroll-behavior: smooth;
+  scroll-padding-top: 6.5rem;
   -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--primary-dark);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
   min-height: 100vh;
-  min-height: -webkit-fill-available;
-  position: relative;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 85% -10%, rgb(181 162 255 / 18%), transparent 34rem),
+    radial-gradient(circle at 5% 22%, rgb(128 103 232 / 9%), transparent 28rem),
+    var(--canvas);
+  color: var(--ink);
+  font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Prevent mobile browser UI from causing layout shifts */
-@supports (-webkit-touch-callout: none) {
-  body {
-    min-height: -webkit-fill-available;
-  }
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-/* Smooth scrolling */
-
-html[data-scroll-behavior="smooth"] {
-  scroll-behavior: smooth;
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-/* Frosted glass utility */
+::selection {
+  background: var(--purple);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 3px solid var(--purple-bright);
+  outline-offset: 3px;
+}
+
+.choice-card:has(input:focus-visible) {
+  outline: 3px solid var(--purple-bright);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  transform: translateY(-180%);
+  border-radius: 0.65rem;
+  background: var(--ink);
+  color: var(--canvas);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.site-container {
+  width: min(100% - 2rem, 76rem);
+  margin-inline: auto;
+}
+
+.site-section {
+  padding-block: clamp(4.5rem, 9vw, 8rem);
+}
+
+.section-rule {
+  border-top: 1px solid var(--line);
+}
+
+.section-heading {
+  max-width: 12ch;
+  font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2.55rem, 7vw, 5rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.font-display {
+  font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  color: var(--purple-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+.quiet-card,
 .frosted-glass {
-  background: rgba(16, 42, 67, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(110, 86, 207, 0.2);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 2%) inset;
 }
 
-/* Liquid glass effect */
-.liquid-glass {
-  background: linear-gradient(135deg, rgba(16, 42, 67, 0.8) 0%, rgba(8, 21, 37, 0.9) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(110, 86, 207, 0.3);
-  box-shadow: 0 8px 32px 0 rgba(110, 86, 207, 0.2);
+.interactive-surface {
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
-/* Glow effect */
-.glow-accent {
-  box-shadow: 0 0 20px rgba(110, 86, 207, 0.4);
-}
-
-/* Animations */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
+@media (hover: hover) {
+  .interactive-surface:hover {
+    transform: translateY(-2px);
+    border-color: var(--line-strong);
+    background: var(--surface-raised);
   }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+@media (min-width: 40rem) {
+  .site-container {
+    width: min(100% - 3rem, 76rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

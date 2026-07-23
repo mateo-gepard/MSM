@@ -1,116 +1,90 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { Button } from '../ui/Button';
-import { Award, Users, FileText, Globe } from 'lucide-react';
 import Link from 'next/link';
+import { ArrowRight, Check, MapPin, Monitor } from 'lucide-react';
+
+const serviceFacts = [
+  'Kostenlose Probestunde mit 60 Minuten für Neukunden',
+  'Danach ab 29 € pro 60 Minuten im Paket mit zehn Stunden',
+] as const;
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.5, 0.3, 0.5],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-      </div>
+    <section className="relative overflow-hidden border-b border-[var(--line)]" aria-labelledby="hero-title">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-50"
+        aria-hidden="true"
+        style={{
+          background:
+            'linear-gradient(115deg, transparent 0%, transparent 56%, rgba(128, 103, 232, 0.12) 56%, rgba(128, 103, 232, 0.02) 83%, transparent 83%)',
+        }}
+      />
 
-      {/* Content */}
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-5xl mx-auto text-center">
-          {/* Main Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight px-2"
+      <div className="site-container relative grid min-h-[calc(100svh-4.75rem)] items-center gap-14 py-16 lg:grid-cols-[1.2fr_0.8fr] lg:py-20">
+        <div className="max-w-3xl">
+          <p className="eyebrow">Munich Scholar Mentors</p>
+          <h1
+            id="hero-title"
+            className="mt-7 max-w-[12ch] font-display text-[clamp(3.35rem,8.2vw,7.15rem)] font-medium leading-[0.9] tracking-[-0.055em] text-[var(--ink)]"
           >
-            Erstklassiges{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">
-              1:1 Mentoring
-            </span>
-          </motion.h1>
+            Erstklassiges Mentoring
+          </h1>
+          <p className="text-pretty mt-7 max-w-2xl text-base leading-8 text-[var(--ink-muted)] sm:text-lg">
+            Hochqualifizierte Schüler und Studenten unterrichten dich individuell mit maßgeschneiderten Lernplänen. Online oder vor Ort und je nach Tutor auch bilingual.
+          </p>
 
-          {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto px-4"
-          >
-            Hochqualifizierte Schüler und Studenten unterrichten dich individuell mit 
-            maßgeschneiderten Lernplänen – online oder vor Ort, auf Wunsch auch bilingual.
-          </motion.p>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4"
-          >
-            <Link href="/matching" className="w-full sm:w-auto">
-              <Button size="lg" variant="primary" className="w-full sm:w-auto py-4 text-base">
-                Kostenloses Erstgespräch
-              </Button>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/matching"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#6e56cf] px-5 text-sm font-bold text-white transition-colors hover:bg-[#745bd1]"
+            >
+              Kostenloses Erstgespräch
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
             </Link>
-            <Link href="#tutors" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto py-4 text-base">
-                Tutoren entdecken
-              </Button>
+            <Link
+              href="#tutoren"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg border border-[var(--line-strong)] px-5 text-sm font-bold text-[var(--ink)] transition-colors hover:bg-white/5"
+            >
+              Tutoren entdecken
             </Link>
-          </motion.div>
+          </div>
 
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 md:gap-8 max-w-4xl mx-auto px-2"
-          >
-            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-              <Award className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">100+</div>
-              <div className="text-xs sm:text-sm text-gray-400">Erste Preise</div>
-            </div>
-            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">6</div>
-              <div className="text-xs sm:text-sm text-gray-400">Elite-Tutoren</div>
-            </div>
-            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">1.0</div>
-              <div className="text-xs sm:text-sm text-gray-400">Notenschnitt</div>
-            </div>
-            <div className="frosted-glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
-              <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-accent mx-auto mb-1 sm:mb-2" />
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">5</div>
-              <div className="text-xs sm:text-sm text-gray-400">Sprachen</div>
-            </div>
-          </motion.div>
+          <ul className="mt-8 grid gap-3 text-sm text-[var(--ink-muted)] sm:grid-cols-2" aria-label="Preisinformationen">
+            {serviceFacts.map((fact) => (
+              <li key={fact} className="flex items-start gap-2.5">
+                <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-[#9b83ff]" />
+                <span>{fact}</span>
+              </li>
+            ))}
+          </ul>
         </div>
+
+        <aside className="relative border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8" aria-label="Das Angebot von MSM im Überblick">
+          <div className="absolute -right-px -top-px h-20 w-20 border-r border-t border-[#6e56cf]" aria-hidden="true" />
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9b83ff]">Direkt geklärt</p>
+          <h2 className="mt-4 font-display text-3xl font-medium tracking-[-0.03em] text-[var(--ink)] sm:text-4xl">
+            Lernen, wo es für dich passt.
+          </h2>
+
+          <dl className="mt-8 divide-y divide-[var(--line)] border-y border-[var(--line)]">
+            <div className="grid grid-cols-[2.25rem_1fr] gap-3 py-5">
+              <Monitor aria-hidden="true" className="mt-0.5 h-5 w-5 text-[#9b83ff]" />
+              <div>
+                <dt className="font-bold text-[var(--ink)]">Online</dt>
+                <dd className="mt-1 text-sm leading-6 text-[var(--ink-muted)]">Ortsunabhängig und direkt mit deinem gewählten Tutor.</dd>
+              </div>
+            </div>
+            <div className="grid grid-cols-[2.25rem_1fr] gap-3 py-5">
+              <MapPin aria-hidden="true" className="mt-0.5 h-5 w-5 text-[#9b83ff]" />
+              <div>
+                <dt className="font-bold text-[var(--ink)]">Vor Ort in München</dt>
+                <dd className="mt-1 text-sm leading-6 text-[var(--ink-muted)]">Je nach Tutor und Terminverfügbarkeit.</dd>
+              </div>
+            </div>
+          </dl>
+
+          <p className="mt-6 text-sm leading-6 text-[var(--ink-muted)]">
+            Das Matching fragt Fach, Ziel und Lernpräferenzen ab. Danach wählst du Tutor und Termin.
+          </p>
+        </aside>
       </div>
     </section>
   );

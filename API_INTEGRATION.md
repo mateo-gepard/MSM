@@ -1,656 +1,288 @@
-# API Integration Documentation
+# Server API contract
 
-✅ **STATUS: Alle APIs erfolgreich integriert!**
+All browser mutations go through same-origin Next.js route handlers. JSON requests must send `Content-Type: application/json`; unknown body fields are rejected. Authenticated routes use the Supabase session cookie established by the SSR auth flow.
 
-Dieses Dokument beschreibt, wie die externen Services (Supabase, Cal.com, Sendbird) integriert wurden und wie sie konfiguriert werden müssen.
+Successful application responses normally use `{ "data": ... }`. Errors use:
 
----
-
-## 🎯 Integrierte Features
-
-### ✅ Supabase Authentication
-- **Login/Signup Page**: `/login` mit Email/Password + Magic Links
-- **Auth Hook**: `useAuth()` für Session-Management
-- **Protected Routes**: Dashboard erfordert Authentication
-- **Navigation**: Dynamisch basierend auf Auth-Status
-
-### ✅ Cal.com Booking System  
-- **API Wrapper**: `src/lib/calcom.ts` mit allen Funktionen
-- **Mock Mode**: Development ohne API-Key möglich
-- **Booking Flow**: 5-Schritte mit Cal.com Integration
-- **Webhook-Ready**: Handler für Cal.com Events vorbereitet
-
-### ✅ Sendbird Chat
-- **Context Provider**: `SendbirdContext` im Root Layout
-- **Chat Widget**: Real-time Messaging Komponente
-- **Dashboard Integration**: Chat für jeden Tutor verfügbar
-- **Auto-Polling**: Neue Nachrichten alle 3 Sekunden
-
----
-
-## 🔐 Supabase Auth Integration
-
-### 1. Setup
-```bash
-# Supabase Projekt erstellen
-1. Gehe zu https://supabase.com/dashboard
-2. Klicke auf "New Project"
-3. Wähle Organization und erstelle Projekt
-4. Kopiere Project URL und anon/public key
-```
-
-### 2. Environment Variables
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
-
-### 3. Code Implementation
-
-**Auth Hook erstellen** (`src/hooks/useAuth.ts`):
-```typescript
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { User } from '@supabase/supabase-js';
-
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return { user, loading };
-}
-```
-
-**Login/Signup Functions** (`src/lib/auth.ts`):
-```typescript
-import { supabase } from './supabase';
-
-export async function signUp(email: string, password: string, name: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { name }
-    }
-  });
-  return { data, error };
-}
-
-export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-  return { data, error };
-}
-
-export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  return { error };
-}
-
-export async function sendMagicLink(email: string) {
-  const { data, error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${window.location.origin}/dashboard`
-    }
-  });
-  return { data, error };
-}
-```
-
-### 4. Protected Routes
-```typescript
-// src/middleware.ts
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-  
-  const { data: { session } } = await supabase.auth.getSession();
-
-  // Protect dashboard routes
-  if (req.nextUrl.pathname.startsWith('/dashboard') && !session) {
-    return NextResponse.redirect(new URL('/login', req.url));
+```json
+{
+  "error": {
+    "code": "STABLE_MACHINE_CODE"
   }
-
-  return res;
-}
-
-export const config = {
-  matcher: ['/dashboard/:path*']
-};
-```
-
----
-
-## 📅 Cal.com Integration
-
-### 1. Setup
-```bash
-1. Erstelle Account auf https://cal.com
-2. Gehe zu Settings → Developer → API Keys
-3. Erstelle neuen API Key
-4. Kopiere den Key
-```
-
-### 2. Environment Variables
-```env
-NEXT_PUBLIC_CALCOM_API_KEY=cal_live_xxxxxxxxxxxxx
-CALCOM_API_KEY=cal_live_xxxxxxxxxxxxx
-```
-
-### 3. Event Types erstellen
-Im Cal.com Dashboard:
-- **Probestunde** (0€, 60min, kostenlos)
-- **Einzelstunde** (60€, 60min)
-- **5er-Paket** (280€, Setup für 5 Termine)
-- **10er-Paket** (520€, Setup für 10 Termine)
-- **Olympiaden-Vorbereitung** (900€, individuelle Länge)
-
-### 4. API Integration
-
-**Booking Function** (`src/lib/calcom.ts`):
-```typescript
-const CALCOM_API_BASE = 'https://api.cal.com/v1';
-
-export async function createBooking(data: {
-  eventTypeId: number;
-  start: string; // ISO 8601
-  responses: {
-    name: string;
-    email: string;
-    notes?: string;
-  };
-  metadata: {
-    tutorId: string;
-    packageId: string;
-  };
-}) {
-  const response = await fetch(`${CALCOM_API_BASE}/bookings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.CALCOM_API_KEY}`
-    },
-    body: JSON.stringify(data)
-  });
-
-  return response.json();
-}
-
-export async function getAvailability(
-  eventTypeId: number,
-  startDate: string,
-  endDate: string
-) {
-  const params = new URLSearchParams({
-    eventTypeId: eventTypeId.toString(),
-    startTime: startDate,
-    endTime: endDate
-  });
-
-  const response = await fetch(
-    `${CALCOM_API_BASE}/availability?${params}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${process.env.CALCOM_API_KEY}`
-      }
-    }
-  );
-
-  return response.json();
-}
-
-export async function cancelBooking(bookingId: string) {
-  const response = await fetch(
-    `${CALCOM_API_BASE}/bookings/${bookingId}/cancel`,
-    {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${process.env.CALCOM_API_KEY}`
-      }
-    }
-  );
-
-  return response.json();
 }
 ```
 
-### 5. Webhooks Setup
-Cal.com Dashboard → Webhooks → Add Webhook:
-- URL: `https://your-domain.com/api/webhooks/calcom`
-- Events: `booking.created`, `booking.cancelled`, `booking.rescheduled`
+The browser maps stable codes to local German copy. Server and provider details are never returned
+in application error bodies; these responses are private and non-cacheable.
 
-**Webhook Handler** (`src/app/api/webhooks/calcom/route.ts`):
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+Stripe and Cal.com webhooks, plus the internal cron route, use provider/operations response envelopes instead. Protected responses set private no-store caching where applicable.
 
-export async function POST(req: NextRequest) {
-  const payload = await req.json();
-  
-  // Verify webhook signature
-  // ... implement signature verification
+Provider credentials, the Supabase service-role key, Stripe Product/Price IDs, Cal.com booking UIDs and event-type IDs, and database user IDs are never accepted as browser input. Internal booking and learner UUIDs are accepted only on routes that re-authorize them against the active principal.
 
-  switch (payload.triggerEvent) {
-    case 'BOOKING_CREATED':
-      // Update database
-      await supabase.from('bookings').insert({
-        cal_booking_id: payload.payload.id,
-        user_id: payload.payload.metadata.userId,
-        tutor_id: payload.payload.metadata.tutorId,
-        status: 'scheduled'
-      });
-      break;
-      
-    case 'BOOKING_CANCELLED':
-      // Update status
-      await supabase
-        .from('bookings')
-        .update({ status: 'cancelled' })
-        .eq('cal_booking_id', payload.payload.id);
-      break;
+## Identity, household permissions, and MFA
+
+`account_roles` is the server-owned role source; roles are additive. Household access is separately derived from the active `household_memberships` row for `profiles.primary_household_id`:
+
+- `can_manage_learners` controls learner creation and editing;
+- `can_book` controls credit visibility and booking;
+- `can_manage_billing` controls Checkout and entitlement visibility;
+- `can_view_all_bookings` expands parent booking and chat scope from the creator to the household.
+
+Staff-sensitive tutor and administrator dashboard, booking, and chat operations require Supabase authenticator assurance level `aal2` when staff MFA is enabled. Production always enforces staff MFA; `REQUIRE_STAFF_MFA=false` is only a local non-production escape hatch. A valid Supabase session without an active profile and role grant fails closed.
+
+Every checkout, booking-create, cancellation, and reschedule request requires a fresh UUID `idempotencyKey`. Retrying the same logical operation must reuse its key. Reusing a key for changed input is rejected.
+
+## Public catalog and pricing
+
+`src/domain/catalog.ts` defines stable tutor slugs, subject IDs, package IDs, and non-commercial presentation fallback copy. It is not the sales-price authority.
+
+The public pricing section and Checkout resolve the selected `active_offers` pointer to an immutable `offer_versions` row. That row owns the sold name, lesson quantity, total amount, currency, Stripe mapping, mode, tax behavior, and effective window. If those facts change, publish a new version and move the pointer; never update an existing version. A static fallback may render when database pricing is unavailable, but it always disables checkout.
+
+New Checkout sessions require all three controls:
+
+- `PAYMENTS_ENABLED=true`;
+- `PAYMENTS_LEGAL_APPROVED=true`;
+- `active_offers.checkout_enabled=true` for the selected package.
+
+These are new-sales gates only. `POST /api/webhooks/stripe` deliberately remains active when either environment gate or an offer's checkout flag is off, so delayed payments, refunds, disputes, and webhook retries can still reconcile.
+
+## Slots
+
+`GET /api/slots?tutorSlug=<slug>&start=<ISO>&end=<ISO>&timeZone=<IANA>`
+
+- Public and read-only for ordinary availability.
+- The requested range can span at most 31 days and start at most one year ahead.
+- The server resolves the tutor's Cal.com event type, overlays active canonical and reschedule claims from the local exclusion domain, and returns only still-selectable slot start times. The final booking transaction remains authoritative.
+- An optional `bookingId=<internal UUID>` requests reschedule-aware availability. That variant requires authentication and booking access; the server resolves the authorized provider UID itself.
+
+## Checkout and payment fulfillment
+
+`POST /api/checkout/sessions`
+
+- Requires an authenticated account with the `parent` role, an active household membership with `can_manage_billing`, and an account email.
+- Requires both environment activation gates. The database then resolves and snapshots the current, enabled, effective Stripe offer.
+- The client sends a package ID and UUID idempotency key only—never an amount, currency, session count, or Stripe Price ID.
+- A replay returns an already attached open Checkout Session only after re-reading it from Stripe and matching its order references, mode, one fixed EUR line item, amount, Price, tax behavior, quantity, and live/test mode. Before any fresh Session is created, even a retained pending order must still reference the enabled, current active offer. A paid replay returns the dashboard URL; a terminal unpaid order requires a new idempotency key.
+- Before redirecting the customer, the server retrieves the Stripe Price and expanded Product and matches their IDs, active state, one-time fixed amount, EUR currency, inclusive tax behavior, and live/test mode to the immutable order. Checkout pins the integration currency and disables adaptive pricing; multi-currency, custom-amount, and transformed-quantity Prices are rejected.
+
+```json
+{
+  "packageId": "medium",
+  "idempotencyKey": "3d6f0a89-748d-4f23-b21e-8809628abade"
+}
+```
+
+The response contains the internal order ID and Stripe-hosted URL:
+
+```json
+{
+  "data": {
+    "orderId": "00000000-0000-4000-8000-000000000000",
+    "checkoutUrl": "https://checkout.stripe.com/..."
   }
-
-  return NextResponse.json({ received: true });
 }
 ```
 
----
+The `/checkout/success` page is informational and never grants credit.
 
-## 💬 Sendbird Chat Integration
+`POST /api/webhooks/stripe`
 
-### 1. Setup
-```bash
-1. Erstelle Account auf https://sendbird.com
-2. Erstelle neue Application
-3. Kopiere Application ID
-4. Gehe zu Settings → API Tokens → Generate Token
-```
+- Public provider callback authenticated with Stripe's signature over the raw body and `STRIPE_WEBHOOK_SECRET`.
+- Does not require a user session, `CRON_SECRET`, either new-sales gate, or an enabled active-offer pointer.
+- Records the signed event in the replay-safe Stripe inbox before processing it.
+- For successful Checkout, retrieves the Session and line item from Stripe and requires a paid, one-item, quantity-one payment whose Price, amount, currency, and live/test mode match the snapshotted order and immutable offer.
+- Only successful fulfillment creates the verified `package_purchase`, `credit_grant`, and append-only grant ledger entry. Duplicate delivery returns success without granting twice.
+- Reconciles asynchronous failure/expiry, refunds, and disputes without trusting the browser success redirect.
+- Relevant Stripe event types are correlated to a local Session or PaymentIntent before mutation. Signed events for unrelated Stripe objects are recorded and terminally ignored; a genuine event racing local Session attachment remains retryable. An unpaid `checkout.session.completed` is terminal for that event and waits for the later asynchronous-success event instead of remaining stuck in the inbox.
 
-### 2. Environment Variables
-```env
-NEXT_PUBLIC_SENDBIRD_APP_ID=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-SENDBIRD_API_TOKEN=your-api-token
-```
+Handled Stripe events:
 
-### 3. SDK Installation
-```bash
-npm install @sendbird/chat @sendbird/uikit-react
-```
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `checkout.session.expired`
+- `refund.created`, `refund.updated`, `refund.failed`
+- `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`
 
-### 4. Code Implementation
+## Credits and entitlements
 
-**Sendbird Provider** (`src/components/SendbirdProvider.tsx`):
-```typescript
-'use client';
+`GET /api/credits`
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import SendbirdChat from '@sendbird/chat';
-import { GroupChannelModule } from '@sendbird/chat/groupChannel';
+- Requires an authenticated `parent` role and household `can_book` permission.
+- Returns aggregate remaining lesson counts by paid package ID.
+- Deliberately omits purchase/grant IDs. It is an availability view; the database rechecks and reserves a specific eligible grant during booking.
 
-const SendbirdContext = createContext<any>(null);
+`GET /api/packages`
 
-export function SendbirdProvider({ children, userId }: any) {
-  const [sb, setSb] = useState<any>(null);
+- Requires an authenticated `parent` role.
+- Returns payment-verified household entitlement DTOs only when the principal has `can_manage_billing`; otherwise the list is empty.
+- Purchase IDs may appear for dashboard display, but no booking mutation accepts them.
 
-  useEffect(() => {
-    const initSendbird = async () => {
-      const sendbird = SendbirdChat.init({
-        appId: process.env.NEXT_PUBLIC_SENDBIRD_APP_ID!,
-        modules: [new GroupChannelModule()]
-      });
+## Learners
 
-      await sendbird.connect(userId);
-      setSb(sendbird);
-    };
+`GET /api/learners`
 
-    if (userId) {
-      initSendbird();
-    }
+- Requires an authenticated `parent` role and an active household.
+- Returns household-scoped learner DTOs. Birth dates are redacted unless the membership has `can_manage_learners`.
 
-    return () => {
-      if (sb) sb.disconnect();
-    };
-  }, [userId]);
+`POST /api/learners`
 
-  return (
-    <SendbirdContext.Provider value={sb}>
-      {children}
-    </SendbirdContext.Provider>
-  );
-}
+- Requires `can_manage_learners`.
+- Accepts `{ "displayName": "...", "birthDate": "YYYY-MM-DD" }`; `birthDate` is optional and cannot be in the future.
+- Household ownership fields are not accepted from the client.
+- Is limited to ten creates per authenticated user per hour. A transaction-scoped database lock caps each household at 25 total learner records, including inactive and legacy rows, so concurrent requests cannot bypass the limit.
 
-export const useSendbird = () => useContext(SendbirdContext);
-```
+`PATCH /api/learners/:learnerId`
 
-**Chat Component** (`src/components/chat/ChatWidget.tsx`):
-```typescript
-'use client';
+- Requires `can_manage_learners` and scopes the UUID to the current household.
+- Accepts one or more of `displayName`, nullable `birthDate`, and `isActive`.
+- Is limited to 60 updates per authenticated user per hour.
+- Editing the name or birth date clears the migration's legacy-placeholder marker. Use `isActive=false` to deactivate a learner; there is no destructive learner-delete route.
 
-import { useSendbird } from '../SendbirdProvider';
-import { useState, useEffect } from 'react';
+The parent dashboard loads bookings, billing entitlements, and learner data together and exposes learner controls only when the resolved household permissions allow them.
 
-export function ChatWidget({ channelUrl }: { channelUrl: string }) {
-  const sb = useSendbird();
-  const [channel, setChannel] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [inputValue, setInputValue] = useState('');
+## Bookings
 
-  useEffect(() => {
-    if (!sb) return;
+`GET /api/bookings`
 
-    const getChannel = async () => {
-      const ch = await sb.groupChannel.getChannel(channelUrl);
-      setChannel(ch);
-      
-      const msgList = await ch.getMessagesByTimestamp(Date.now(), {
-        prevResultSize: 50
-      });
-      setMessages(msgList);
-    };
+- Requires authentication; staff callers must be at AAL2.
+- Without an explicit tutor scope, an account that holds `parent` uses its household view: `can_view_all_bookings` returns the household's bookings, otherwise only bookings that account created. This remains true for an additive parent+tutor/admin account.
+- A staff-only tutor receives bookings assigned to their mapped tutor identity.
+- A staff-only administrator must provide `?tutorSlug=<slug>`. An administrator may use any explicit tutor scope; a tutor may use only their own mapped slug.
+- Responses are redacted dashboard DTOs; provider, credit-ledger, and ownership internals are omitted. An HTTPS meeting URL is included only for an authorized booking participant and rendered for active online lessons.
 
-    getChannel();
-  }, [sb, channelUrl]);
+`POST /api/bookings`
 
-  const sendMessage = async () => {
-    if (!channel || !inputValue.trim()) return;
+- Requires an authenticated `parent` role, an active household membership with `can_book`, and an active learner in that household.
+- Validates tutor/subject/location compatibility, a start within the next year, and that the contact email matches the signed-in account.
+- `learnerId` may be omitted only when the household has exactly one active learner. The shipped booking UI always asks the user to choose a learner.
+- Never accepts `packagePurchaseId`. For a paid package, the locking database transaction automatically chooses the eligible household grant with the earliest expiry, then the oldest creation time, and finally a stable purchase-ID tie-breaker.
+- Creates the local booking and operation and reserves one credit in the append-only ledger before calling Cal.com. The provider call requires an atomic operation claim: a queued replay may claim and continue, while a processing or ambiguous operation is never sent twice. This local-first reservation prevents concurrent double-spend and tutor-slot overlap.
+- Provider confirmation changes the reservation to consumed and decrements the purchase projection. A deterministic provider rejection releases the reservation exactly once. A timeout or other ambiguous result remains pending for webhook/cron/manual reconciliation and returns HTTP `202`; the route never blindly repeats an external create.
 
-    const params = {
-      message: inputValue
-    };
+Example paid booking body:
 
-    await channel.sendUserMessage(params);
-    setInputValue('');
-  };
-
-  return (
-    <div className="flex flex-col h-96 bg-secondary-dark rounded-xl">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((msg: any) => (
-          <div key={msg.messageId} className="bg-primary-dark p-3 rounded-lg">
-            <div className="text-sm text-gray-400">{msg.sender.nickname}</div>
-            <div className="text-white">{msg.message}</div>
-          </div>
-        ))}
-      </div>
-      <div className="p-4 border-t border-white/10 flex gap-2">
-        <input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-          className="flex-1 p-2 bg-primary-dark rounded-lg text-white"
-          placeholder="Nachricht schreiben..."
-        />
-        <button
-          onClick={sendMessage}
-          className="px-4 py-2 bg-accent rounded-lg text-white"
-        >
-          Senden
-        </button>
-      </div>
-    </div>
-  );
+```json
+{
+  "idempotencyKey": "0e61af76-4b62-4f20-89e3-e3140b39d33b",
+  "tutorSlug": "mateo-mamaladze",
+  "subjectId": "physics",
+  "packageId": "medium",
+  "learnerId": "00000000-0000-4000-8000-000000000001",
+  "startsAt": "2026-08-10T14:00:00.000Z",
+  "timeZone": "Europe/Berlin",
+  "location": "online",
+  "contact": {
+    "name": "Example Parent",
+    "email": "parent@example.invalid"
+  }
 }
 ```
 
-### 5. Create Channel for Parent-Tutor
-```typescript
-// src/lib/sendbird.ts
-import SendbirdChat from '@sendbird/chat';
+Trial requests use `"packageId": "trial"` and no payment entitlement. Trial eligibility is enforced for the whole household inside the same reservation transaction.
 
-export async function createParentTutorChannel(
-  parentId: string,
-  tutorId: string,
-  tutorName: string
-) {
-  const sb = SendbirdChat.getInstance();
-  
-  const params = {
-    invitedUserIds: [parentId, tutorId],
-    name: `Chat with ${tutorName}`,
-    isDistinct: true // Prevents duplicate channels
-  };
+`DELETE /api/bookings/:bookingId/cancel`
 
-  const channel = await sb.groupChannel.createChannel(params);
-  return channel.url;
+- Requires the authorized household booker, assigned tutor, or administrator. Staff callers require AAL2.
+- The path value is the internal booking UUID, never a Cal.com UID.
+- Begins an idempotent local `cancellation_pending` operation before calling Cal.com.
+- Only a same-UID provider response with an explicit cancelled status and no replacement UID completes cancellation immediately. Eligible reserved/consumed paid credit is restored exactly once through the ledger.
+- A 404, conflict, mismatched UID, non-terminal status, or replacement UID is ambiguous, never proof that the logical lesson was cancelled. Reconciliation follows the replacement lineage or requires two complete terminal observations at least one hour apart before settling a genuinely absent/cancelled source.
+- Ambiguous provider or local-completion results return HTTP `202` and remain queued for reconciliation.
+
+```json
+{
+  "idempotencyKey": "7aa34266-32cb-43c7-a66a-81091167fd87",
+  "reason": "Schedule changed"
 }
 ```
 
----
+`PATCH /api/bookings/:bookingId/reschedule`
 
-## 💳 Stripe Payments (Optional)
+- Uses the same booking authorization and MFA boundary as cancellation.
+- Requires a future start within one year and begins an idempotent local `reschedule_pending` operation before the provider call.
+- The server derives the provider booking UID from the authorized database row.
+- Explicit authorization or validation rejection fails the operation. Source-UID absence and provider state conflicts remain ambiguous because an external mutation may have won the race; those and local-completion uncertainty return HTTP `202` for reconciliation.
 
-### 1. Setup
-```bash
-1. Erstelle Account auf https://stripe.com
-2. Gehe zu Developers → API keys
-3. Kopiere Publishable key und Secret key
+```json
+{
+  "idempotencyKey": "d9902f8a-f108-486f-b001-56dd9345c009",
+  "startsAt": "2026-08-12T15:00:00.000Z",
+  "timeZone": "Europe/Berlin",
+  "reason": "School event"
+}
 ```
 
-### 2. Environment Variables
-```env
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
-STRIPE_SECRET_KEY=sk_test_xxxxx
-```
+## Cal.com lifecycle synchronization
 
-### 3. Installation
-```bash
-npm install stripe @stripe/stripe-js
-```
+`POST /api/webhooks/calcom`
 
-### 4. Checkout Session
-```typescript
-// src/app/api/checkout/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+- Public provider callback authenticated by an HMAC-SHA-256 of the exact raw body in `x-cal-signature-256` using `CALCOM_WEBHOOK_SECRET`.
+- Accepts `BOOKING_CREATED`, `BOOKING_REQUESTED`, `BOOKING_RESCHEDULED`, `BOOKING_CANCELLED`, `BOOKING_REJECTED`, and `MEETING_ENDED`.
+- Converts the provider event to a replay-safe inbox observation. Database processing rejects event-ID collisions, ignores stale/out-of-order transitions where appropriate, and applies lifecycle/credit effects transactionally.
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+`GET /api/cron/reconcile-bookings`
 
-export async function POST(req: NextRequest) {
-  const { packageId, amount, metadata } = await req.json();
+- Internal route authenticated only by `Authorization: Bearer <CRON_SECRET>`.
+- `vercel.json` schedules a Hobby-compatible daily run with `17 3 * * *`. On Hobby, execution can occur at any point within the 03:00 UTC hour. Production environments that need a tighter repair SLO should invoke the same authenticated route hourly from Vercel Pro or an equivalent scheduler.
+- Uses a fixed bounded split of 15 urgent slots and five independent scheduled-audit slots, so persistent pending work cannot fully starve upcoming-booking drift detection. Scheduled rows become eligible after six hours and are processed oldest-first, but the five-per-run audit slice is explicitly a throughput bound rather than a six-hour completion guarantee. Consecutive `possiblyMore=true` responses require an operational backlog alert and capacity review. Known UIDs use a direct provider lookup and bounded, cycle-checked reschedule-lineage traversal; a 404 falls back to a complete bounded internal-ID search from the last known provider sync. UID-less creates use a narrow bounded list search for the exact internal booking UUID in provider metadata. A staged signed external cancellation requires two spaced, append-only observations tied to that exact provider event: continued absence settles cancellation, while an unchanged same-UID active or pending state restores `scheduled` or `pending_confirmation`. Provider-state fingerprints prevent unlike evidence from being combined.
+- Never recreates an external booking. A unique exact match is adopted. The lookup window is anchored to the recorded provider-attempt time. A missing match releases eligible reserved credit only after that attempt is at least 24 hours old and two complete negative searches are at least one hour apart; a later claim resets older evidence, while duplicates and truncated searches remain unresolved.
+- Repeated authoritative active snapshots that show an ambiguous cancel or reschedule was never applied close the stranded operation and restore its previous local lifecycle. Missing or cancelled source UIDs use a separate evidence kind and require two complete, spaced observations before the logical lesson is cancelled; incompatible evidence resets the counter. A lineage-linked replacement is adopted instead.
+- Returns reconciliation counters and reports HTTP `503` when every selected candidate fails to reconcile.
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card', 'sepa_debit'],
-    line_items: [
-      {
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: metadata.packageName,
-          },
-          unit_amount: amount * 100, // in cents
-        },
-        quantity: 1,
-      },
+Signed webhooks are the primary synchronization path; the scheduled job is a repair loop for missed delivery and provider/database drift.
+
+## Profile and chat
+
+`GET /api/profile`
+
+Returns the active account's primary role, complete role list, display name, and mapped tutor slug where applicable.
+
+Chat is text only and persisted in append-only Supabase `booking_messages`. There is no separate chat-provider token route. Every history read and message write goes through a Vercel Function and is preceded by fresh authorization of the exact live booking and side. `can_view_all_bookings=false` limits a household member to bookings they created; tutor callers require AAL2, and administrator status alone never authorizes chat.
+
+After a committed insert, a database trigger emits a private `message_created` broadcast on `booking:<booking-uuid>`. Realtime Authorization checks the live booking, active household membership or assigned tutor role, tutor AAL2, and active counterpart before allowing the subscription. The broadcast payload contains only the minimized message ID, text, timestamp, and sender side; it contains no internal user ID or booking/provider data. Clients have no direct message-table write permission and no broadcast-send policy.
+
+Realtime is not history authority. The visible page reconciles the newest database page through the Vercel API every 60 seconds, immediately after a successful subscription, and when returning to visibility. The private channel is recreated every five minutes so application-role changes are re-evaluated rather than relying on a long-lived authorization cache.
+
+## Abuse protection
+
+The slot, checkout, booking-create, booking-mutation, and chat routes use a database-backed fixed-window limiter. Authenticated limits are keyed by the user UUID; public slot traffic is keyed by the trusted deployment network address. Chat additionally applies a coarse network gate before query/body parsing and authorization, then a principal gate after authorization. Private Realtime handles normal delivery; the 60-second visible-page reconciliation budget supports two continuously visible tabs with substantial headroom for reconnects and manual history loads. Send bodies are byte-bounded before JSON parsing. Identities are HMACed with `RATE_LIMIT_SECRET` before storage, and protected requests fail closed if the limiter is unavailable.
+
+`GET /api/chat/channels?identityContext=household&bookingId=<uuid>[&beforeMessageId=<id>]`
+
+Returns the latest 50 authorized text messages, or the 50 messages before `beforeMessageId`, in chronological order:
+
+```json
+{
+  "data": {
+    "messages": [
+      { "id": "273778828", "text": "Bis morgen!", "createdAt": 1784707200000, "sender": "self" }
     ],
-    mode: 'payment',
-    success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?payment=success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_URL}/booking?payment=cancelled`,
-    metadata: metadata
-  });
-
-  return NextResponse.json({ sessionId: session.id });
+    "olderCursor": "273778828"
+  }
 }
 ```
 
----
+`POST /api/chat/channels`
 
-## 📧 E-Mail Benachrichtigungen (Resend)
-
-### 1. Setup
-```bash
-1. Erstelle Account auf https://resend.com
-2. Verifiziere Domain
-3. Erstelle API Key
-```
-
-### 2. Installation
-```bash
-npm install resend
-```
-
-### 3. Send Booking Confirmation
-```typescript
-// src/lib/email.ts
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-export async function sendBookingConfirmation(
-  to: string,
-  bookingDetails: any
-) {
-  await resend.emails.send({
-    from: 'Elite Tutoring <noreply@elitetutoring.de>',
-    to,
-    subject: 'Buchungsbestätigung - Elite Tutoring',
-    html: `
-      <h1>Buchung bestätigt!</h1>
-      <p>Deine Buchung wurde erfolgreich bestätigt.</p>
-      <ul>
-        <li>Tutor: ${bookingDetails.tutorName}</li>
-        <li>Fach: ${bookingDetails.subject}</li>
-        <li>Datum: ${bookingDetails.date}</li>
-        <li>Uhrzeit: ${bookingDetails.time}</li>
-      </ul>
-    `
-  });
+```json
+{
+  "identityContext": "household",
+  "bookingId": "00000000-0000-4000-8000-000000000000",
+  "message": "Bis morgen!",
+  "clientMessageId": "d9902f8a-f108-486f-b001-56dd9345c009"
 }
 ```
 
----
+`message` is trimmed, text only, and limited to 2,000 characters. The client retains `clientMessageId` for retries of an unchanged draft. The database uniqueness constraint returns the existing message only when sender, booking, side, and body are identical, so an ambiguous transport retry cannot create a duplicate or silently change content. The ID resets only after confirmed success or when the draft changes. Tutor requests use `identityContext=tutor`, require AAL2, and must match the booking's assigned tutor. Both methods re-authorize the live booking and apply database-backed per-user limits.
 
-## 🚀 Deployment Checklist
+## Server integration locations
 
-### Vercel Deployment
-```bash
-1. Push Code zu GitHub
-2. Vercel Dashboard → New Project
-3. Import GitHub Repository
-4. Environment Variables hinzufügen
-5. Deploy
-```
+- Supabase clients and configuration: `src/lib/supabase`
+- Supabase booking chat persistence and API data access: `supabase/migrations/20260722000100_supabase_booking_chat.sql`, `src/lib/chat/server.ts`
+- Stripe Checkout and fulfillment: `src/lib/stripe`, `src/lib/commerce`
+- Cal.com API, HMAC verification, and reconciliation: `src/lib/calcom`
+- Request schemas: `src/domain/*-schemas.ts`
+- Public dashboard/credit DTOs: `src/domain/dashboard-dtos.ts`, `src/domain/credit-dtos.ts`
 
-### Environment Variables in Vercel
-- ✅ NEXT_PUBLIC_SUPABASE_URL
-- ✅ NEXT_PUBLIC_SUPABASE_ANON_KEY
-- ✅ NEXT_PUBLIC_CALCOM_API_KEY
-- ✅ CALCOM_API_KEY
-- ✅ NEXT_PUBLIC_SENDBIRD_APP_ID
-- ✅ SENDBIRD_API_TOKEN
-- ✅ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (optional)
-- ✅ STRIPE_SECRET_KEY (optional)
-- ✅ RESEND_API_KEY (optional)
-
----
-
-## 🧪 Testing ohne API Keys
-
-Alle Features funktionieren auch OHNE echte API-Keys im Development Mode:
-
-### Mock Supabase Auth
-- Login/Signup funktioniert mit Mock-Daten
-- Session wird in localStorage gespeichert
-- Dashboard-Zugriff funktioniert
-
-### Mock Cal.com Booking
-- `mockCreateBooking()` wird automatisch verwendet
-- Buchungen werden in localStorage gespeichert
-- Alle Funktionen testbar
-
-### Mock Sendbird Chat
-- Chat-Widget zeigt "Service unavailable" wenn nicht konfiguriert
-- Keine Fehler, nur Info-Message
-
----
-
-## 🚀 Production Deployment
-
-### 1. API-Keys erstellen
-```bash
-# Supabase
-1. https://supabase.com/dashboard → New Project
-2. Kopiere URL + anon key
-
-# Cal.com
-1. https://cal.com → Settings → API Keys
-2. Erstelle Event Types für alle Pakete
-3. Kopiere API Key + Event Type IDs
-
-# Sendbird
-1. https://sendbird.com → New Application
-2. Kopiere Application ID
-```
-
-### 2. Environment Variables setzen
-```env
-# .env.local für Development
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
-NEXT_PUBLIC_CALCOM_API_KEY=cal_live_xxxxx
-NEXT_PUBLIC_CALCOM_EVENT_TYPE_ID=123456
-NEXT_PUBLIC_SENDBIRD_APP_ID=XXXXXXXX-XXXX-XXXX
-```
-
-### 3. Vercel Deployment
-```bash
-# Push to GitHub
-git add .
-git commit -m "Complete API integration"
-git push
-
-# Vercel Dashboard
-1. Import GitHub Repository
-2. Add Environment Variables (siehe oben)
-3. Deploy
-```
-
-### 4. Post-Deployment
-- Teste Login/Signup auf Production URL
-- Erstelle Test-Buchung
-- Verifiziere Chat-Funktionalität
-- Setup Cal.com Webhooks mit Production URL
-
----
-
-## 📝 Nächste Schritte
-
-### Empfohlene Erweiterungen:
-1. **Stripe Payments**: Zahlungen vor Buchungsbestätigung
-2. **Resend Emails**: Automatische Buchungsbestätigungen
-3. **Supabase Database**: Persistente Buchungsdaten
-4. **Cal.com Webhooks**: Automatische Status-Updates
-5. **Analytics**: Tracking mit Vercel Analytics
-
-### Optional:
-- **Admin Dashboard**: Tutor-Verwaltung
-- **Rating System**: Bewertungen nach Unterricht
-- **File Sharing**: Material-Upload im Chat
-- **Video Integration**: Eigenes Video-System statt Zoom
-
----
-
-**🎉 Alle APIs sind integriert und produktionsbereit!**
-
-Bei Fragen zur Konfiguration siehe die entsprechenden Abschnitte oben.
+See `.env.example`, `SETUP_GUIDE.md`, and `supabase/README.md` for deployment and migration prerequisites.

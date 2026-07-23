@@ -1,12 +1,12 @@
-import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import MatchingWizard from './MatchingWizard';
 
-export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+  title: 'Passenden Tutor finden',
+  description:
+    'Finde in drei kurzen Schritten einen fachlich passenden Mentor für deinen Lernweg.',
+};
 
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-32 flex items-center justify-center"><div className="text-white">Laden...</div></div>}>
-      <MatchingWizard />
-    </Suspense>
-  );
+  return <MatchingWizard />;
 }

@@ -1,236 +1,88 @@
-# 🎓 Elite Tutoring Munich
+# MSM tutoring platform
 
-Eine Premium-Nachhilfe-Plattform für München, die Schüler und Studenten mit überqualifizierten Tutoren verbindet – Olympiade-Sieger, Wettbewerbs-Gewinner und Fach-Experten.
+MSM is a responsive German tutoring marketplace built with Next.js 16, React 19, TypeScript, and Tailwind CSS. It includes tutor discovery and matching, household and learner management, Stripe-hosted package checkout, live Cal.com scheduling, Supabase authentication and dashboards, and authorized one-to-one chat.
 
-![Next.js](https://img.shields.io/badge/Next.js-16.0-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-11.0-ff0055)
+## Architecture
 
-## ✨ Features
+- `src/domain/catalog.ts` defines stable public tutor, subject, and package identifiers plus fail-closed presentation fallback copy; immutable database `offer_versions` hold the displayed and sold commercial facts.
+- Supabase Auth uses request-scoped SSR clients and cookie refresh in `src/proxy.ts`.
+- Household membership permissions govern learner management, booking, billing, and household-wide booking visibility.
+- Protected Next.js route handlers run as Vercel Functions and own checkout, booking, entitlement, household, profile, webhook, and chat authorization.
+- Stripe Checkout creates one-time payment sessions; signed Stripe webhooks are the only path that fulfills purchases and grants credits.
+- Cal.com v2 creates scheduling operations, while HMAC-signed Cal.com webhooks and an authenticated scheduled repair job reconcile provider lifecycle changes.
+- Supabase row-level security limits direct reads; privileged payment, booking, and append-only credit-ledger mutations are transactional service-role RPCs.
+- Supabase stores append-only booking chat history and emits minimized private Realtime events; Vercel Functions remain the only message-write API.
+- Tutor and administrator operations require Supabase AAL2 multi-factor authentication in production.
+- Client dashboards consume redacted DTOs rather than querying sensitive tables or provider identifiers directly.
 
-### 🏠 Landing Page
-- **Hero Section** mit animierten Hintergrund-Elementen und Parallax-Effekten
-- **Features Section** mit Icons und Frosted Glass Cards
-- **Tutoren-Galerie** mit 6 Elite-Tutoren inkl. Achievements und Bewertungen
-- **Pricing Section** mit 5 verschiedenen Paketen (Probestunde, Einzelstunde, 5er/10er-Paket, Olympiaden-Vorbereitung)
-- Responsive Design mit modernen UI-Effekten
+The application deliberately has no fake-success or local-storage persistence fallback. Missing provider configuration produces an explicit error. Creating a new Checkout Session additionally requires both `PAYMENTS_ENABLED=true` and `PAYMENTS_LEGAL_APPROVED=true`; the supplied environment template keeps both gates off. Those gates never disable signed Stripe webhook fulfillment or financial reconciliation.
 
-### 🧭 Matching Wizard (5 Schritte)
-1. **Fächerauswahl** - Mehrfachauswahl aus 10 Fächern
-2. **Ziel** - Olympiade, Notenverbesserung, Begeisterung, etc.
-3. **Lernstil** - Visuell, Auditiv, Praktisch, Lesen/Schreiben
-4. **Zeitrahmen** - Sofort, Bald, Flexibel
-5. **Sprache** - Deutsch, Englisch, Spanisch, Französisch
+## Local development
 
-### 📅 Booking System
-- **Schritt 1:** Fach & Tutor auswählen
-- **Schritt 2:** Service/Paket wählen
-- **Schritt 3:** Datum & Uhrzeit
-- **Schritt 4:** Online oder Vor Ort
-- **Schritt 5:** Kontaktdaten
-- Integration mit Matching-Daten (überspringt Schritte wenn vom Wizard kommend)
-- Probestunde nur für Neukunden
-
-### 📊 Parent Dashboard
-- **Buchungen-Tab**: Übersicht aller Buchungen mit Status (Geplant, Abgeschlossen, Storniert)
-- **Nachrichten-Tab**: Kommunikation mit Tutoren (Sendbird-Ready)
-- **Kalender-Tab**: Zeitliche Übersicht aller Termine (Cal.com-Ready)
-- **Profil-Tab**: Account-Verwaltung mit Supabase Auth
-
-## 🎨 Design System
-
-### Farbpalette
-```css
---primary-dark: #081525    /* Haupthintergrund */
---secondary-dark: #102A43  /* Sekundärer Hintergrund */
---accent-purple: #6E56CF   /* Akzentfarbe für CTAs */
-```
-
-### UI-Effekte
-- **Frosted Glass**: `backdrop-blur` mit Transparenz
-- **Liquid Glass**: Erweiterte Glasmorphismus-Effekte
-- **Hover-to-Enlarge**: Scale-Transform bei Hover
-- **Parallax Scrolling**: Animated Background Elements
-- **Smooth Animations**: Framer Motion für alle Übergänge
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Animations**: Framer Motion
-- **Icons**: lucide-react
-- **Image Handling**: Next/Image mit Unsplash
-
-### Backend & Services (Ready to Integrate)
-- **Authentication**: Supabase Auth
-  - E-Mail/Passwort + Magic Link
-  - Account-Erstellung nach erster Buchung
-  
-- **Booking**: Cal.com API
-  - Event Types für verschiedene Produkte
-  - Tutor-Verfügbarkeiten
-  - Webhooks für Dashboard-Integration
-  
-- **Messaging**: Sendbird Chat API
-  - 1:1 Chat zwischen Eltern und Tutoren
-  - Echtzeit-Benachrichtigungen
-  
-- **Payments**: Stripe (optional)
-  - Sichere Zahlungsabwicklung
-  - Paket- und Einzelbuchungen
-
-## 🚀 Getting Started
-
-### Installation
+Node.js 20.9 or newer is required.
 
 ```bash
-# Repository klonen
-git clone <your-repo-url>
-cd romaverbessert
-
-# Dependencies installieren
 npm install
-
-# Development Server starten
+cp .env.example .env.local
 npm run dev
 ```
 
-Die App läuft auf [http://localhost:3000](http://localhost:3000)
+Open `http://localhost:3000`. The public UI and production build can render with placeholder configuration, but authentication, booking, checkout, webhooks, and chat require real staging services.
 
-### Umgebungsvariablen
+## Configuration
 
-Erstelle eine `.env.local` Datei (siehe `.env.local.example`):
+`.env.example` is the authoritative environment-variable template. Server secrets must never use the `NEXT_PUBLIC_` prefix or be committed.
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+Before exercising protected flows:
 
-# Cal.com
-NEXT_PUBLIC_CALCOM_API_KEY=your_calcom_api_key
-CALCOM_API_KEY=your_calcom_api_key
+1. Rehearse and audit the legacy backfill in staging, then apply `supabase/migrations` in filename order. New customer accounts receive a household, owner membership, and parent role automatically; review migrated household and learner placeholders before production.
+2. Provision tutor/admin roles through a trusted server-side workflow and enroll staff MFA.
+3. Configure a Cal.com event type per tutor and the signed `/api/webhooks/calcom` endpoint.
+4. Configure Stripe test-mode credentials, signed `/api/webhooks/stripe`, and immutable offer versions using `supabase/stripe_offer_setup.example.sql`. Do not enable checkout yet.
+5. Scope Supabase, Stripe, Cal.com, rate-limit, and cron secrets to Vercel Development, Preview, and Production. The Vercel Marketplace can connect an existing Supabase or Stripe resource and synchronize its generated environment variables; never connect Preview to live payment or production data.
+6. Add the deployed `/auth/callback` URL to Supabase Auth redirect URLs, require private Supabase Realtime channels, and configure the authenticated `/api/cron/reconcile-bookings` job with `CRON_SECRET`. The checked-in schedule is Hobby-compatible and runs daily; use Vercel Pro or an equivalent scheduler for hourly production repair when the operational SLO requires it.
 
-# Sendbird
-NEXT_PUBLIC_SENDBIRD_APP_ID=your_sendbird_app_id
-SENDBIRD_API_TOKEN=your_sendbird_api_token
-```
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for the release checklist and [API_INTEGRATION.md](API_INTEGRATION.md) for route contracts. Existing-database migration notes are in [supabase/README.md](supabase/README.md).
 
-## 📁 Projektstruktur
-
-```
-romaverbessert/
-├── src/
-│   ├── app/
-│   │   ├── page.tsx              # Landing Page
-│   │   ├── layout.tsx            # Root Layout mit Navigation
-│   │   ├── matching/
-│   │   │   └── page.tsx          # Matching Wizard
-│   │   ├── booking/
-│   │   │   └── page.tsx          # Booking System
-│   │   └── dashboard/
-│   │       └── page.tsx          # Parent Dashboard
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Navigation.tsx    # Haupt-Navigation
-│   │   │   └── Footer.tsx        # Footer
-│   │   ├── sections/
-│   │   │   ├── Hero.tsx          # Hero Section
-│   │   │   ├── FeaturesSection.tsx
-│   │   │   ├── TutorsSection.tsx
-│   │   │   └── PricingSection.tsx
-│   │   ├── tutors/
-│   │   │   └── TutorCard.tsx     # Tutor Card Komponente
-│   │   ├── pricing/
-│   │   │   └── PricingCard.tsx   # Pricing Card
-│   │   └── ui/
-│   │       ├── Button.tsx        # Wiederverwendbare Button
-│   │       └── FrostedCard.tsx   # Frosted Glass Card
-│   ├── data/
-│   │   └── mockData.ts           # Mock-Daten für Tutoren & Pakete
-│   ├── lib/
-│   │   ├── supabase.ts           # Supabase Client
-│   │   └── utils.ts              # Utility Functions
-│   └── types/
-│       └── index.ts              # TypeScript Interfaces
-├── .github/
-│   └── copilot-instructions.md   # Copilot Context
-└── .env.local.example            # Umgebungsvariablen Template
-```
-
-## 🔧 API Integration Guide
-
-### Supabase Auth Setup
-1. Projekt erstellen auf [supabase.com](https://supabase.com)
-2. Projekt-URL und Anon Key in `.env.local` einfügen
-3. Authentication aktivieren (E-Mail/Passwort)
-4. Optional: Magic Link für passwortlose Anmeldung
-
-### Cal.com Integration
-1. Account erstellen auf [cal.com](https://cal.com)
-2. API Key generieren
-3. Event Types erstellen:
-   - Probestunde (kostenlos)
-   - Einzelstunde
-   - 5er-Paket
-   - 10er-Paket
-   - Olympiaden-Vorbereitung
-4. Webhooks für Buchungsbestätigungen einrichten
-
-### Sendbird Chat
-1. App erstellen auf [sendbird.com](https://sendbird.com)
-2. App ID und API Token in `.env.local`
-3. Chat UI in Dashboard integrieren
-4. User-to-User Messaging aktivieren
-
-## 🎯 Roadmap
-
-- [x] Landing Page mit Hero, Features, Tutoren, Pricing
-- [x] Matching Wizard (5 Schritte)
-- [x] Booking System (5 Schritte)
-- [x] Parent Dashboard (Buchungen, Nachrichten, Kalender, Profil)
-- [ ] Supabase Auth vollständig integrieren
-- [ ] Cal.com API anbinden
-- [ ] Sendbird Chat implementieren
-- [ ] Stripe Payments integrieren
-- [ ] Tutor-Dashboard erstellen
-- [ ] E-Mail-Benachrichtigungen (z.B. via Resend)
-- [ ] Review-System für Tutoren
-- [ ] Admin-Panel
-
-## 🎨 Design Principles
-
-- **Professional but Approachable**: Hochwertig aber nicht einschüchternd
-- **Quality over Quantity**: Fokus auf wenige, aber exzellente Tutoren
-- **No Emojis in Production**: Icons statt Emojis (außer in UI-Beispielen)
-- **Frosted Glass**: Moderne Glasmorphismus-Effekte
-- **Smooth Animations**: Alle Übergänge mit Framer Motion
-- **Mobile First**: Responsive Design für alle Geräte
-
-## 📝 Scripts
+## Quality checks
 
 ```bash
-# Development
-npm run dev          # Start dev server
-
-# Production
-npm run build        # Build für Production
-npm run start        # Start production server
-
-# Code Quality
-npm run lint         # ESLint prüfen
+npm run check
 ```
 
-## 🤝 Contributing
+The check runs ESLint, Next.js route type generation plus TypeScript, Vitest, and a production build. Focused commands are also available:
 
-Dieses Projekt ist für Elite Tutoring Munich entwickelt. Für Änderungen oder Erweiterungen, bitte ein Issue erstellen.
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
 
-## 📄 License
+## Security model
 
-Proprietary - Alle Rechte vorbehalten © 2025 Elite Tutoring Munich
+- Clients submit stable catalog IDs and UUID idempotency keys, never prices, user IDs, provider booking IDs, Stripe Price IDs, or Cal.com event-type IDs.
+- Checkout resolves a server-owned active offer and validates the live Stripe Product/Price against its immutable order before issuing a fixed-currency Session. The success page never grants credit; a signature-verified, replay-safe Stripe webhook validates and fulfills the payment exactly once.
+- Household permissions scope learners, package purchases, and bookings. New bookings require an active learner in the caller's household.
+- Paid booking never accepts a purchase/grant ID: the database reserves the earliest-expiring, then oldest eligible household credit before the Cal.com call. Provider confirmation consumes it; deterministic failure releases it; ambiguous results remain queued for reconciliation.
+- Creation, cancellation, and rescheduling use atomically claimed idempotent operations. A queued operation can be resumed safely; a possibly dispatched provider call is never repeated blindly.
+- Eligible paid cancellation restores one credit exactly once through an append-only ledger entry.
+- HMAC-signed Cal.com events and the scheduled repair loop reconcile booking lifecycle and provider drift without granting payment authority to Cal.com. Every run reserves capacity for upcoming-booking audits even under a sustained pending backlog. A UID-less ambiguous create is recovered only by an exact internal booking UUID match around the actual provider-attempt time; two complete, spaced negative searches are required before its reservation is released. Missing mutation UIDs are searched by internal ID and replacement lineage, and incompatible active/absent/cancelled evidence is never combined. Absence or unchanged same-UID presence evidence for a staged external cancellation is durably tied to the signed event that caused the pending state and requires two consistent observations.
+- Sensitive mutations and provider-backed reads use privacy-preserving, database-backed rate limits keyed by an HMAC identity.
+- Production staff MFA requires AAL2 for tutor/admin dashboards, booking access, and chat operations.
+- Chat is text only and belongs to one exact live booking. Every history read and message write is re-authorized by a Vercel Function; tutors require AAL2, and completed, cancelled, and failed bookings do not qualify. Supabase stores immutable history and broadcasts only a minimized relative-side DTO on a private RLS-authorized Realtime topic.
+- Safe redirect handling accepts only local application paths.
 
----
+Rotate any secret that has appeared in Git history. Removing a value from the current tree is not credential revocation and does not rewrite repository history.
 
-**Built with ❤️ in Munich**
+## Production activation gates
+
+- Keep `PAYMENTS_ENABLED=false`, `PAYMENTS_LEGAL_APPROVED=false`, `STRIPE_AUTOMATIC_TAX_ENABLED=false`, and every `active_offers.checkout_enabled=false` until the migration/backfill, legal, VAT, refund, test-mode webhook, and reconciliation checks in `SETUP_GUIDE.md` are complete.
+- Do not invent or commit Stripe Product/Price IDs. Publish the provider-created IDs as a new immutable offer version, then move the `active_offers` pointer deliberately.
+- Stop new sales with the operational gate and/or the relevant `active_offers.checkout_enabled` pointer. Keep the signed Stripe webhook route and secrets available: webhook fulfillment, retries, refunds, and disputes remain active even while both environment sales gates are false.
+- Validate migrations and legacy financial/learner backfills against a staging database, require staff MFA, configure scheduled reconciliation and `RATE_LIMIT_SECRET`, and add provider-failure alerting before production traffic.
+- Keep Supabase Realtime public access disabled, rehearse the booking-message migration in staging, and define reviewed retention/export/deletion procedures before migrating any legacy provider chat history.
+
+## License
+
+Proprietary. All rights reserved.

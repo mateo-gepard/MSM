@@ -1,76 +1,78 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { Target, Users, MessageCircle, Calendar, GraduationCap, Brain } from 'lucide-react';
+import {
+  Brain,
+  CalendarCheck,
+  GraduationCap,
+  MessageSquareText,
+  Target,
+  Users,
+} from 'lucide-react';
 
 const features = [
   {
     icon: Target,
     title: 'Personalisierte Lernpläne',
-    description: 'Jeder Schüler erhält einen individuellen Lernplan, abgestimmt auf seine Ziele und Bedürfnisse.'
+    description:
+      'Jeder Schüler erhält einen individuellen Lernplan, abgestimmt auf seine Ziele und Bedürfnisse.',
   },
   {
     icon: GraduationCap,
-    title: 'Peer-to-Peer Mentoring',
-    description: 'Unsere Tutoren sind selbst Schüler oder Studenten und verstehen deine Herausforderungen aus eigener Erfahrung.'
+    title: 'Mentoring auf Augenhöhe',
+    description:
+      'Unsere Tutoren sind selbst Schüler oder Studenten und verstehen deine Herausforderungen aus eigener Erfahrung.',
   },
   {
     icon: Users,
-    title: '1:1 Betreuung',
-    description: 'Intensive Einzelbetreuung für maximalen Lernerfolg – kein Gruppenunterricht.'
+    title: 'Individuelle Betreuung',
+    description:
+      'Intensive Einzelbetreuung für maximalen Lernerfolg. Kein Gruppenunterricht.',
   },
   {
     icon: Brain,
     title: 'Tiefgehendes Verständnis',
-    description: 'Wir legen Wert darauf, dass Konzepte wirklich verstanden werden – nicht nur auswendig gelernt.'
+    description:
+      'Wir legen Wert darauf, dass Konzepte wirklich verstanden und nicht nur auswendig gelernt werden.',
   },
   {
-    icon: Calendar,
+    icon: CalendarCheck,
     title: 'Flexible Buchung',
-    description: 'Online-Buchungssystem mit Echtzeit-Verfügbarkeit und einfacher Terminverwaltung.'
+    description:
+      'Onlinebuchung mit Verfügbarkeit in Echtzeit und einfacher Terminverwaltung.',
   },
   {
-    icon: MessageCircle,
+    icon: MessageSquareText,
     title: 'Direkte Kommunikation',
-    description: 'Integriertes Messaging-System für schnellen Austausch mit deinem Tutor.'
-  }
-];
+    description:
+      'Ein integriertes Nachrichtensystem ermöglicht den schnellen Austausch mit deinem Tutor.',
+  },
+] as const;
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-gradient-to-b from-primary-dark to-secondary-dark">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Warum MSM?
-          </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Mehr als nur Nachhilfe – ein ganzheitliches Lernkonzept
+    <section
+      id="ablauf"
+      className="site-section scroll-mt-24 border-y border-[var(--line)] bg-[var(--canvas-soft)]"
+      aria-labelledby="features-title"
+    >
+      <div className="site-container">
+        <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-end">
+          <div>
+            <p className="eyebrow">Warum MSM?</p>
+            <h2 id="features-title" className="section-heading mt-6 text-[var(--ink)]">
+              Mehr als nur Nachhilfe
+            </h2>
+          </div>
+          <p className="text-pretty max-w-xl text-base leading-7 text-[var(--ink-muted)] lg:justify-self-end">
+            Ein ganzheitliches Lernkonzept mit persönlicher Betreuung, klaren Zielen und direktem Austausch.
           </p>
-        </motion.div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {features.map((feature, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="frosted-glass rounded-2xl p-8 transition-colors duration-300"
-            >
-              <div className="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-4">
-                <feature.icon className="w-7 h-7 text-accent" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-              <p className="text-gray-400">{feature.description}</p>
-            </motion.div>
+        <div className="mt-12 grid gap-px overflow-hidden border border-[var(--line)] bg-[var(--line)] md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <article key={feature.title} className="bg-[var(--surface)] p-7 sm:p-8">
+              <feature.icon aria-hidden="true" className="h-6 w-6 text-[var(--purple-bright)]" />
+              <h3 className="mt-8 text-lg font-bold text-[var(--ink)]">{feature.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-[var(--ink-muted)]">{feature.description}</p>
+            </article>
           ))}
         </div>
       </div>

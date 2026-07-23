@@ -1,411 +1,324 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { Suspense, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, signUp, sendMagicLink, resetPassword } from '@/lib/auth';
+import { ArrowRight, KeyRound, Lock, Mail, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FrostedCard } from '@/components/ui/FrostedCard';
-import { Mail, Lock, User, ArrowRight, KeyRound, AlertCircle, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { resetPassword, sendMagicLink, signIn, signUp } from '@/lib/auth';
+import { safeInternalRedirect } from '@/lib/security/safe-redirect';
+
+type AuthMode = 'login' | 'signup' | 'magic' | 'reset';
+
+const MODE_COPY: Record<AuthMode, { title: string; description: string }> = {
+  login: {
+    title: 'Willkommen zurück',
+    description: 'Melde dich an, um deine Termine und Nachrichten zu verwalten.',
+  },
+  signup: {
+    title: 'Account erstellen',
+    description: 'Ein Account reicht für Buchungen, Nachrichten und Terminänderungen.',
+  },
+  magic: {
+    title: 'Ohne Passwort anmelden',
+    description: 'Wir senden dir einen einmalig nutzbaren Anmeldelink per E Mail.',
+  },
+  reset: {
+    title: 'Passwort zurücksetzen',
+    description: 'Du erhältst einen sicheren Link, über den du ein neues Passwort setzen kannst.',
+  },
+};
+
+function friendlyAuthError(error: unknown) {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'object' && error && 'message' in error
+      ? String(error.message)
+      : '';
+
+  if (/invalid login credentials/i.test(message)) {
+    return 'E Mailadresse oder Passwort ist nicht korrekt.';
+  }
+  if (/email not confirmed/i.test(message)) {
+    return 'Bitte bestätige zuerst deine E Mailadresse.';
+  }
+  if (/rate limit|too many requests/i.test(message)) {
+    return 'Zu viele Versuche. Bitte warte kurz und versuche es erneut.';
+  }
+  if (/password should be at least|weak password/i.test(message)) {
+    return 'Bitte verwende ein stärkeres Passwort mit mindestens 8 Zeichen.';
+  }
+  return 'Das hat leider nicht funktioniert. Bitte versuche es erneut.';
+}
+
+const inputClassName =
+  'min-h-12 w-full rounded-lg border border-[var(--line)] bg-[var(--canvas)] px-4 pl-11 text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--ink-subtle)] focus:border-[var(--purple-bright)]';
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<'login' | 'signup' | 'magic' | 'reset'>('login');
+  const requestedMode = searchParams.get('mode');
+  const [mode, setMode] = useState<AuthMode>(() =>
+    requestedMode === 'signup' || requestedMode === 'magic' || requestedMode === 'reset'
+      ? requestedMode
+      : 'login',
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
-  const [showLoginRequired, setShowLoginRequired] = useState(false);
 
-  useEffect(() => {
-    const redirect = searchParams.get('redirect');
-    const message = searchParams.get('message');
-    
-    if (redirect) {
-      setRedirectUrl(redirect);
-    }
-    
-    if (message === 'login-required') {
-      setShowLoginRequired(true);
-    }
-  }, [searchParams]);
+  const redirectUrl = safeInternalRedirect(searchParams.get('redirect'), '/dashboard');
+  const loginRequired = searchParams.get('message') === 'login-required';
+  const callbackFailed = searchParams.has('error');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  function changeMode(nextMode: AuthMode) {
+    setMode(nextMode);
+    setError('');
+    setSuccess('');
+  }
+
+  async function runAuth(action: () => Promise<void>) {
     setLoading(true);
     setError('');
+    setSuccess('');
 
-    const { data, error: authError } = await signIn(email, password);
-    
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-    } else if (data.user) {
-      // Redirect to the saved URL or dashboard
-      router.push(redirectUrl || '/dashboard');
-    }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const { data, error: authError } = await signUp(email, password, name);
-    
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-    } else if (data?.user) {
-      // Redirect after signup
-      setSuccess('Account erstellt! Du wirst weitergeleitet...');
-      setTimeout(() => {
-        router.push(redirectUrl || '/dashboard');
-      }, 1500);
-    } else {
-      setSuccess('Account erstellt! Bitte überprüfe deine E-Mail zur Bestätigung.');
+    try {
+      await action();
+    } catch (authError) {
+      setError(friendlyAuthError(authError));
+    } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  function finishLogin() {
+    router.replace(redirectUrl);
+    router.refresh();
+  }
 
-    // Pass redirect URL to magic link
-    const { error: authError } = await sendMagicLink(email, redirectUrl || undefined);
-    
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-    } else {
-      setSuccess('Magic Link wurde gesendet! Überprüfe deine E-Mail und klicke auf den Link.');
-      setLoading(false);
-    }
-  };
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runAuth(async () => {
+      const result = await signIn(email.trim(), password);
+      if (result.error) throw result.error;
+      if (!result.data.session) throw new Error('Die Anmeldung konnte nicht bestätigt werden.');
+      finishLogin();
+    });
+  }
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  async function handleSignup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runAuth(async () => {
+      const result = await signUp(email.trim(), password, name, redirectUrl);
+      if (result.error) throw result.error;
 
-    const { error: authError } = await resetPassword(email);
-    
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-    } else {
-      setSuccess('Passwort-Reset-Link wurde gesendet! Überprüfe deine E-Mail.');
-      setLoading(false);
-    }
-  };
+      if (result.data?.session) {
+        finishLogin();
+        return;
+      }
+
+      setSuccess('Fast geschafft: Bitte bestätige deine E Mailadresse über den Link in deinem Postfach.');
+    });
+  }
+
+  async function handleMagicLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runAuth(async () => {
+      const result = await sendMagicLink(email.trim(), redirectUrl);
+      if (result.error) throw result.error;
+      setSuccess('Der Anmeldelink ist unterwegs. Er kann einmal verwendet werden und läuft automatisch ab.');
+    });
+  }
+
+  async function handlePasswordReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runAuth(async () => {
+      const result = await resetPassword(email.trim());
+      if (result.error) throw result.error;
+      setSuccess('Wenn ein Account zu dieser Adresse gehört, findest du gleich einen Link zum Zurücksetzen im Postfach.');
+    });
+  }
+
+  const copy = MODE_COPY[mode];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark pt-24 sm:pt-32 pb-12 sm:pb-20">
-      <div className="container mx-auto px-4 max-w-md">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="text-center mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-              {mode === 'login' && 'Willkommen zurück'}
-              {mode === 'signup' && 'Account erstellen'}
-              {mode === 'magic' && 'Magic Link Login'}
-              {mode === 'reset' && 'Passwort zurücksetzen'}
-            </h1>
-            <p className="text-gray-400 text-sm sm:text-base">
-              {mode === 'login' && 'Melde dich an um fortzufahren'}
-              {mode === 'signup' && 'Erstelle deinen Account für Elite Tutoring'}
-              {mode === 'magic' && 'Login ohne Passwort via E-Mail'}
-              {mode === 'reset' && 'Wir senden dir einen Link zum Zurücksetzen'}
-            </p>
+    <section className="site-section min-h-[calc(100vh-5rem)] bg-[var(--canvas)] pt-28 sm:pt-36">
+      <div className="site-container grid min-w-0 max-w-5xl gap-10 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-center">
+        <div className="min-w-0 max-w-xl">
+          <p className="eyebrow">Dein MSM Account</p>
+          <h1 className="mt-5 break-words font-display text-4xl font-medium leading-[0.98] tracking-[-0.045em] text-[var(--ink)] sm:text-6xl">
+            Lernen organisieren, ohne Organisationschaos.
+          </h1>
+          <p className="mt-6 max-w-lg text-lg leading-8 text-[var(--ink-muted)]">
+            Termine, Buchungen und Nachrichten bleiben an einem Ort. Deine Kontaktdaten werden erst nach der Anmeldung an die Buchung übergeben.
+          </p>
+        </div>
+
+        <div className="min-w-0">
+          <div className="mb-6">
+            <h2 className="font-display text-4xl font-medium tracking-[-0.035em] text-[var(--ink)]">
+              {copy.title}
+            </h2>
+            <p className="mt-2 leading-7 text-[var(--ink-muted)]">{copy.description}</p>
           </div>
 
-                    <FrostedCard className="p-6 sm:p-8">
-            {/* Login Required Message */}
-            {showLoginRequired && (
-              <div className="mb-4 p-3 sm:p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-blue-200 font-semibold mb-1">
-                      Login erforderlich
-                    </div>
-                    <div className="text-blue-300 text-sm">
-                      Um eine Buchung abzuschließen, musst du eingeloggt sein. 
-                      Deine Auswahl (Tutor & Fach) wird nach dem Login wiederhergestellt.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Error Message */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
-                {error}
+          <FrostedCard className="rounded-2xl p-5 sm:p-7">
+            {(loginRequired || callbackFailed) && (
+              <div className="mb-5 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-raised)] p-4 text-sm leading-6 text-[var(--ink-muted)]" role="status">
+                {loginRequired
+                  ? 'Bitte melde dich an, um die Buchung sicher abzuschließen. Deine Auswahl von Tutor, Fach und Paket bleibt im Link erhalten.'
+                  : 'Der Anmeldelink konnte nicht bestätigt werden. Fordere bitte einen neuen Link an oder nutze dein Passwort.'}
               </div>
             )}
 
-            {/* Success Message */}
-            {success && (
-              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm">
-                {success}
-              </div>
-            )}
+            <div aria-live="polite" aria-atomic="true">
+              {error && (
+                <p className="mb-5 rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-sm leading-6 text-red-200" role="alert">
+                  {error}
+                </p>
+              )}
+              {success && (
+                <p className="mb-5 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-4 text-sm leading-6 text-emerald-100" role="status">
+                  {success}
+                </p>
+              )}
+            </div>
 
-            {/* Login Form */}
             {mode === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
-                      placeholder="deine@email.de"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Passwort</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Anmelden...' : 'Anmelden'}
-                  <ArrowRight className="w-5 h-5 ml-2" />
+              <form className="space-y-5" onSubmit={handleLogin}>
+                <EmailField email={email} onChange={setEmail} autoComplete="email" />
+                <PasswordField password={password} onChange={setPassword} autoComplete="current-password" />
+                <Button className="w-full" type="submit" size="lg" disabled={loading}>
+                  {loading ? 'Anmeldung wird geprüft …' : 'Anmelden'}
+                  {!loading && <ArrowRight aria-hidden="true" className="size-4" />}
                 </Button>
-
-                {/* Forgot Password Link */}
-                <button
-                  type="button"
-                  onClick={() => setMode('reset')}
-                  className="block w-full text-center text-gray-400 hover:text-accent transition-colors text-sm"
-                >
+                <button className="w-full text-sm font-semibold text-[var(--purple-soft)] hover:text-white" type="button" onClick={() => changeMode('reset')}>
                   Passwort vergessen?
                 </button>
               </form>
             )}
 
-            {/* Signup Form */}
             {mode === 'signup' && (
-              <form onSubmit={handleSignup} className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
-                      placeholder="Max Mustermann"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
-                      placeholder="deine@email.de"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Passwort</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
-                      placeholder="••••••••"
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Mindestens 6 Zeichen</p>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Erstellen...' : 'Account erstellen'}
-                  <ArrowRight className="w-5 h-5 ml-2" />
+              <form className="space-y-5" onSubmit={handleSignup}>
+                <label className="block" htmlFor="name">
+                  <span className="mb-2 block text-sm font-semibold text-[var(--ink)]">Name</span>
+                  <span className="relative block">
+                    <UserRound aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[var(--ink-subtle)]" />
+                    <input id="name" className={inputClassName} name="name" type="text" autoComplete="name" minLength={2} required value={name} onChange={(event) => setName(event.target.value)} />
+                  </span>
+                </label>
+                <EmailField email={email} onChange={setEmail} autoComplete="email" />
+                <PasswordField password={password} onChange={setPassword} autoComplete="new-password" showHint />
+                <Button className="w-full" type="submit" size="lg" disabled={loading}>
+                  {loading ? 'Account wird erstellt …' : 'Account erstellen'}
+                  {!loading && <ArrowRight aria-hidden="true" className="size-4" />}
                 </Button>
               </form>
             )}
 
-            {/* Magic Link Form */}
             {mode === 'magic' && (
-              <form onSubmit={handleMagicLink} className="space-y-3 sm:space-y-4">
-                <div className="mb-4 p-3 sm:p-4 bg-accent/10 border border-accent/30 rounded-lg">
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <KeyRound className="w-4 h-4 sm:w-5 sm:h-5 text-accent flex-shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-white font-semibold mb-1 text-sm sm:text-base">
-                        Login ohne Passwort
-                      </div>
-                      <div className="text-gray-300 text-xs sm:text-sm">
-                        Gib deine E-Mail ein und erhalte einen Login-Link. 
-                        <strong className="text-accent"> Funktioniert auch wenn du noch keinen Account hast</strong> - 
-                        wir erstellen automatisch einen für dich.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
-                      placeholder="deine@email.de"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full py-3 sm:py-3.5" disabled={loading}>
-                  {loading ? 'Senden...' : 'Magic Link senden'}
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+              <form className="space-y-5" onSubmit={handleMagicLink}>
+                <EmailField email={email} onChange={setEmail} autoComplete="email" />
+                <Button className="w-full" type="submit" size="lg" disabled={loading}>
+                  {loading ? 'Link wird gesendet …' : 'Anmeldelink senden'}
+                  {!loading && <Mail aria-hidden="true" className="size-4" />}
                 </Button>
-
-                <p className="text-xs text-gray-400 text-center">
-                  Nach dem Klick auf den Link in deiner E-Mail bist du eingeloggt
-                </p>
               </form>
             )}
 
-            {/* Password Reset Form */}
             {mode === 'reset' && (
-              <form onSubmit={handleResetPassword} className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">E-Mail</label>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 rounded-lg bg-secondary-dark text-white text-base border border-accent/30 focus:border-accent outline-none"
-                      placeholder="deine@email.de"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full py-3 sm:py-3.5" disabled={loading}>
-                  {loading ? 'Senden...' : 'Reset-Link senden'}
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+              <form className="space-y-5" onSubmit={handlePasswordReset}>
+                <EmailField email={email} onChange={setEmail} autoComplete="email" />
+                <Button className="w-full" type="submit" size="lg" disabled={loading}>
+                  {loading ? 'Link wird gesendet …' : 'Link zum Zurücksetzen senden'}
+                  {!loading && <KeyRound aria-hidden="true" className="size-4" />}
                 </Button>
-
-                <p className="text-xs text-gray-400 text-center">
-                  Du erhältst einen Link zum Zurücksetzen deines Passworts per E-Mail
-                </p>
               </form>
             )}
 
-            {/* Mode Switch */}
-            <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
+            <div className="mt-6 border-t border-[var(--line)] pt-5 text-center text-sm text-[var(--ink-muted)]">
+              {mode !== 'login' ? (
+                <button className="font-semibold text-[var(--purple-soft)] hover:text-white" type="button" onClick={() => changeMode('login')}>
+                  Zur Anmeldung
+                </button>
+              ) : (
+                <span>
+                  Noch kein Account?{' '}
+                  <button className="font-semibold text-[var(--purple-soft)] hover:text-white" type="button" onClick={() => changeMode('signup')}>
+                    Jetzt registrieren
+                  </button>
+                </span>
+              )}
               {mode === 'login' && (
                 <>
-                  <button
-                    onClick={() => setMode('signup')}
-                    className="block w-full text-center text-accent hover:text-accent/80 transition-colors text-sm"
-                  >
-                    Noch kein Account? Jetzt registrieren
-                  </button>
-                  <button
-                    onClick={() => setMode('magic')}
-                    className="block w-full text-center text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    Login ohne Passwort (Magic Link)
+                  <span aria-hidden="true" className="mx-2 text-[var(--line-strong)]">·</span>
+                  <button className="font-semibold text-[var(--purple-soft)] hover:text-white" type="button" onClick={() => changeMode('magic')}>
+                    Anmeldelink nutzen
                   </button>
                 </>
-              )}
-              {mode === 'signup' && (
-                <button
-                  onClick={() => setMode('login')}
-                  className="block w-full text-center text-accent hover:text-accent/80 transition-colors text-sm"
-                >
-                  Bereits registriert? Jetzt anmelden
-                </button>
-              )}
-              {mode === 'magic' && (
-                <button
-                  onClick={() => setMode('login')}
-                  className="block w-full text-center text-accent hover:text-accent/80 transition-colors text-sm"
-                >
-                  Zurück zum Login
-                </button>
-              )}
-              {mode === 'reset' && (
-                <button
-                  onClick={() => setMode('login')}
-                  className="block w-full text-center text-accent hover:text-accent/80 transition-colors text-sm"
-                >
-                  Zurück zum Login
-                </button>
               )}
             </div>
           </FrostedCard>
 
-          {/* Back to Home */}
-          <div className="text-center mt-6">
-            <Link href="/" className="text-gray-400 hover:text-white transition-colors text-sm">
-              ← Zurück zur Startseite
-            </Link>
-          </div>
-        </motion.div>
+          <p className="mt-5 text-center text-xs leading-5 text-[var(--ink-subtle)]">
+            Mit der Nutzung gelten unsere <Link className="underline hover:text-[var(--ink)]" href="/agb">AGB</Link> und unsere <Link className="underline hover:text-[var(--ink)]" href="/datenschutz">Datenschutzhinweise</Link>.
+          </p>
+        </div>
       </div>
-    </div>
+    </section>
+  );
+}
+
+function EmailField({
+  email,
+  onChange,
+  autoComplete,
+}: {
+  email: string;
+  onChange: (email: string) => void;
+  autoComplete: string;
+}) {
+  return (
+    <label className="block" htmlFor="email">
+      <span className="mb-2 block text-sm font-semibold text-[var(--ink)]">E Mailadresse</span>
+      <span className="relative block">
+        <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[var(--ink-subtle)]" />
+        <input id="email" className={inputClassName} name="email" type="email" inputMode="email" autoComplete={autoComplete} required value={email} onChange={(event) => onChange(event.target.value)} />
+      </span>
+    </label>
+  );
+}
+
+function PasswordField({
+  password,
+  onChange,
+  autoComplete,
+  showHint = false,
+}: {
+  password: string;
+  onChange: (password: string) => void;
+  autoComplete: string;
+  showHint?: boolean;
+}) {
+  return (
+    <label className="block" htmlFor="password">
+      <span className="mb-2 block text-sm font-semibold text-[var(--ink)]">Passwort</span>
+      <span className="relative block">
+        <Lock aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[var(--ink-subtle)]" />
+        <input id="password" className={inputClassName} name="password" type="password" autoComplete={autoComplete} minLength={showHint ? 8 : undefined} required value={password} onChange={(event) => onChange(event.target.value)} />
+      </span>
+      {showHint && <span className="mt-2 block text-xs text-[var(--ink-subtle)]">Mindestens 8 Zeichen.</span>}
+    </label>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-primary-dark via-secondary-dark to-primary-dark flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-accent animate-spin" />
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-[70vh] bg-[var(--canvas)]" aria-label="Anmeldung wird geladen" />}>
       <LoginContent />
     </Suspense>
   );
